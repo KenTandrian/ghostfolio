@@ -1,3 +1,4 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@200..800&display=swap');
 @import './styles/bootstrap';
 @import './styles/table';
 
@@ -5,7 +6,8 @@
 
 :root {
   --dark-background: rgb(25, 25, 25);
-  --font-family-sans-serif: 'Inter', Roboto, 'Helvetica Neue', sans-serif;
+  --font-family-sans-serif: 'Plus Jakarta Sans', Roboto, 'Helvetica Neue',
+    sans-serif;
   --light-background: rgb(255, 255, 255);
 
   --dark-primary-text: 0, 0, 0, 0.87;

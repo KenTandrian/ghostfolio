@@ -24,6 +24,7 @@ import {
   Router
 } from '@angular/router';
 import { DataSource } from '@prisma/client';
+import { Chart } from 'chart.js';
 import { DeviceDetectorService } from 'ngx-device-detector';
 import { Subject } from 'rxjs';
 import { filter, takeUntil } from 'rxjs/operators';
@@ -284,6 +285,9 @@ export class AppComponent implements OnDestroy, OnInit {
 
     this.toggleTheme(isDarkTheme);
 
+    // Default chart styles
+    Chart.defaults.font.family = 'Plus Jakarta Sans';
+
     window.matchMedia('(prefers-color-scheme: dark)').addListener((event) => {
       if (!this.user?.settings.colorScheme) {
         this.toggleTheme(event.matches);
@@ -355,6 +359,7 @@ export class AppComponent implements OnDestroy, OnInit {
 
     if (isDarkTheme) {
       this.document.body.classList.add('theme-dark');
+      this.document.documentElement.style.colorScheme = 'dark';
     } else {
       this.document.body.classList.remove('theme-dark');
     }

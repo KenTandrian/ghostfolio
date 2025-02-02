@@ -71,7 +71,9 @@ $gf-secondary: (
   )
 );
 
-$gf-typography: mat.m2-define-typography-config();
+$gf-typography: mat.m2-define-typography-config(
+  $font-family: 'Plus Jakarta Sans'
+);
 
 // Create default theme
 $gf-theme-default: mat.m2-define-light-theme(
