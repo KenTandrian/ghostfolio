@@ -138,6 +138,8 @@ export class TWRPortfolioCalculator extends PortfolioCalculator {
     let grossPerformanceAtStartDateWithCurrencyEffect = new Big(0);
     let grossPerformanceFromSells = new Big(0);
     let grossPerformanceFromSellsWithCurrencyEffect = new Big(0);
+    let grossPerformanceFromDividends = new Big(0);
+    let grossPerformanceFromDividendsWithCurrencyEffect = new Big(0);
     let initialValue: Big;
     let initialValueWithCurrencyEffect: Big;
     let investmentAtStartDate: Big;
@@ -580,6 +582,16 @@ export class TWRPortfolioCalculator extends PortfolioCalculator {
               .mul(order.quantity)
           : new Big(0);
 
+      if (order.type === 'DIVIDEND') {
+        grossPerformanceFromDividends = grossPerformanceFromDividends.plus(
+          order.unitPrice.mul(currentExchangeRate).mul(order.quantity)
+        );
+        grossPerformanceFromDividendsWithCurrencyEffect =
+          grossPerformanceFromDividendsWithCurrencyEffect.plus(
+            order.unitPrice.mul(exchangeRateAtOrderDate).mul(order.quantity)
+          );
+      }
+
       grossPerformanceFromSells = grossPerformanceFromSells.plus(
         grossPerformanceFromSell
       );
@@ -616,12 +628,14 @@ export class TWRPortfolioCalculator extends PortfolioCalculator {
 
       const newGrossPerformance = valueOfInvestment
         .minus(totalInvestment)
-        .plus(grossPerformanceFromSells);
+        .plus(grossPerformanceFromSells)
+        .plus(grossPerformanceFromDividends);
 
       const newGrossPerformanceWithCurrencyEffect =
         valueOfInvestmentWithCurrencyEffect
           .minus(totalInvestmentWithCurrencyEffect)
-          .plus(grossPerformanceFromSellsWithCurrencyEffect);
+          .plus(grossPerformanceFromSellsWithCurrencyEffect)
+          .plus(grossPerformanceFromDividendsWithCurrencyEffect);
 
       grossPerformance = newGrossPerformance;
 
