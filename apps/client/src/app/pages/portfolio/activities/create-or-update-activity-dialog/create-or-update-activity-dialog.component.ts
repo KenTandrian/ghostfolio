@@ -566,4 +566,11 @@ export class CreateOrUpdateActivityDialog implements OnDestroy {
         this.changeDetectorRef.markForCheck();
       });
   }
+
+  public predefinedTax(percentage: number) {
+    const total =
+      this.activityForm.get('quantity').value *
+      this.activityForm.get('unitPrice').value;
+    this.activityForm.get('feeInCustomCurrency').setValue(total * percentage);
+  }
 }
