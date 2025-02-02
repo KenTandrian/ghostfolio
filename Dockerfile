@@ -1,4 +1,4 @@
-FROM --platform=$BUILDPLATFORM node:20-slim AS builder
+FROM node:22-slim AS builder
 
 # Build application and add additional files
 WORKDIR /ghostfolio
@@ -50,8 +50,8 @@ COPY package.json /ghostfolio/dist/apps/api
 RUN npm run database:generate-typings
 
 # Image to run, copy everything needed from builder
-FROM node:20-slim
-LABEL org.opencontainers.image.source="https://github.com/ghostfolio/ghostfolio"
+FROM node:22-slim
+LABEL org.opencontainers.image.source="https://github.com/KenTandrian/ghostfolio"
 ENV NODE_ENV=production
 
 RUN apt-get update && apt-get install -y --no-install-suggests \
