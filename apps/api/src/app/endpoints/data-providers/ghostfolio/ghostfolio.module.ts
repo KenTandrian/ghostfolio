@@ -11,6 +11,7 @@ import { EodHistoricalDataService } from '@ghostfolio/api/services/data-provider
 import { FinancialModelingPrepService } from '@ghostfolio/api/services/data-provider/financial-modeling-prep/financial-modeling-prep.service';
 import { GoogleSheetsService } from '@ghostfolio/api/services/data-provider/google-sheets/google-sheets.service';
 import { ManualService } from '@ghostfolio/api/services/data-provider/manual/manual.service';
+import { PluangService } from '@ghostfolio/api/services/data-provider/pluang/pluang.service';
 import { RapidApiService } from '@ghostfolio/api/services/data-provider/rapid-api/rapid-api.service';
 import { YahooFinanceService } from '@ghostfolio/api/services/data-provider/yahoo-finance/yahoo-finance.service';
 import { MarketDataModule } from '@ghostfolio/api/services/market-data/market-data.module';
@@ -45,6 +46,7 @@ import { GhostfolioService } from './ghostfolio.service';
     GhostfolioService,
     GoogleSheetsService,
     ManualService,
+    PluangService,
     RapidApiService,
     YahooFinanceService,
     YahooFinanceDataEnhancerService,
@@ -57,6 +59,7 @@ import { GhostfolioService } from './ghostfolio.service';
         FinancialModelingPrepService,
         GoogleSheetsService,
         ManualService,
+        PluangService,
         RapidApiService,
         YahooFinanceService
       ],
@@ -69,6 +72,7 @@ import { GhostfolioService } from './ghostfolio.service';
         financialModelingPrepService,
         googleSheetsService,
         manualService,
+        pluangService,
         rapidApiService,
         yahooFinanceService
       ) => [
@@ -79,6 +83,7 @@ import { GhostfolioService } from './ghostfolio.service';
         financialModelingPrepService,
         googleSheetsService,
         manualService,
+        pluangService,
         rapidApiService,
         yahooFinanceService
       ]

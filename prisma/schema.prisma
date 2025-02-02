@@ -300,6 +300,7 @@ enum DataSource {
   GHOSTFOLIO
   GOOGLE_SHEETS
   MANUAL
+  PLUANG
   RAPID_API
   YAHOO
 }
