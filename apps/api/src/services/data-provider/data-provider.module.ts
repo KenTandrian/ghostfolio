@@ -2,6 +2,7 @@ import { RedisCacheModule } from '@ghostfolio/api/app/redis-cache/redis-cache.mo
 import { ConfigurationModule } from '@ghostfolio/api/services/configuration/configuration.module';
 import { CryptocurrencyModule } from '@ghostfolio/api/services/cryptocurrency/cryptocurrency.module';
 import { AlphaVantageService } from '@ghostfolio/api/services/data-provider/alpha-vantage/alpha-vantage.service';
+import { BibitService } from '@ghostfolio/api/services/data-provider/bibit/bibit.service';
 import { CoinGeckoService } from '@ghostfolio/api/services/data-provider/coingecko/coingecko.service';
 import { EodHistoricalDataService } from '@ghostfolio/api/services/data-provider/eod-historical-data/eod-historical-data.service';
 import { FinancialModelingPrepService } from '@ghostfolio/api/services/data-provider/financial-modeling-prep/financial-modeling-prep.service';
@@ -34,6 +35,7 @@ import { DataProviderService } from './data-provider.service';
   ],
   providers: [
     AlphaVantageService,
+    BibitService,
     CoinGeckoService,
     DataProviderService,
     EodHistoricalDataService,
@@ -46,6 +48,7 @@ import { DataProviderService } from './data-provider.service';
     {
       inject: [
         AlphaVantageService,
+        BibitService,
         CoinGeckoService,
         EodHistoricalDataService,
         FinancialModelingPrepService,
@@ -58,6 +61,7 @@ import { DataProviderService } from './data-provider.service';
       provide: 'DataProviderInterfaces',
       useFactory: (
         alphaVantageService,
+        bibitService,
         coinGeckoService,
         eodHistoricalDataService,
         financialModelingPrepService,
@@ -68,6 +72,7 @@ import { DataProviderService } from './data-provider.service';
         yahooFinanceService
       ) => [
         alphaVantageService,
+        bibitService,
         coinGeckoService,
         eodHistoricalDataService,
         financialModelingPrepService,
