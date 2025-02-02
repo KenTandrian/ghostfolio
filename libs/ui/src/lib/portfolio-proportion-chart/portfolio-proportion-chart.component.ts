@@ -31,6 +31,7 @@ import { Chart } from 'chart.js';
 import ChartDataLabels from 'chartjs-plugin-datalabels';
 import * as Color from 'color';
 import { NgxSkeletonLoaderModule } from 'ngx-skeleton-loader';
+import OpenColor from 'open-color';
 
 const {
   blue,
@@ -45,7 +46,7 @@ const {
   teal,
   violet,
   yellow
-} = require('open-color');
+} = OpenColor;
 
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -248,7 +249,7 @@ export class GfPortfolioProportionChartComponent
 
       Object.keys(item.subCategory ?? {}).forEach((subCategory) => {
         backgroundColorSubCategory.push(
-          Color(item.color).lighten(lightnessRatio).hex()
+          Color.rgb(item.color).lighten(lightnessRatio).hex()
         );
         dataSubCategory.push(item.subCategory[subCategory].value.toNumber());
         labelSubCategory.push(subCategory);

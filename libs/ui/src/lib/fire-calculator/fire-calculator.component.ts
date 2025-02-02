@@ -361,7 +361,7 @@ export class GfFireCalculatorComponent implements OnChanges, OnDestroy {
     };
 
     const datasetInterest = {
-      backgroundColor: Color(
+      backgroundColor: Color.rgb(
         `rgb(${primaryColorRgb.r}, ${primaryColorRgb.g}, ${primaryColorRgb.b})`
       )
         .lighten(0.5)
@@ -371,7 +371,7 @@ export class GfFireCalculatorComponent implements OnChanges, OnDestroy {
     };
 
     const datasetSavings = {
-      backgroundColor: Color(
+      backgroundColor: Color.rgb(
         `rgb(${primaryColorRgb.r}, ${primaryColorRgb.g}, ${primaryColorRgb.b})`
       )
         .lighten(0.25)

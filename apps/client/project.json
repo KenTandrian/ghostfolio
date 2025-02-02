@@ -11,7 +11,7 @@
   "prefix": "gf",
   "targets": {
     "build": {
-      "executor": "@nx/angular:webpack-browser",
+      "executor": "@nx/angular:browser-esbuild",
       "options": {
         "deleteOutputPath": false,
         "localize": true,
@@ -25,6 +25,10 @@
           "apps/client/src/styles/theme.scss",
           "apps/client/src/styles.scss"
         ],
+        "stylePreprocessorOptions": {
+          "includePaths": ["node_modules"]
+        },
+        "externalDependencies": ["ionicons/ionicons.esm.js"],
         "scripts": ["node_modules/marked/marked.min.js"],
         "vendorChunk": true,
         "extractLicenses": false,
