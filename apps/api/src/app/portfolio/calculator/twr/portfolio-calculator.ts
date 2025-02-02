@@ -499,6 +499,17 @@ export class TWRPortfolioCalculator extends PortfolioCalculator {
               .div(totalUnits)
               .mul(order.quantity)
               .mul(getFactor(order.type));
+
+          totalQuantityFromBuyTransactions =
+            totalQuantityFromBuyTransactions.minus(order.quantity);
+
+          totalInvestmentFromBuyTransactions =
+            totalInvestmentFromBuyTransactions.plus(transactionInvestment);
+
+          totalInvestmentFromBuyTransactionsWithCurrencyEffect =
+            totalInvestmentFromBuyTransactionsWithCurrencyEffect.plus(
+              transactionInvestmentWithCurrencyEffect
+            );
         }
       }
 
