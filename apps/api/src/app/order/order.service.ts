@@ -111,7 +111,10 @@ export class OrderService {
     const updateAccountBalance = data.updateAccountBalance ?? false;
     const userId = data.userId;
 
-    if (['FEE', 'INTEREST', 'ITEM', 'LIABILITY'].includes(data.type)) {
+    if (
+      ['FEE', 'INTEREST', 'ITEM', 'LIABILITY'].includes(data.type) &&
+      !data.SymbolProfile.connectOrCreate.create.symbol.startsWith('FEE.')
+    ) {
       const assetClass = data.assetClass;
       const assetSubClass = data.assetSubClass;
       const dataSource: DataSource = 'MANUAL';

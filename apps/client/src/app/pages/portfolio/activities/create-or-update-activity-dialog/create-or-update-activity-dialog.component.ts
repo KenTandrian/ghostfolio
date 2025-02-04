@@ -478,6 +478,10 @@ export class CreateOrUpdateActivityDialog implements OnDestroy {
       symbol:
         (['FEE', 'INTEREST', 'ITEM', 'LIABILITY'].includes(
           this.activityForm.get('type').value
+        ) &&
+        !(
+          this.activityForm.get('type').value === 'FEE' &&
+          this.data.activity?.symbolProfileId
         )
           ? undefined
           : this.activityForm.get('searchSymbol')?.value?.symbol) ??
