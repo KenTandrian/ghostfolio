@@ -1,4 +1,5 @@
 import { GfAssetProfileIconComponent } from '@ghostfolio/client/components/asset-profile-icon/asset-profile-icon.component';
+import { GfPredefinedFeeComponent } from '@ghostfolio/client/components/predefined-fee/predefined-fee.component';
 import { GfSymbolAutocompleteComponent } from '@ghostfolio/ui/symbol-autocomplete';
 import { GfValueComponent } from '@ghostfolio/ui/value';
 
@@ -23,6 +24,7 @@ import { CreateOrUpdateActivityDialog } from './create-or-update-activity-dialog
     CommonModule,
     FormsModule,
     GfAssetProfileIconComponent,
+    GfPredefinedFeeComponent,
     GfSymbolAutocompleteComponent,
     GfValueComponent,
     MatAutocompleteModule,
