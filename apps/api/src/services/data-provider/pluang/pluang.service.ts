@@ -25,25 +25,29 @@ import {
 
 import {
   IPluangDescriptionResponse,
+  IPluangGoldPricingResponse,
   IPluangHistoricalResponse,
   IPluangSearchResponse
 } from './interfaces/interfaces';
 
 @Injectable()
 export class PluangService implements DataProviderInterface {
-  private readonly apiUrl = 'https://api-pluang.pluang.com/api/v4';
+  private readonly apiUrl = 'https://api-pluang.pluang.com/api';
   private readonly userAgent =
     'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.2 Safari/605.1.15';
   private readonly assetClassMap: {
     [key: string]: AssetClass;
   } = {
+    cryptocurrency: AssetClass.LIQUIDITY,
     global_equity: AssetClass.EQUITY,
-    cryptocurrency: AssetClass.LIQUIDITY
+    gold: AssetClass.COMMODITY
   };
   private readonly assetSubClassMap: {
     [key: string]: AssetSubClass;
   } = {
     CRYPTO: AssetSubClass.CRYPTOCURRENCY,
+    ETF: AssetSubClass.ETF,
+    gold: AssetSubClass.PRECIOUS_METAL,
     STOCK: AssetSubClass.STOCK
   };
 
@@ -62,24 +66,30 @@ export class PluangService implements DataProviderInterface {
   }): Promise<Partial<SymbolProfile>> {
     const response: Partial<SymbolProfile> = {
       symbol,
-      assetClass: AssetClass.LIQUIDITY,
-      assetSubClass: AssetSubClass.CRYPTOCURRENCY,
       currency: 'IDR',
       dataSource: this.getName()
     };
 
     try {
-      const { data } = await fetch(
-        `${this.apiUrl}/asset/cryptocurrency/description?cryptocurrency=${symbol}`,
-        {
-          headers: { 'User-Agent': this.userAgent },
-          signal: AbortSignal.timeout(
-            this.configurationService.get('REQUEST_TIMEOUT')
-          )
-        }
-      ).then((res) => res.json() as Promise<IPluangDescriptionResponse>);
+      if (symbol === 'GOLD') {
+        response.assetClass = AssetClass.COMMODITY;
+        response.assetSubClass = AssetSubClass.PRECIOUS_METAL;
+        response.name = 'Emas';
+      } else {
+        const { data } = await fetch(
+          `${this.apiUrl}/v4/asset/cryptocurrency/description?cryptocurrency=${symbol}`,
+          {
+            headers: { 'User-Agent': this.userAgent },
+            signal: AbortSignal.timeout(
+              this.configurationService.get('REQUEST_TIMEOUT')
+            )
+          }
+        ).then((res) => res.json() as Promise<IPluangDescriptionResponse>);
 
-      response.name = data.cryptoCurrencyName;
+        response.assetClass = AssetClass.LIQUIDITY;
+        response.assetSubClass = AssetSubClass.CRYPTOCURRENCY;
+        response.name = data.cryptoCurrencyName;
+      }
     } catch (error) {
       Logger.error(
         `Could not get asset profile for ${symbol} (${this.getName()}): [${error.name}] ${error.message}`,
@@ -108,21 +118,41 @@ export class PluangService implements DataProviderInterface {
     [symbol: string]: { [date: string]: IDataProviderHistoricalResponse };
   }> {
     try {
-      const { data } = await fetch(
-        `${this.apiUrl}/asset/cryptocurrency/price/price-stats-history?cryptocurrency=${symbol}&timeframe=3M`,
-        {
-          headers: { 'User-Agent': this.userAgent },
-          signal: AbortSignal.timeout(requestTimeout)
-        }
-      ).then((res) => res.json() as Promise<IPluangHistoricalResponse>);
-      return {
-        [symbol]: data.priceHistory.reduce((acc, item) => {
-          acc[item.priceStatDate.split('T')[0]] = {
-            marketPrice: item.closeMidPrice
-          };
-          return acc;
-        }, {})
-      };
+      if (symbol === 'GOLD') {
+        const { data } = await fetch(
+          `${this.apiUrl}/v3/asset/gold/pricing?daysLimit=90`,
+          {
+            headers: { 'User-Agent': this.userAgent },
+            signal: AbortSignal.timeout(requestTimeout)
+          }
+        ).then((res) => res.json() as Promise<IPluangGoldPricingResponse>);
+
+        return {
+          [symbol]: data.history.reduce((acc, item) => {
+            acc[item.updated_at.split('T')[0]] = {
+              marketPrice: item.midPrice
+            };
+            return acc;
+          }, {})
+        };
+      } else {
+        const { data } = await fetch(
+          `${this.apiUrl}/v4/asset/cryptocurrency/price/price-stats-history?cryptocurrency=${symbol}&timeframe=3M`,
+          {
+            headers: { 'User-Agent': this.userAgent },
+            signal: AbortSignal.timeout(requestTimeout)
+          }
+        ).then((res) => res.json() as Promise<IPluangHistoricalResponse>);
+
+        return {
+          [symbol]: data.priceHistory.reduce((acc, item) => {
+            acc[item.priceStatDate.split('T')[0]] = {
+              marketPrice: item.closeMidPrice
+            };
+            return acc;
+          }, {})
+        };
+      }
     } catch (error) {
       throw new Error(
         `Could not get historical data for ${symbol} (${this.getName()}): [${error.name}] ${error.message}`
@@ -145,21 +175,39 @@ export class PluangService implements DataProviderInterface {
     }
     try {
       const promises = symbols.map(async (symbol) => {
-        const { data } = await fetch(
-          `${this.apiUrl}/asset/cryptocurrency/price/price-stats-history?cryptocurrency=${symbol}&timeframe=3M`,
-          {
-            headers: { 'User-Agent': this.userAgent },
-            signal: AbortSignal.timeout(requestTimeout)
-          }
-        ).then((res) => res.json() as Promise<IPluangHistoricalResponse>);
+        if (symbol === 'GOLD') {
+          const { data } = await fetch(
+            'https://api-pluang.pluang.com/api/v3/asset/gold/pricing?daysLimit=1',
+            {
+              headers: { 'User-Agent': this.userAgent },
+              signal: AbortSignal.timeout(requestTimeout)
+            }
+          ).then((res) => res.json() as Promise<IPluangGoldPricingResponse>);
 
-        response[symbol] = {
-          currency: 'IDR',
-          dataProviderInfo: this.getDataProviderInfo(),
-          dataSource: DataSource.PLUANG,
-          marketPrice: data.currentPrice.midPrice,
-          marketState: 'open'
-        };
+          response[symbol] = {
+            currency: data.currency,
+            dataProviderInfo: this.getDataProviderInfo(),
+            dataSource: DataSource.PLUANG,
+            marketPrice: data.current.midPrice,
+            marketState: 'open'
+          };
+        } else {
+          const { data } = await fetch(
+            `${this.apiUrl}/v4/asset/cryptocurrency/price/price-stats-history?cryptocurrency=${symbol}&timeframe=3M`,
+            {
+              headers: { 'User-Agent': this.userAgent },
+              signal: AbortSignal.timeout(requestTimeout)
+            }
+          ).then((res) => res.json() as Promise<IPluangHistoricalResponse>);
+
+          response[symbol] = {
+            currency: 'IDR',
+            dataProviderInfo: this.getDataProviderInfo(),
+            dataSource: DataSource.PLUANG,
+            marketPrice: data.currentPrice.midPrice,
+            marketState: 'open'
+          };
+        }
       });
       await Promise.all(promises);
     } catch (error) {
@@ -175,7 +223,7 @@ export class PluangService implements DataProviderInterface {
   public async search({ query }: GetSearchParams): Promise<LookupResponse> {
     try {
       const { pageProps } = await fetch(
-        `https://pluang.com/_next/data/dashboard_ZtScS88NtD/id/explore/search.json?query=${query}`,
+        `https://pluang.com/_next/data/${process.env.PLUANG_DASH_ID}/id/explore/search.json?query=${query}`,
         {
           signal: AbortSignal.timeout(
             this.configurationService.get('REQUEST_TIMEOUT')
@@ -184,20 +232,26 @@ export class PluangService implements DataProviderInterface {
       ).then((res) => res.json() as Promise<IPluangSearchResponse>);
 
       return {
-        items: pageProps.pageData?.assetCategories[0].assetCategoryData
-          .map((d) => d.tileInfo)
-          .map((item) => ({
-            name: item.name,
-            symbol: item.symbol,
-            assetClass: this.assetClassMap[item.group],
-            assetSubClass:
-              this.assetSubClassMap[
-                item.securityType ?? item.recurringAssetType
-              ],
-            currency: 'IDR',
-            dataProviderInfo: this.getDataProviderInfo(),
-            dataSource: this.getName()
-          }))
+        items: pageProps.pageData?.assetCategories
+          .map((cat) =>
+            cat.assetCategoryData
+              .map((d) => d.tileInfo)
+              .map((item) => ({
+                name: item.name,
+                symbol: item.symbol,
+                assetClass: this.assetClassMap[item.group],
+                assetSubClass:
+                  this.assetSubClassMap[
+                    item.securityType ?? item.recurringAssetType ?? item.group
+                  ],
+                currency: item.watchlistAssetCode.startsWith('USSTOCK:')
+                  ? 'USD'
+                  : 'IDR',
+                dataProviderInfo: this.getDataProviderInfo(),
+                dataSource: this.getName()
+              }))
+          )
+          .flat()
       };
     } catch (error) {
       Logger.error(

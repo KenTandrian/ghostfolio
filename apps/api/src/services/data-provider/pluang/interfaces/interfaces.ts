@@ -46,7 +46,7 @@ export interface IPluangSearchResponse {
             isTradable: boolean;
             name: string;
             pricePrecision: number;
-            recurringAssetType: string;
+            recurringAssetType?: string;
             securityType?: string;
             sparkLine: string;
             subscriptionId: string;
@@ -60,5 +60,25 @@ export interface IPluangSearchResponse {
       }[];
     } | null;
     query: string;
+  };
+}
+
+export interface IPluangGoldPricingResponse {
+  data: {
+    currency: string;
+    current: {
+      midPrice: number;
+      sell: number;
+      buy: number;
+      installment: number;
+      updated_at: string;
+    };
+    history: {
+      midPrice: number;
+      sell: number;
+      buy: number;
+      installment: number;
+      updated_at: string;
+    }[];
   };
 }
