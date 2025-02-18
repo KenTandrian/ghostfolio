@@ -5,6 +5,58 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Unreleased
+
+### Changed
+
+- Reloaded the available tags after creating a custom tag in the holding detail dialog (experimental)
+- Migrated the `@ghostfolio/client` components to control flow
+- Migrated the `@ghostfolio/ui` components to control flow
+
+### Fixed
+
+- Added missing assets in _Storybook_ setup
+
+## 2.139.1 - 2025-02-15
+
+### Added
+
+- Extended the tooltip in the chart of the holdings tab on the home page by the allocation, change and performance
+- Added a new static portfolio analysis rule: _Regional Market Cluster Risk_ (Asia-Pacific Markets)
+- Added a new static portfolio analysis rule: _Regional Market Cluster Risk_ (Japan)
+- Added support to create custom tags in the holding detail dialog (experimental)
+- Extended the tags selector component by a `readonly` attribute
+- Extended the tags selector component to support creating custom tags
+- Extended the holding detail dialog by the historical market data editor (experimental)
+- Added global styles to the _Storybook_ setup
+
+### Changed
+
+- Improved the symbol lookup in the _Trackinsight_ data enhancer for asset profile data
+- Improved the language localization for German (`de`)
+- Upgraded `@trivago/prettier-plugin-sort-imports` from version `5.2.1` to `5.2.2`
+
+### Fixed
+
+- Fixed the gaps in the chart of the benchmark comparator
+
+## 2.138.0 - 2025-02-08
+
+### Added
+
+- Added a new static portfolio analysis rule: _Regional Market Cluster Risk_ (Emerging Markets)
+- Added a new static portfolio analysis rule: _Regional Market Cluster Risk_ (Europe)
+- Added a link to _Duck.ai_ to the _Copy AI prompt to clipboard_ action on the analysis page (experimental)
+- Extracted the tags selector to a reusable component used in the create or update activity dialog and holding detail dialog
+- Added stories for the tags selector component
+
+### Changed
+
+- Improved the caching of the portfolio snapshot in the portfolio calculator by expiring cache entries when a user changes tags in the holding detail dialog
+- Improved the error handling in the _CoinGecko_ service
+- Improved the language localization for German (`de`)
+- Upgraded `svgmap` from version `2.6.0` to `2.12.2`
+
 ## 2.137.1 - 2025-02-01
 
 ### Added
