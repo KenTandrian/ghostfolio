@@ -1,7 +1,8 @@
-import { RuleSettings } from '@ghostfolio/api/models/interfaces/rule-settings.interface';
 import { Rule } from '@ghostfolio/api/models/rule';
 import { ExchangeRateDataService } from '@ghostfolio/api/services/exchange-rate-data/exchange-rate-data.service';
 import { UserSettings } from '@ghostfolio/common/interfaces';
+
+import { Settings } from './interfaces/rule-settings.interface';
 
 export class RegionalMarketClusterRiskNorthAmerica extends Rule<Settings> {
   private currentValueInBaseCurrency: number;
@@ -10,7 +11,7 @@ export class RegionalMarketClusterRiskNorthAmerica extends Rule<Settings> {
   public constructor(
     protected exchangeRateDataService: ExchangeRateDataService,
     currentValueInBaseCurrency: number,
-    valueInBaseCurrency
+    northAmericaValueInBaseCurrency: number
   ) {
     super(exchangeRateDataService, {
       key: RegionalMarketClusterRiskNorthAmerica.name,
@@ -18,7 +19,7 @@ export class RegionalMarketClusterRiskNorthAmerica extends Rule<Settings> {
     });
 
     this.currentValueInBaseCurrency = currentValueInBaseCurrency;
-    this.northAmericaValueInBaseCurrency = valueInBaseCurrency;
+    this.northAmericaValueInBaseCurrency = northAmericaValueInBaseCurrency;
   }
 
   public evaluate(ruleSettings: Settings) {
@@ -73,10 +74,4 @@ export class RegionalMarketClusterRiskNorthAmerica extends Rule<Settings> {
       thresholdMin: xRayRules?.[this.getKey()]?.thresholdMin ?? 0.65
     };
   }
-}
-
-interface Settings extends RuleSettings {
-  baseCurrency: string;
-  thresholdMin: number;
-  thresholdMax: number;
 }

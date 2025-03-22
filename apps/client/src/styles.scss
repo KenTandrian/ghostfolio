@@ -453,7 +453,7 @@ ngx-skeleton-loader {
 }
 
 .mat-mdc-menu-panel {
-  &.assistant {
+  &.no-max-width {
     max-width: unset !important;
 
     .mat-mdc-menu-content {
