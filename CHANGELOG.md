@@ -7,17 +7,56 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Changed
+
+- Improved the check for duplicates in the preview step of the activities import (allow different comments)
+- Improved the language localization for German (`fr`)
+- Improved the language localization for Polish (`pl`)
+- Upgraded `ng-extract-i18n-merge` from version `2.14.1` to `2.14.3`
+
+## 2.149.0 - 2025-03-30
+
+### Added
+
+- Added support for changing the asset profile identifier (`dataSource` and `symbol`) in the asset profile details dialog of the admin control panel (experimental)
+- Set up the terms of service for the _Ghostfolio_ SaaS (cloud)
+
+### Changed
+
+- Improved the static portfolio analysis rule: Emergency fund setup by supporting assets
+- Restricted the historical market data gathering to active asset profiles
+- Improved the language localization for German (`de`)
+- Upgraded `Nx` from version `20.5.0` to `20.6.4`
+
+## 2.148.0 - 2025-03-24
+
+### Added
+
+- Added the `isActive` flag to the asset profile model
+
+### Changed
+
+- Improved the language localization for German (`de`)
+- Upgraded `ngx-skeleton-loader` from version `9.0.0` to `10.0.0`
+
+## 2.147.0 - 2025-03-22
+
 ### Added
 
 - Added support for filtering in the _Copy AI prompt to clipboard_ actions on the analysis page (experimental)
+- Added support for generating a new _Security Token_ via the users table of the admin control panel
+- Added an endpoint to localize the `site.webmanifest`
 - Added the _Storybook_ path to the `sitemap.xml` file
 
 ### Changed
 
 - Improved the export functionality by applying filters on accounts and tags
 - Improved the symbol validation in the _Yahoo Finance_ service (get asset profiles)
+- Eliminated `firstOrderDate` from the summary of the portfolio details endpoint in favor of using `dateOfFirstActivity` from the user endpoint
 - Refactored `lodash.uniq` with `Array.from(new Set(...))`
 - Refreshed the cryptocurrencies list
+- Improved the language localization for German (`de`)
+- Improved the language localization for Turkish (`tr`)
 
 ### Fixed
 
