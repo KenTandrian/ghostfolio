@@ -9,8 +9,8 @@ import { DataGatheringService } from '@ghostfolio/api/services/queues/data-gathe
 import {
   DATA_GATHERING_QUEUE_PRIORITY_HIGH,
   DATA_GATHERING_QUEUE_PRIORITY_MEDIUM,
-  GATHER_ASSET_PROFILE_PROCESS,
-  GATHER_ASSET_PROFILE_PROCESS_OPTIONS
+  GATHER_ASSET_PROFILE_PROCESS_JOB_NAME,
+  GATHER_ASSET_PROFILE_PROCESS_JOB_OPTIONS
 } from '@ghostfolio/common/config';
 import { getAssetProfileIdentifier } from '@ghostfolio/common/helper';
 import {
@@ -83,7 +83,7 @@ export class AdminController {
   @UseGuards(AuthGuard('jwt'), HasPermissionGuard)
   public async gatherMax(): Promise<void> {
     const assetProfileIdentifiers =
-      await this.dataGatheringService.getAllAssetProfileIdentifiers();
+      await this.dataGatheringService.getAllActiveAssetProfileIdentifiers();
 
     await this.dataGatheringService.addJobsToQueue(
       assetProfileIdentifiers.map(({ dataSource, symbol }) => {
@@ -92,9 +92,9 @@ export class AdminController {
             dataSource,
             symbol
           },
-          name: GATHER_ASSET_PROFILE_PROCESS,
+          name: GATHER_ASSET_PROFILE_PROCESS_JOB_NAME,
           opts: {
-            ...GATHER_ASSET_PROFILE_PROCESS_OPTIONS,
+            ...GATHER_ASSET_PROFILE_PROCESS_JOB_OPTIONS,
             jobId: getAssetProfileIdentifier({ dataSource, symbol }),
             priority: DATA_GATHERING_QUEUE_PRIORITY_MEDIUM
           }
@@ -110,7 +110,7 @@ export class AdminController {
   @UseGuards(AuthGuard('jwt'), HasPermissionGuard)
   public async gatherProfileData(): Promise<void> {
     const assetProfileIdentifiers =
-      await this.dataGatheringService.getAllAssetProfileIdentifiers();
+      await this.dataGatheringService.getAllActiveAssetProfileIdentifiers();
 
     await this.dataGatheringService.addJobsToQueue(
       assetProfileIdentifiers.map(({ dataSource, symbol }) => {
@@ -119,9 +119,9 @@ export class AdminController {
             dataSource,
             symbol
           },
-          name: GATHER_ASSET_PROFILE_PROCESS,
+          name: GATHER_ASSET_PROFILE_PROCESS_JOB_NAME,
           opts: {
-            ...GATHER_ASSET_PROFILE_PROCESS_OPTIONS,
+            ...GATHER_ASSET_PROFILE_PROCESS_JOB_OPTIONS,
             jobId: getAssetProfileIdentifier({ dataSource, symbol }),
             priority: DATA_GATHERING_QUEUE_PRIORITY_MEDIUM
           }
@@ -142,9 +142,9 @@ export class AdminController {
         dataSource,
         symbol
       },
-      name: GATHER_ASSET_PROFILE_PROCESS,
+      name: GATHER_ASSET_PROFILE_PROCESS_JOB_NAME,
       opts: {
-        ...GATHER_ASSET_PROFILE_PROCESS_OPTIONS,
+        ...GATHER_ASSET_PROFILE_PROCESS_JOB_OPTIONS,
         jobId: getAssetProfileIdentifier({ dataSource, symbol }),
         priority: DATA_GATHERING_QUEUE_PRIORITY_HIGH
       }
@@ -334,15 +334,14 @@ export class AdminController {
   @Patch('profile-data/:dataSource/:symbol')
   @UseGuards(AuthGuard('jwt'), HasPermissionGuard)
   public async patchAssetProfileData(
-    @Body() assetProfileData: UpdateAssetProfileDto,
+    @Body() assetProfile: UpdateAssetProfileDto,
     @Param('dataSource') dataSource: DataSource,
     @Param('symbol') symbol: string
   ): Promise<EnhancedSymbolProfile> {
-    return this.adminService.patchAssetProfileData({
-      ...assetProfileData,
-      dataSource,
-      symbol
-    });
+    return this.adminService.patchAssetProfileData(
+      { dataSource, symbol },
+      assetProfile
+    );
   }
 
   @HasPermission(permissions.accessAdminControl)

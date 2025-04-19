@@ -1,4 +1,5 @@
 import { CryptocurrencyService } from '@ghostfolio/api/services/cryptocurrency/cryptocurrency.service';
+import { AssetProfileDelistedError } from '@ghostfolio/api/services/data-provider/errors/asset-profile-delisted.error';
 import { DataEnhancerInterface } from '@ghostfolio/api/services/data-provider/interfaces/data-enhancer.interface';
 import {
   DEFAULT_CURRENCY,
@@ -170,7 +171,7 @@ export class YahooFinanceDataEnhancerService implements DataEnhancerInterface {
             symbol = quotes[0].symbol;
           }
         } catch {}
-      } else if (symbol?.includes('-')) {
+      } else if (symbol?.endsWith(`-${DEFAULT_CURRENCY}`)) {
         throw new Error(`${symbol} is not valid`);
       } else {
         symbol = this.convertToYahooFinanceSymbol(symbol);
@@ -236,7 +237,13 @@ export class YahooFinanceDataEnhancerService implements DataEnhancerInterface {
         response.url = url;
       }
     } catch (error) {
-      Logger.error(error, 'YahooFinanceService');
+      if (error.message === `Quote not found for symbol: ${aSymbol}`) {
+        throw new AssetProfileDelistedError(
+          `No data found, ${aSymbol} (${this.getName()}) may be delisted`
+        );
+      } else {
+        Logger.error(error, 'YahooFinanceService');
+      }
     }
 
     return response;

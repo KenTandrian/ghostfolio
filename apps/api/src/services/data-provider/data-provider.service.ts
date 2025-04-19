@@ -30,7 +30,7 @@ import type { Granularity, UserWithSettings } from '@ghostfolio/common/types';
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { DataSource, MarketData, SymbolProfile } from '@prisma/client';
 import { Big } from 'big.js';
-import { eachDayOfInterval, format, isValid } from 'date-fns';
+import { eachDayOfInterval, format, isBefore, isValid } from 'date-fns';
 import { groupBy, isEmpty, isNumber, uniqWith } from 'lodash';
 import ms from 'ms';
 
@@ -114,7 +114,13 @@ export class DataProviderService {
       }
     }
 
-    await Promise.all(promises);
+    try {
+      await Promise.all(promises);
+    } catch (error) {
+      Logger.error(error, 'DataProviderService');
+
+      throw error;
+    }
 
     return response;
   }
@@ -154,9 +160,22 @@ export class DataProviderService {
     return DataSource[this.configurationService.get('DATA_SOURCE_IMPORT')];
   }
 
-  public async getDataSources(): Promise<DataSource[]> {
+  public async getDataSources({
+    user
+  }: {
+    user: UserWithSettings;
+  }): Promise<DataSource[]> {
+    let dataSourcesKey: 'DATA_SOURCES' | 'DATA_SOURCES_LEGACY' = 'DATA_SOURCES';
+
+    if (
+      isBefore(user.createdAt, new Date('2025-03-23')) &&
+      this.configurationService.get('DATA_SOURCES_LEGACY')?.length > 0
+    ) {
+      dataSourcesKey = 'DATA_SOURCES_LEGACY';
+    }
+
     const dataSources: DataSource[] = this.configurationService
-      .get('DATA_SOURCES')
+      .get(dataSourcesKey)
       .map((dataSource) => {
         return DataSource[dataSource];
       });
@@ -608,7 +627,7 @@ export class DataProviderService {
       return { items: lookupItems };
     }
 
-    const dataSources = await this.getDataSources();
+    const dataSources = await this.getDataSources({ user });
 
     const dataProviderServices = dataSources.map((dataSource) => {
       return this.getDataProvider(DataSource[dataSource]);
