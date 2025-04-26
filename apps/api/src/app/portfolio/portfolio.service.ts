@@ -50,13 +50,14 @@ import {
   UserSettings
 } from '@ghostfolio/common/interfaces';
 import { TimelinePosition } from '@ghostfolio/common/models';
-import type {
+import {
   AccountWithValue,
   DateRange,
   GroupBy,
   RequestWithUser,
   UserWithSettings
 } from '@ghostfolio/common/types';
+import { PerformanceCalculationType } from '@ghostfolio/common/types/performance-calculation-type.type';
 
 import { Inject, Injectable } from '@nestjs/common';
 import { REQUEST } from '@nestjs/core';
@@ -85,10 +86,7 @@ import {
 import { isEmpty } from 'lodash';
 
 import { PortfolioCalculator } from './calculator/portfolio-calculator';
-import {
-  PerformanceCalculationType,
-  PortfolioCalculatorFactory
-} from './calculator/portfolio-calculator.factory';
+import { PortfolioCalculatorFactory } from './calculator/portfolio-calculator.factory';
 import { PortfolioHoldingDetail } from './interfaces/portfolio-holding-detail.interface';
 import { RulesService } from './rules.service';
 
@@ -246,10 +244,14 @@ export class PortfolioService {
     activities: Activity[];
     groupBy?: GroupBy;
   }): Promise<InvestmentItem[]> {
-    let dividends = activities.map(({ date, valueInBaseCurrency }) => {
+    let dividends = activities.map(({ currency, date, value }) => {
       return {
         date: format(date, DATE_FORMAT),
-        investment: valueInBaseCurrency
+        investment: this.exchangeRateDataService.toCurrency(
+          value,
+          currency,
+          this.getUserCurrency()
+        )
       };
     });
 
@@ -274,14 +276,16 @@ export class PortfolioService {
     savingsRate: number;
   }): Promise<PortfolioInvestments> {
     const userId = await this.getUserId(impersonationId, this.request.user.id);
+    const user = await this.userService.user({ id: userId });
+    const userCurrency = this.getUserCurrency(user);
 
     const { endDate, startDate } = getIntervalFromDateRange(dateRange);
 
     const { activities } =
       await this.orderService.getOrdersForPortfolioCalculator({
         filters,
-        userId,
-        userCurrency: this.getUserCurrency()
+        userCurrency,
+        userId
       });
 
     if (activities.length === 0) {
@@ -295,8 +299,8 @@ export class PortfolioService {
       activities,
       filters,
       userId,
-      calculationType: PerformanceCalculationType.ROAI,
-      currency: this.request.user.Settings.settings.baseCurrency
+      calculationType: this.getUserPerformanceCalculationType(user),
+      currency: userCurrency
     });
 
     const { historicalData } = await portfolioCalculator.getSnapshot();
@@ -372,7 +376,7 @@ export class PortfolioService {
       activities,
       filters,
       userId,
-      calculationType: PerformanceCalculationType.ROAI,
+      calculationType: this.getUserPerformanceCalculationType(user),
       currency: userCurrency
     });
 
@@ -569,7 +573,7 @@ export class PortfolioService {
 
       const emergencyFundInCash = emergencyFund
         .minus(
-          this.getEmergencyFundPositionsValueInBaseCurrency({
+          this.getEmergencyFundHoldingsValueInBaseCurrency({
             holdings
           })
         )
@@ -608,8 +612,8 @@ export class PortfolioService {
         userCurrency,
         userId,
         balanceInBaseCurrency: cashDetails.balanceInBaseCurrency,
-        emergencyFundPositionsValueInBaseCurrency:
-          this.getEmergencyFundPositionsValueInBaseCurrency({
+        emergencyFundHoldingsValueInBaseCurrency:
+          this.getEmergencyFundHoldingsValueInBaseCurrency({
             holdings
           })
       });
@@ -680,7 +684,7 @@ export class PortfolioService {
     const portfolioCalculator = this.calculatorFactory.createCalculator({
       activities,
       userId,
-      calculationType: PerformanceCalculationType.ROAI,
+      calculationType: this.getUserPerformanceCalculationType(user),
       currency: userCurrency
     });
 
@@ -931,12 +935,13 @@ export class PortfolioService {
     })?.id;
     const userId = await this.getUserId(impersonationId, this.request.user.id);
     const user = await this.userService.user({ id: userId });
+    const userCurrency = this.getUserCurrency(user);
 
     const { activities } =
       await this.orderService.getOrdersForPortfolioCalculator({
         filters,
-        userId,
-        userCurrency: this.getUserCurrency()
+        userCurrency,
+        userId
       });
 
     if (activities.length === 0) {
@@ -950,8 +955,8 @@ export class PortfolioService {
       activities,
       filters,
       userId,
-      calculationType: PerformanceCalculationType.ROAI,
-      currency: this.request.user.Settings.settings.baseCurrency
+      calculationType: this.getUserPerformanceCalculationType(user),
+      currency: userCurrency
     });
 
     const portfolioSnapshot = await portfolioCalculator.getSnapshot();
@@ -1116,7 +1121,7 @@ export class PortfolioService {
       activities,
       filters,
       userId,
-      calculationType: PerformanceCalculationType.ROAI,
+      calculationType: this.getUserPerformanceCalculationType(user),
       currency: userCurrency
     });
 
@@ -1263,7 +1268,11 @@ export class PortfolioService {
         [
           new EmergencyFundSetup(
             this.exchangeRateDataService,
-            userSettings.emergencyFund
+            this.getTotalEmergencyFund({
+              userSettings,
+              emergencyFundHoldingsValueInBaseCurrency:
+                this.getEmergencyFundHoldingsValueInBaseCurrency({ holdings })
+            }).toNumber()
           )
         ],
         userSettings
@@ -1585,7 +1594,7 @@ export class PortfolioService {
     return dividendsByGroup;
   }
 
-  private getEmergencyFundPositionsValueInBaseCurrency({
+  private getEmergencyFundHoldingsValueInBaseCurrency({
     holdings
   }: {
     holdings: PortfolioDetails['holdings'];
@@ -1600,14 +1609,14 @@ export class PortfolioService {
       );
     });
 
-    let valueInBaseCurrencyOfEmergencyFundPositions = new Big(0);
+    let valueInBaseCurrencyOfEmergencyFundHoldings = new Big(0);
 
     for (const { valueInBaseCurrency } of emergencyFundHoldings) {
-      valueInBaseCurrencyOfEmergencyFundPositions =
-        valueInBaseCurrencyOfEmergencyFundPositions.plus(valueInBaseCurrency);
+      valueInBaseCurrencyOfEmergencyFundHoldings =
+        valueInBaseCurrencyOfEmergencyFundHoldings.plus(valueInBaseCurrency);
     }
 
-    return valueInBaseCurrencyOfEmergencyFundPositions.toNumber();
+    return valueInBaseCurrencyOfEmergencyFundHoldings.toNumber();
   }
 
   private getInitialCashPosition({
@@ -1774,7 +1783,7 @@ export class PortfolioService {
 
   private async getSummary({
     balanceInBaseCurrency,
-    emergencyFundPositionsValueInBaseCurrency,
+    emergencyFundHoldingsValueInBaseCurrency,
     filteredValueInBaseCurrency,
     impersonationId,
     portfolioCalculator,
@@ -1782,7 +1791,7 @@ export class PortfolioService {
     userId
   }: {
     balanceInBaseCurrency: number;
-    emergencyFundPositionsValueInBaseCurrency: number;
+    emergencyFundHoldingsValueInBaseCurrency: number;
     filteredValueInBaseCurrency: Big;
     impersonationId: string;
     portfolioCalculator: PortfolioCalculator;
@@ -1827,12 +1836,10 @@ export class PortfolioService {
     const dividendInBaseCurrency =
       await portfolioCalculator.getDividendInBaseCurrency();
 
-    const emergencyFund = new Big(
-      Math.max(
-        emergencyFundPositionsValueInBaseCurrency,
-        (user.Settings?.settings as UserSettings)?.emergencyFund ?? 0
-      )
-    );
+    const totalEmergencyFund = this.getTotalEmergencyFund({
+      emergencyFundHoldingsValueInBaseCurrency,
+      userSettings: user.Settings?.settings as UserSettings
+    });
 
     const fees = await portfolioCalculator.getFeesInBaseCurrency();
 
@@ -1858,8 +1865,8 @@ export class PortfolioService {
     }).toNumber();
 
     const cash = new Big(balanceInBaseCurrency)
-      .minus(emergencyFund)
-      .plus(emergencyFundPositionsValueInBaseCurrency)
+      .minus(totalEmergencyFund)
+      .plus(emergencyFundHoldingsValueInBaseCurrency)
       .toNumber();
 
     const committedFunds = new Big(totalBuy).minus(totalSell);
@@ -1918,7 +1925,6 @@ export class PortfolioService {
       annualizedPerformancePercentWithCurrencyEffect,
       cash,
       excludedAccountsAndActivities,
-      firstOrderDate,
       netPerformance,
       netPerformancePercentage,
       netPerformancePercentageWithCurrencyEffect,
@@ -1929,11 +1935,11 @@ export class PortfolioService {
       currentValueInBaseCurrency: currentValueInBaseCurrency.toNumber(),
       dividendInBaseCurrency: dividendInBaseCurrency.toNumber(),
       emergencyFund: {
-        assets: emergencyFundPositionsValueInBaseCurrency,
-        cash: emergencyFund
-          .minus(emergencyFundPositionsValueInBaseCurrency)
+        assets: emergencyFundHoldingsValueInBaseCurrency,
+        cash: totalEmergencyFund
+          .minus(emergencyFundHoldingsValueInBaseCurrency)
           .toNumber(),
-        total: emergencyFund.toNumber()
+        total: totalEmergencyFund.toNumber()
       },
       fees: fees.toNumber(),
       filteredValueInBaseCurrency: filteredValueInBaseCurrency.toNumber(),
@@ -1941,7 +1947,7 @@ export class PortfolioService {
         ? filteredValueInBaseCurrency.div(netWorth).toNumber()
         : undefined,
       fireWealth: new Big(currentValueInBaseCurrency)
-        .minus(emergencyFundPositionsValueInBaseCurrency)
+        .minus(emergencyFundHoldingsValueInBaseCurrency)
         .toNumber(),
       grossPerformance: new Big(netPerformance).plus(fees).toNumber(),
       grossPerformanceWithCurrencyEffect: new Big(
@@ -1986,6 +1992,21 @@ export class PortfolioService {
     );
   }
 
+  private getTotalEmergencyFund({
+    emergencyFundHoldingsValueInBaseCurrency,
+    userSettings
+  }: {
+    emergencyFundHoldingsValueInBaseCurrency: number;
+    userSettings: UserSettings;
+  }) {
+    return new Big(
+      Math.max(
+        emergencyFundHoldingsValueInBaseCurrency,
+        userSettings?.emergencyFund ?? 0
+      )
+    );
+  }
+
   private getUserCurrency(aUser?: UserWithSettings) {
     return (
       aUser?.Settings?.settings.baseCurrency ??
@@ -1999,6 +2020,12 @@ export class PortfolioService {
       await this.impersonationService.validateImpersonationId(aImpersonationId);
 
     return impersonationUserId || aUserId;
+  }
+
+  private getUserPerformanceCalculationType(
+    aUser: UserWithSettings
+  ): PerformanceCalculationType {
+    return aUser?.Settings?.settings.performanceCalculationType;
   }
 
   private async getValueOfAccountsAndPlatforms({

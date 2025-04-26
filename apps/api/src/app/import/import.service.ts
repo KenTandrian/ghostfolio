@@ -10,12 +10,10 @@ import { PlatformService } from '@ghostfolio/api/app/platform/platform.service';
 import { PortfolioService } from '@ghostfolio/api/app/portfolio/portfolio.service';
 import { ConfigurationService } from '@ghostfolio/api/services/configuration/configuration.service';
 import { DataProviderService } from '@ghostfolio/api/services/data-provider/data-provider.service';
-import { ExchangeRateDataService } from '@ghostfolio/api/services/exchange-rate-data/exchange-rate-data.service';
 import { DataGatheringService } from '@ghostfolio/api/services/queues/data-gathering/data-gathering.service';
 import { SymbolProfileService } from '@ghostfolio/api/services/symbol-profile/symbol-profile.service';
 import { DATA_GATHERING_QUEUE_PRIORITY_HIGH } from '@ghostfolio/common/config';
 import {
-  DATE_FORMAT,
   getAssetProfileIdentifier,
   parseDate
 } from '@ghostfolio/common/helper';
@@ -29,8 +27,8 @@ import {
 import { Injectable } from '@nestjs/common';
 import { DataSource, Prisma, SymbolProfile } from '@prisma/client';
 import { Big } from 'big.js';
-import { endOfToday, format, isAfter, isSameSecond, parseISO } from 'date-fns';
-import { isNumber, uniqBy } from 'lodash';
+import { endOfToday, isAfter, isSameSecond, parseISO } from 'date-fns';
+import { uniqBy } from 'lodash';
 import { v4 as uuidv4 } from 'uuid';
 
 @Injectable()
@@ -40,7 +38,6 @@ export class ImportService {
     private readonly configurationService: ConfigurationService,
     private readonly dataGatheringService: DataGatheringService,
     private readonly dataProviderService: DataProviderService,
-    private readonly exchangeRateDataService: ExchangeRateDataService,
     private readonly orderService: OrderService,
     private readonly platformService: PlatformService,
     private readonly portfolioService: PortfolioService,
@@ -49,9 +46,8 @@ export class ImportService {
 
   public async getDividends({
     dataSource,
-    symbol,
-    userCurrency
-  }: AssetProfileIdentifier & { userCurrency: string }): Promise<Activity[]> {
+    symbol
+  }: AssetProfileIdentifier): Promise<Activity[]> {
     try {
       const { firstBuyDate, historicalData, orders } =
         await this.portfolioService.getPosition(dataSource, undefined, symbol);
@@ -121,22 +117,16 @@ export class ImportService {
             currency: undefined,
             createdAt: undefined,
             fee: 0,
-            feeInBaseCurrency: 0,
+            feeInAssetProfileCurrency: 0,
             id: assetProfile.id,
             isDraft: false,
             SymbolProfile: assetProfile,
             symbolProfileId: assetProfile.id,
             type: 'DIVIDEND',
             unitPrice: marketPrice,
+            unitPriceInAssetProfileCurrency: marketPrice,
             updatedAt: undefined,
-            userId: Account?.userId,
-            valueInBaseCurrency:
-              await this.exchangeRateDataService.toCurrencyAtDate(
-                value,
-                assetProfile.currency,
-                userCurrency,
-                date
-              )
+            userId: Account?.userId
           };
         })
       );
@@ -177,9 +167,9 @@ export class ImportService {
 
       for (const account of accountsDto) {
         // Check if there is any existing account with the same ID
-        const accountWithSameId = existingAccounts.find(
-          (existingAccount) => existingAccount.id === account.id
-        );
+        const accountWithSameId = existingAccounts.find((existingAccount) => {
+          return existingAccount.id === account.id;
+        });
 
         // If there is no account or if the account belongs to a different user then create a new account
         if (!accountWithSameId || accountWithSameId.userId !== user.id) {
@@ -266,17 +256,17 @@ export class ImportService {
 
     const activities: Activity[] = [];
 
-    for (const [index, activity] of activitiesExtendedWithErrors.entries()) {
+    for (const activity of activitiesExtendedWithErrors) {
       const accountId = activity.accountId;
       const comment = activity.comment;
       const currency = activity.currency;
       const date = activity.date;
       const error = activity.error;
-      let fee = activity.fee;
+      const fee = activity.fee;
       const quantity = activity.quantity;
       const SymbolProfile = activity.SymbolProfile;
       const type = activity.type;
-      let unitPrice = activity.unitPrice;
+      const unitPrice = activity.unitPrice;
 
       const assetProfile = assetProfiles[
         getAssetProfileIdentifier({
@@ -284,7 +274,6 @@ export class ImportService {
           symbol: SymbolProfile.symbol
         })
       ] ?? {
-        currency: SymbolProfile.currency,
         dataSource: SymbolProfile.dataSource,
         symbol: SymbolProfile.symbol
       };
@@ -300,6 +289,7 @@ export class ImportService {
         figiShareClass,
         holdings,
         id,
+        isActive,
         isin,
         name,
         scraperConfiguration,
@@ -318,35 +308,6 @@ export class ImportService {
         | (Omit<OrderWithAccount, 'Account'> & {
             Account?: { id: string; name: string };
           });
-
-      if (SymbolProfile.currency !== assetProfile.currency) {
-        // Convert the unit price and fee to the asset currency if the imported
-        // activity is in a different currency
-        unitPrice = await this.exchangeRateDataService.toCurrencyAtDate(
-          unitPrice,
-          SymbolProfile.currency,
-          assetProfile.currency,
-          date
-        );
-
-        if (!isNumber(unitPrice)) {
-          throw new Error(
-            `activities.${index} historical exchange rate at ${format(
-              date,
-              DATE_FORMAT
-            )} is not available from "${SymbolProfile.currency}" to "${
-              assetProfile.currency
-            }"`
-          );
-        }
-
-        fee = await this.exchangeRateDataService.toCurrencyAtDate(
-          fee,
-          SymbolProfile.currency,
-          assetProfile.currency,
-          date
-        );
-      }
 
       if (isDryRun) {
         order = {
@@ -375,6 +336,7 @@ export class ImportService {
             figiShareClass,
             holdings,
             id,
+            isActive,
             isin,
             name,
             scraperConfiguration,
@@ -398,6 +360,7 @@ export class ImportService {
 
         order = await this.orderService.createOrder({
           comment,
+          currency,
           date,
           fee,
           quantity,
@@ -437,21 +400,8 @@ export class ImportService {
         ...order,
         error,
         value,
-        feeInBaseCurrency: await this.exchangeRateDataService.toCurrencyAtDate(
-          fee,
-          assetProfile.currency,
-          userCurrency,
-          date
-        ),
         // @ts-ignore
-        SymbolProfile: assetProfile,
-        valueInBaseCurrency:
-          await this.exchangeRateDataService.toCurrencyAtDate(
-            value,
-            assetProfile.currency,
-            userCurrency,
-            date
-          )
+        SymbolProfile: assetProfile
       });
     }
 
@@ -517,7 +467,9 @@ export class ImportService {
         const isDuplicate = existingActivities.some((activity) => {
           return (
             activity.accountId === accountId &&
-            activity.SymbolProfile.currency === currency &&
+            activity.comment === comment &&
+            (activity.currency === currency ||
+              activity.SymbolProfile.currency === currency) &&
             activity.SymbolProfile.dataSource === dataSource &&
             isSameSecond(activity.date, date) &&
             activity.fee === fee &&
@@ -535,6 +487,7 @@ export class ImportService {
         return {
           accountId,
           comment,
+          currency,
           date,
           error,
           fee,
@@ -542,7 +495,6 @@ export class ImportService {
           type,
           unitPrice,
           SymbolProfile: {
-            currency,
             dataSource,
             symbol,
             activitiesCount: undefined,
@@ -550,8 +502,10 @@ export class ImportService {
             assetSubClass: undefined,
             countries: undefined,
             createdAt: undefined,
+            currency: undefined,
             holdings: undefined,
             id: undefined,
+            isActive: true,
             sectors: undefined,
             updatedAt: undefined
           }
@@ -586,7 +540,7 @@ export class ImportService {
     const assetProfiles: {
       [assetProfileIdentifier: string]: Partial<SymbolProfile>;
     } = {};
-    const dataSources = await this.dataProviderService.getDataSources();
+    const dataSources = await this.dataProviderService.getDataSources({ user });
 
     for (const [
       index,
@@ -627,12 +581,6 @@ export class ImportService {
           if (!assetProfile?.name) {
             throw new Error(
               `activities.${index}.symbol ("${symbol}") is not valid for the specified data source ("${dataSource}")`
-            );
-          }
-
-          if (assetProfile.currency !== currency) {
-            throw new Error(
-              `activities.${index}.currency ("${currency}") does not match with currency of ${assetProfile.symbol} ("${assetProfile.currency}")`
             );
           }
         }

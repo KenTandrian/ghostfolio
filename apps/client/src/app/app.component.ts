@@ -76,6 +76,10 @@ export class AppComponent implements OnDestroy, OnInit {
     '/' + $localize`:snake-case:about`,
     $localize`:snake-case:privacy-policy`
   ];
+  public routerLinkAboutTermsOfService = [
+    '/' + $localize`:snake-case:about`,
+    $localize`:snake-case:terms-of-service`
+  ];
   public routerLinkFaq = ['/' + $localize`:snake-case:faq`];
   public routerLinkFeatures = ['/' + $localize`:snake-case:features`];
   public routerLinkMarkets = ['/' + $localize`:snake-case:markets`];
@@ -140,8 +144,8 @@ export class AppComponent implements OnDestroy, OnInit {
     );
 
     this.hasPromotion =
-      !!this.info?.subscriptionOffers?.default?.coupon ||
-      !!this.info?.subscriptionOffers?.default?.durationExtension;
+      !!this.info?.subscriptionOffer?.coupon ||
+      !!this.info?.subscriptionOffer?.durationExtension;
 
     this.impersonationStorageService
       .onChangeHasImpersonation()
@@ -239,12 +243,8 @@ export class AppComponent implements OnDestroy, OnInit {
           this.canCreateAccount || !!this.user?.systemMessage;
 
         this.hasPromotion =
-          !!this.info?.subscriptionOffers?.[
-            this.user?.subscription?.offer ?? 'default'
-          ]?.coupon ||
-          !!this.info?.subscriptionOffers?.[
-            this.user?.subscription?.offer ?? 'default'
-          ]?.durationExtension;
+          !!this.user?.subscription?.offer?.coupon ||
+          !!this.user?.subscription?.offer?.durationExtension;
 
         this.initializeTheme(this.user?.settings.colorScheme);
 

@@ -203,20 +203,24 @@ export class AdminService {
     return this.http.get<IDataProviderHistoricalResponse>(url);
   }
 
-  public patchAssetProfile({
-    assetClass,
-    assetSubClass,
-    comment,
-    countries,
-    currency,
-    dataSource,
-    name,
-    scraperConfiguration,
-    sectors,
-    symbol,
-    symbolMapping,
-    url
-  }: AssetProfileIdentifier & UpdateAssetProfileDto) {
+  public patchAssetProfile(
+    { dataSource, symbol }: AssetProfileIdentifier,
+    {
+      assetClass,
+      assetSubClass,
+      comment,
+      countries,
+      currency,
+      dataSource: newDataSource,
+      isActive,
+      name,
+      scraperConfiguration,
+      sectors,
+      symbol: newSymbol,
+      symbolMapping,
+      url
+    }: UpdateAssetProfileDto
+  ) {
     return this.http.patch<EnhancedSymbolProfile>(
       `/api/v1/admin/profile-data/${dataSource}/${symbol}`,
       {
@@ -225,9 +229,12 @@ export class AdminService {
         comment,
         countries,
         currency,
+        dataSource: newDataSource,
+        isActive,
         name,
         scraperConfiguration,
         sectors,
+        symbol: newSymbol,
         symbolMapping,
         url
       }

@@ -32,11 +32,13 @@ import { AuthModule } from './auth/auth.module';
 import { CacheModule } from './cache/cache.module';
 import { AiModule } from './endpoints/ai/ai.module';
 import { ApiKeysModule } from './endpoints/api-keys/api-keys.module';
+import { AssetsModule } from './endpoints/assets/assets.module';
 import { BenchmarksModule } from './endpoints/benchmarks/benchmarks.module';
 import { GhostfolioModule } from './endpoints/data-providers/ghostfolio/ghostfolio.module';
 import { MarketDataModule } from './endpoints/market-data/market-data.module';
 import { PublicModule } from './endpoints/public/public.module';
 import { TagsModule } from './endpoints/tags/tags.module';
+import { WatchlistModule } from './endpoints/watchlist/watchlist.module';
 import { ExchangeRateModule } from './exchange-rate/exchange-rate.module';
 import { ExportModule } from './export/export.module';
 import { HealthModule } from './health/health.module';
@@ -61,6 +63,7 @@ import { UserModule } from './user/user.module';
     AiModule,
     ApiKeysModule,
     AssetModule,
+    AssetsModule,
     AuthDeviceModule,
     AuthModule,
     BenchmarksModule,
@@ -126,7 +129,8 @@ import { UserModule } from './user/user.module';
     SymbolModule,
     TagsModule,
     TwitterBotModule,
-    UserModule
+    UserModule,
+    WatchlistModule
   ],
   providers: [CronService]
 })

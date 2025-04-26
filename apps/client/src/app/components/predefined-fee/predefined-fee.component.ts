@@ -14,6 +14,6 @@ export class GfPredefinedFeeComponent {
     const total =
       this.activityForm.get('quantity').value *
       this.activityForm.get('unitPrice').value;
-    this.activityForm.get('feeInCustomCurrency').setValue(total * percentage);
+    this.activityForm.get('fee').setValue(total * percentage);
   }
 }
