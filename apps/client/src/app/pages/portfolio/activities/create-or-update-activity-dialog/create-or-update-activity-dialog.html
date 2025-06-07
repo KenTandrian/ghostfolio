@@ -230,8 +230,10 @@
           </div>
         </mat-form-field>
         @if (
+          currencyOfAssetProfile ===
+            activityForm.get('currencyOfUnitPrice').value &&
           currentMarketPrice &&
-          (data.activity.type === 'BUY' || data.activity.type === 'SELL') &&
+          ['BUY', 'SELL'].includes(data.activity.type) &&
           isToday(activityForm.get('date')?.value)
         ) {
           <button
@@ -312,8 +314,9 @@
         </mat-select>
       </mat-form-field>
     </div>
-    <div class="mb-3" [ngClass]="{ 'd-none': tagsAvailable?.length < 1 }">
+    <div class="mb-3">
       <gf-tags-selector
+        [hasPermissionToCreateTag]="hasPermissionToCreateOwnTag"
         [tags]="activityForm.get('tags')?.value"
         [tagsAvailable]="tagsAvailable"
         (tagsChanged)="onTagsChanged($event)"

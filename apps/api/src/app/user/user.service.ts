@@ -52,11 +52,10 @@ import { sortBy, without } from 'lodash';
 
 @Injectable()
 export class UserService {
-  private i18nService = new I18nService();
-
   public constructor(
     private readonly configurationService: ConfigurationService,
     private readonly eventEmitter: EventEmitter2,
+    private readonly i18nService: I18nService,
     private readonly orderService: OrderService,
     private readonly prismaService: PrismaService,
     private readonly propertyService: PropertyService,
@@ -299,9 +298,13 @@ export class UserService {
         ).getSettings(user.Settings.settings),
       EmergencyFundSetup: new EmergencyFundSetup(
         undefined,
+        undefined,
+        undefined,
         undefined
       ).getSettings(user.Settings.settings),
       FeeRatioInitialInvestment: new FeeRatioInitialInvestment(
+        undefined,
+        undefined,
         undefined,
         undefined,
         undefined
@@ -411,6 +414,10 @@ export class UserService {
         user.subscription.offer.durationExtension = undefined;
         user.subscription.offer.label = undefined;
       }
+
+      if (hasRole(user, Role.ADMIN)) {
+        currentPermissions.push(permissions.syncDemoUserAccount);
+      }
     }
 
     if (this.configurationService.get('ENABLE_FEATURE_READ_ONLY_MODE')) {
@@ -433,7 +440,7 @@ export class UserService {
       }
     }
 
-    if (!environment.production && role === 'ADMIN') {
+    if (!environment.production && hasRole(user, Role.ADMIN)) {
       currentPermissions.push(permissions.impersonateAllUsers);
     }
 

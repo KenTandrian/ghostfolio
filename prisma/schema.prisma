@@ -234,11 +234,11 @@ model Subscription {
 }
 
 model Tag {
-  id     String  @id @default(uuid())
-  name   String
-  orders Order[]
-  userId String?
-  User   User?   @relation(fields: [userId], onDelete: Cascade, references: [id])
+  activities Order[]
+  id         String  @id @default(uuid())
+  name       String
+  userId     String?
+  User       User?   @relation(fields: [userId], onDelete: Cascade, references: [id])
 
   @@unique([name, userId])
   @@index([name])
@@ -253,6 +253,7 @@ model User {
   provider      Provider        @default(ANONYMOUS)
   role          Role            @default(USER)
   subscriptions Subscription[]
+  tags          Tag[]
   thirdPartyId  String?
   updatedAt     DateTime        @updatedAt
   watchlist     SymbolProfile[] @relation("UserWatchlist")
@@ -264,7 +265,6 @@ model User {
   AuthDevice    AuthDevice[]
   Settings      Settings?
   SymbolProfile SymbolProfile[]
-  Tag           Tag[]
 
   @@index([accessToken])
   @@index([createdAt])
