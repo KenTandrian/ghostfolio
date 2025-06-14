@@ -2,6 +2,7 @@ import { DataService } from '@ghostfolio/client/services/data.service';
 import { TokenStorageService } from '@ghostfolio/client/services/token-storage.service';
 import { WebAuthnService } from '@ghostfolio/client/services/web-authn.service';
 import { InfoItem } from '@ghostfolio/common/interfaces';
+import { routes } from '@ghostfolio/common/routes/routes';
 
 import {
   HTTP_INTERCEPTORS,
@@ -74,7 +75,7 @@ export class HttpResponseInterceptor implements HttpInterceptor {
             });
 
             this.snackBarRef.onAction().subscribe(() => {
-              this.router.navigate(['/' + $localize`pricing`]);
+              this.router.navigate(['/' + routes.pricing]);
             });
           }
         } else if (error.status === StatusCodes.INTERNAL_SERVER_ERROR) {
@@ -110,7 +111,7 @@ export class HttpResponseInterceptor implements HttpInterceptor {
         } else if (error.status === StatusCodes.UNAUTHORIZED) {
           if (!error.url.includes('/data-providers/ghostfolio/status')) {
             if (this.webAuthnService.isEnabled()) {
-              this.router.navigate(['/webauthn']);
+              this.router.navigate(['/' + routes.webauthn]);
             } else {
               this.tokenStorageService.signOut();
             }

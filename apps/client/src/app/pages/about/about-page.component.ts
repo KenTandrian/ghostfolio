@@ -2,6 +2,7 @@ import { DataService } from '@ghostfolio/client/services/data.service';
 import { UserService } from '@ghostfolio/client/services/user/user.service';
 import { TabConfiguration, User } from '@ghostfolio/common/interfaces';
 import { hasPermission, permissions } from '@ghostfolio/common/permissions';
+import { routes } from '@ghostfolio/common/routes/routes';
 
 import { ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
 import { DeviceDetectorService } from 'ngx-device-detector';
@@ -43,17 +44,17 @@ export class AboutPageComponent implements OnDestroy, OnInit {
           {
             iconName: 'information-circle-outline',
             label: $localize`About`,
-            path: ['/' + $localize`about`]
+            path: ['/' + routes.about]
           },
           {
             iconName: 'sparkles-outline',
             label: $localize`Changelog`,
-            path: ['/' + $localize`about`, 'changelog']
+            path: ['/' + routes.about, routes.changelog]
           },
           {
             iconName: 'ribbon-outline',
             label: $localize`License`,
-            path: ['/' + $localize`about`, $localize`license`],
+            path: ['/' + routes.about, routes.license],
             showCondition: !this.hasPermissionForSubscription
           }
         ];
@@ -62,14 +63,14 @@ export class AboutPageComponent implements OnDestroy, OnInit {
           this.tabs.push({
             iconName: 'shield-checkmark-outline',
             label: $localize`Privacy Policy`,
-            path: ['/' + $localize`about`, $localize`privacy-policy`],
+            path: ['/' + routes.about, routes.privacyPolicy],
             showCondition: this.hasPermissionForSubscription
           });
 
           this.tabs.push({
             iconName: 'document-text-outline',
             label: $localize`Terms of Service`,
-            path: ['/' + $localize`about`, $localize`terms-of-service`],
+            path: ['/' + routes.about, routes.termsOfService],
             showCondition: this.hasPermissionForSubscription
           });
 
@@ -81,7 +82,7 @@ export class AboutPageComponent implements OnDestroy, OnInit {
         this.tabs.push({
           iconName: 'happy-outline',
           label: 'OSS Friends',
-          path: ['/' + $localize`about`, 'oss-friends']
+          path: ['/' + routes.about, routes.ossFriends]
         });
       });
   }

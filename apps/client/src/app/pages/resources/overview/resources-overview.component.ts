@@ -1,3 +1,5 @@
+import { routes } from '@ghostfolio/common/routes/routes';
+
 import { Component } from '@angular/core';
 
 @Component({
@@ -12,34 +14,25 @@ export class ResourcesOverviewComponent {
       title: 'Frequently Asked Questions (FAQ)',
       description:
         'Find quick answers to commonly asked questions about Ghostfolio in our Frequently Asked Questions (FAQ) section.',
-      link: ['/' + $localize`:snake-case:faq`]
+      link: ['/' + routes.faq]
     },
     {
       title: 'Guides',
       description:
         'Explore our guides to help you get started with investing and managing your finances.',
-      link: [
-        '/' + $localize`:snake-case:resources`,
-        $localize`:snake-case:guides`
-      ]
+      link: ['/' + routes.resources, routes.guides]
     },
     {
       title: 'Markets',
       description:
         'Access various market resources and tools to stay informed about financial markets.',
-      link: [
-        '/' + $localize`:snake-case:resources`,
-        $localize`:snake-case:markets`
-      ]
+      link: ['/' + routes.resources, routes.markets]
     },
     {
       title: 'Glossary',
       description:
         'Learn key financial terms and concepts in our comprehensive glossary.',
-      link: [
-        '/' + $localize`:snake-case:resources`,
-        $localize`:snake-case:glossary`
-      ]
+      link: ['/' + routes.resources, routes.glossary]
     }
   ];
 }

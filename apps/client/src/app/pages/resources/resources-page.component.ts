@@ -1,3 +1,5 @@
+import { routes } from '@ghostfolio/common/routes/routes';
+
 import { Component, OnInit } from '@angular/core';
 import { DeviceDetectorService } from 'ngx-device-detector';
 import { Subject } from 'rxjs';
@@ -18,17 +20,17 @@ export class ResourcesPageComponent implements OnInit {
       iconName: 'reader-outline'
     },
     {
-      path: 'guides',
+      path: routes.guides,
       label: $localize`Guides`,
       iconName: 'book-outline'
     },
     {
-      path: 'markets',
+      path: routes.markets,
       label: $localize`Markets`,
       iconName: 'newspaper-outline'
     },
     {
-      path: 'glossary',
+      path: routes.glossary,
       label: $localize`Glossary`,
       iconName: 'library-outline'
     }
