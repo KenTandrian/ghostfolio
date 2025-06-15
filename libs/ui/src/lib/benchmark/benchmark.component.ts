@@ -1,3 +1,5 @@
+import { ConfirmationDialogType } from '@ghostfolio/client/core/notification/confirmation-dialog/confirmation-dialog.type';
+import { NotificationService } from '@ghostfolio/client/core/notification/notification.service';
 import { getLocale, resolveMarketCondition } from '@ghostfolio/common/helper';
 import {
   AssetProfileIdentifier,
@@ -13,13 +15,20 @@ import {
   CUSTOM_ELEMENTS_SCHEMA,
   ChangeDetectionStrategy,
   Component,
+  EventEmitter,
   Input,
   OnChanges,
-  OnDestroy
+  OnDestroy,
+  Output,
+  ViewChild
 } from '@angular/core';
+import { MatButtonModule } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
-import { MatTableModule } from '@angular/material/table';
+import { MatMenuModule } from '@angular/material/menu';
+import { MatSort, MatSortModule } from '@angular/material/sort';
+import { MatTableDataSource, MatTableModule } from '@angular/material/table';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
+import { get, isNumber } from 'lodash';
 import { NgxSkeletonLoaderModule } from 'ngx-skeleton-loader';
 import { Subject, takeUntil } from 'rxjs';
 
@@ -32,6 +41,9 @@ import { BenchmarkDetailDialogParams } from './benchmark-detail-dialog/interface
     CommonModule,
     GfTrendIndicatorComponent,
     GfValueComponent,
+    MatButtonModule,
+    MatMenuModule,
+    MatSortModule,
     MatTableModule,
     NgxSkeletonLoaderModule,
     RouterModule
@@ -44,11 +56,24 @@ import { BenchmarkDetailDialogParams } from './benchmark-detail-dialog/interface
 export class GfBenchmarkComponent implements OnChanges, OnDestroy {
   @Input() benchmarks: Benchmark[];
   @Input() deviceType: string;
+  @Input() hasPermissionToDeleteItem: boolean;
   @Input() locale = getLocale();
   @Input() user: User;
 
-  public displayedColumns = ['name', 'date', 'change', 'marketCondition'];
+  @Output() itemDeleted = new EventEmitter<AssetProfileIdentifier>();
+
+  @ViewChild(MatSort) sort: MatSort;
+
+  public dataSource = new MatTableDataSource<Benchmark>([]);
+  public displayedColumns = [
+    'name',
+    'date',
+    'change',
+    'marketCondition',
+    'actions'
+  ];
   public isLoading = true;
+  public isNumber = isNumber;
   public resolveMarketCondition = resolveMarketCondition;
   public translate = translate;
 
@@ -56,6 +81,7 @@ export class GfBenchmarkComponent implements OnChanges, OnDestroy {
 
   public constructor(
     private dialog: MatDialog,
+    private notificationService: NotificationService,
     private route: ActivatedRoute,
     private router: Router
   ) {
@@ -77,6 +103,10 @@ export class GfBenchmarkComponent implements OnChanges, OnDestroy {
 
   public ngOnChanges() {
     if (this.benchmarks) {
+      this.dataSource.data = this.benchmarks;
+      this.dataSource.sort = this.sort;
+      this.dataSource.sortingDataAccessor = get;
+
       this.isLoading = false;
     }
 
@@ -87,9 +117,20 @@ export class GfBenchmarkComponent implements OnChanges, OnDestroy {
         'trend200d',
         'date',
         'change',
-        'marketCondition'
+        'marketCondition',
+        'actions'
       ];
     }
+  }
+
+  public onDeleteItem({ dataSource, symbol }: AssetProfileIdentifier) {
+    this.notificationService.confirm({
+      confirmFn: () => {
+        this.itemDeleted.emit({ dataSource, symbol });
+      },
+      confirmType: ConfirmationDialogType.Warn,
+      title: $localize`Do you really want to delete this item?`
+    });
   }
 
   public onOpenBenchmarkDialog({ dataSource, symbol }: AssetProfileIdentifier) {

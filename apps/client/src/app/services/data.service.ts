@@ -6,13 +6,13 @@ import { UpdateAccountDto } from '@ghostfolio/api/app/account/update-account.dto
 import { UpdateBulkMarketDataDto } from '@ghostfolio/api/app/admin/update-bulk-market-data.dto';
 import { CreateTagDto } from '@ghostfolio/api/app/endpoints/tags/create-tag.dto';
 import { UpdateTagDto } from '@ghostfolio/api/app/endpoints/tags/update-tag.dto';
+import { CreateWatchlistItemDto } from '@ghostfolio/api/app/endpoints/watchlist/create-watchlist-item.dto';
 import { CreateOrderDto } from '@ghostfolio/api/app/order/create-order.dto';
 import {
   Activities,
   Activity
 } from '@ghostfolio/api/app/order/interfaces/activities.interface';
 import { UpdateOrderDto } from '@ghostfolio/api/app/order/update-order.dto';
-import { PortfolioHoldingDetail } from '@ghostfolio/api/app/portfolio/interfaces/portfolio-holding-detail.interface';
 import { SymbolItem } from '@ghostfolio/api/app/symbol/interfaces/symbol-item.interface';
 import { DeleteOwnUserDto } from '@ghostfolio/api/app/user/delete-own-user.dto';
 import { UserItem } from '@ghostfolio/api/app/user/interfaces/user-item.interface';
@@ -22,8 +22,9 @@ import { PropertyDto } from '@ghostfolio/api/services/property/property.dto';
 import { DATE_FORMAT } from '@ghostfolio/common/helper';
 import {
   Access,
+  AccessTokenResponse,
   AccountBalancesResponse,
-  Accounts,
+  AccountsResponse,
   AiPromptResponse,
   ApiKeyResponse,
   AssetProfileIdentifier,
@@ -38,12 +39,14 @@ import {
   OAuthResponse,
   PortfolioDetails,
   PortfolioDividends,
+  PortfolioHoldingResponse,
   PortfolioHoldingsResponse,
   PortfolioInvestments,
   PortfolioPerformanceResponse,
   PortfolioReportResponse,
   PublicPortfolioResponse,
-  User
+  User,
+  WatchlistResponse
 } from '@ghostfolio/common/interfaces';
 import { filterGlobalPermissions } from '@ghostfolio/common/permissions';
 import type {
@@ -188,7 +191,7 @@ export class DataService {
   public fetchAccounts({ filters }: { filters?: Filter[] } = {}) {
     const params = this.buildFiltersAsQueryParams({ filters });
 
-    return this.http.get<Accounts>('/api/v1/account', { params });
+    return this.http.get<AccountsResponse>('/api/v1/account', { params });
   }
 
   public fetchActivities({
@@ -324,6 +327,10 @@ export class DataService {
     return this.http.delete<any>(`/api/v1/user/${aId}`);
   }
 
+  public deleteWatchlistItem({ dataSource, symbol }: AssetProfileIdentifier) {
+    return this.http.delete<any>(`/api/v1/watchlist/${dataSource}/${symbol}`);
+  }
+
   public fetchAccesses() {
     return this.http.get<Access[]>('/api/v1/access');
   }
@@ -399,13 +406,13 @@ export class DataService {
     symbol: string;
   }) {
     return this.http
-      .get<PortfolioHoldingDetail>(
-        `/api/v1/portfolio/position/${dataSource}/${symbol}`
+      .get<PortfolioHoldingResponse>(
+        `/api/v1/portfolio/holding/${dataSource}/${symbol}`
       )
       .pipe(
         map((data) => {
-          if (data.orders) {
-            for (const order of data.orders) {
+          if (data.activities) {
+            for (const order of data.activities) {
               order.createdAt = parseISO(order.createdAt as unknown as string);
               order.date = parseISO(order.date as unknown as string);
             }
@@ -529,12 +536,6 @@ export class DataService {
       })
       .pipe(
         map((response) => {
-          if (response.summary?.firstOrderDate) {
-            response.summary.firstOrderDate = parseISO(
-              response.summary.firstOrderDate
-            );
-          }
-
           if (response.holdings) {
             for (const symbol of Object.keys(response.holdings)) {
               response.holdings[symbol].assetClassLabel = translate(
@@ -691,6 +692,17 @@ export class DataService {
     return this.http.get<Tag[]>('/api/v1/tags');
   }
 
+  public fetchWatchlist() {
+    return this.http.get<WatchlistResponse>('/api/v1/watchlist');
+  }
+
+  public generateAccessToken(aUserId: string) {
+    return this.http.post<AccessTokenResponse>(
+      `/api/v1/user/${aUserId}/access-token`,
+      {}
+    );
+  }
+
   public loginAnonymous(accessToken: string) {
     return this.http.post<OAuthResponse>('/api/v1/auth/anonymous', {
       accessToken
@@ -746,6 +758,10 @@ export class DataService {
     return this.http.post<UserItem>('/api/v1/user', {});
   }
 
+  public postWatchlistItem(watchlistItem: CreateWatchlistItemDto) {
+    return this.http.post('/api/v1/watchlist', watchlistItem);
+  }
+
   public putAccount(aAccount: UpdateAccountDto) {
     return this.http.put<UserItem>(`/api/v1/account/${aAccount.id}`, aAccount);
   }
@@ -760,7 +776,7 @@ export class DataService {
     tags
   }: { tags: Tag[] } & AssetProfileIdentifier) {
     return this.http.put<void>(
-      `/api/v1/portfolio/position/${dataSource}/${symbol}/tags`,
+      `/api/v1/portfolio/holding/${dataSource}/${symbol}/tags`,
       { tags }
     );
   }

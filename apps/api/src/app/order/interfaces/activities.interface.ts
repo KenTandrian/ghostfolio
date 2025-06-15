@@ -11,9 +11,11 @@ export interface Activities {
 export interface Activity extends Order {
   Account?: AccountWithPlatform;
   error?: ActivityError;
+  feeInAssetProfileCurrency: number;
   feeInBaseCurrency: number;
   SymbolProfile?: EnhancedSymbolProfile;
   tags?: Tag[];
+  unitPriceInAssetProfileCurrency: number;
   updateAccountBalance?: boolean;
   value: number;
   valueInBaseCurrency: number;

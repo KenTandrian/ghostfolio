@@ -1,4 +1,5 @@
 import { TabConfiguration } from '@ghostfolio/common/interfaces';
+import { routes } from '@ghostfolio/common/routes/routes';
 
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { DeviceDetectorService } from 'ngx-device-detector';
@@ -26,27 +27,27 @@ export class AdminPageComponent implements OnDestroy, OnInit {
       {
         iconName: 'reader-outline',
         label: $localize`Overview`,
-        path: ['/admin']
+        routerLink: ['/' + routes.adminControl]
       },
       {
         iconName: 'settings-outline',
         label: $localize`Settings`,
-        path: ['/admin', 'settings']
+        routerLink: ['/' + routes.adminControl, routes.settings]
       },
       {
         iconName: 'server-outline',
         label: $localize`Market Data`,
-        path: ['/admin', 'market-data']
+        routerLink: ['/' + routes.adminControl, routes.marketData]
       },
       {
         iconName: 'flash-outline',
         label: $localize`Job Queue`,
-        path: ['/admin', 'jobs']
+        routerLink: ['/' + routes.adminControl, routes.jobs]
       },
       {
         iconName: 'people-outline',
         label: $localize`Users`,
-        path: ['/admin', 'users']
+        routerLink: ['/' + routes.adminControl, routes.users]
       }
     ];
   }

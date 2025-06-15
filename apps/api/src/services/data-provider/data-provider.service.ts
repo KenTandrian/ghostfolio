@@ -18,6 +18,7 @@ import {
   DATE_FORMAT,
   getCurrencyFromSymbol,
   getStartOfUtcDate,
+  isCurrency,
   isDerivedCurrency
 } from '@ghostfolio/common/helper';
 import {
@@ -25,12 +26,13 @@ import {
   LookupItem,
   LookupResponse
 } from '@ghostfolio/common/interfaces';
+import { hasRole } from '@ghostfolio/common/permissions';
 import type { Granularity, UserWithSettings } from '@ghostfolio/common/types';
 
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { DataSource, MarketData, SymbolProfile } from '@prisma/client';
 import { Big } from 'big.js';
-import { eachDayOfInterval, format, isValid } from 'date-fns';
+import { eachDayOfInterval, format, isBefore, isValid } from 'date-fns';
 import { groupBy, isEmpty, isNumber, uniqWith } from 'lodash';
 import ms from 'ms';
 
@@ -114,7 +116,13 @@ export class DataProviderService {
       }
     }
 
-    await Promise.all(promises);
+    try {
+      await Promise.all(promises);
+    } catch (error) {
+      Logger.error(error, 'DataProviderService');
+
+      throw error;
+    }
 
     return response;
   }
@@ -154,9 +162,25 @@ export class DataProviderService {
     return DataSource[this.configurationService.get('DATA_SOURCE_IMPORT')];
   }
 
-  public async getDataSources(): Promise<DataSource[]> {
+  public async getDataSources({
+    includeGhostfolio = false,
+    user
+  }: {
+    includeGhostfolio?: boolean;
+    user: UserWithSettings;
+  }): Promise<DataSource[]> {
+    let dataSourcesKey: 'DATA_SOURCES' | 'DATA_SOURCES_LEGACY' = 'DATA_SOURCES';
+
+    if (
+      !hasRole(user, 'ADMIN') &&
+      isBefore(user.createdAt, new Date('2025-03-23')) &&
+      this.configurationService.get('DATA_SOURCES_LEGACY')?.length > 0
+    ) {
+      dataSourcesKey = 'DATA_SOURCES_LEGACY';
+    }
+
     const dataSources: DataSource[] = this.configurationService
-      .get('DATA_SOURCES')
+      .get(dataSourcesKey)
       .map((dataSource) => {
         return DataSource[dataSource];
       });
@@ -165,7 +189,7 @@ export class DataProviderService {
       PROPERTY_API_KEY_GHOSTFOLIO
     )) as string;
 
-    if (ghostfolioApiKey) {
+    if (includeGhostfolio || ghostfolioApiKey) {
       dataSources.push('GHOSTFOLIO');
     }
 
@@ -449,17 +473,21 @@ export class DataProviderService {
     )) {
       const dataProvider = this.getDataProvider(DataSource[dataSource]);
 
-      if (
-        dataProvider.getDataProviderInfo().isPremium &&
-        this.configurationService.get('ENABLE_FEATURE_SUBSCRIPTION') &&
-        user?.subscription.type === 'Basic'
-      ) {
-        continue;
-      }
-
       const symbols = assetProfileIdentifiers
         .filter(({ symbol }) => {
-          return !isDerivedCurrency(getCurrencyFromSymbol(symbol));
+          if (isCurrency(getCurrencyFromSymbol(symbol))) {
+            // Keep non-derived currencies
+            return !isDerivedCurrency(getCurrencyFromSymbol(symbol));
+          } else if (
+            dataProvider.getDataProviderInfo().isPremium &&
+            this.configurationService.get('ENABLE_FEATURE_SUBSCRIPTION') &&
+            user?.subscription.type === 'Basic'
+          ) {
+            // Skip symbols of Premium data providers for users without subscription
+            return false;
+          }
+
+          return true;
         })
         .map(({ symbol }) => {
           return symbol;
@@ -608,7 +636,7 @@ export class DataProviderService {
       return { items: lookupItems };
     }
 
-    const dataSources = await this.getDataSources();
+    const dataSources = await this.getDataSources({ user });
 
     const dataProviderServices = dataSources.map((dataSource) => {
       return this.getDataProvider(DataSource[dataSource]);
@@ -637,22 +665,34 @@ export class DataProviderService {
         // Only allow symbols with supported currency
         return currency ? true : false;
       })
-      .sort(({ name: name1 }, { name: name2 }) => {
-        return name1?.toLowerCase().localeCompare(name2?.toLowerCase());
-      })
       .map((lookupItem) => {
         if (this.configurationService.get('ENABLE_FEATURE_SUBSCRIPTION')) {
           if (user.subscription.type === 'Premium') {
             lookupItem.dataProviderInfo.isPremium = false;
           }
 
+          lookupItem.dataProviderInfo.dataSource = undefined;
           lookupItem.dataProviderInfo.name = undefined;
           lookupItem.dataProviderInfo.url = undefined;
         } else {
           lookupItem.dataProviderInfo.isPremium = false;
         }
 
+        if (
+          lookupItem.assetSubClass === 'CRYPTOCURRENCY' &&
+          user?.Settings?.settings.isExperimentalFeatures
+        ) {
+          // Remove DEFAULT_CURRENCY at the end of cryptocurrency names
+          lookupItem.name = lookupItem.name.replace(
+            new RegExp(` ${DEFAULT_CURRENCY}$`),
+            ''
+          );
+        }
+
         return lookupItem;
+      })
+      .sort(({ name: name1 }, { name: name2 }) => {
+        return name1?.toLowerCase().localeCompare(name2?.toLowerCase());
       });
 
     return {

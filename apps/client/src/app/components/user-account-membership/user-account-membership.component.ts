@@ -5,6 +5,7 @@ import { UserService } from '@ghostfolio/client/services/user/user.service';
 import { getDateFormatString } from '@ghostfolio/common/helper';
 import { User } from '@ghostfolio/common/interfaces';
 import { hasPermission, permissions } from '@ghostfolio/common/permissions';
+import { publicRoutes } from '@ghostfolio/common/routes/routes';
 
 import {
   ChangeDetectionStrategy,
@@ -36,7 +37,7 @@ export class UserAccountMembershipComponent implements OnDestroy {
   public hasPermissionToUpdateUserSettings: boolean;
   public price: number;
   public priceId: string;
-  public routerLinkPricing = ['/' + $localize`:snake-case:pricing`];
+  public routerLinkPricing = publicRoutes.pricing.routerLink;
   public trySubscriptionMail =
     'mailto:hi@ghostfol.io?Subject=Ghostfolio Premium Trial&body=Hello%0D%0DI am interested in Ghostfolio Premium. Can you please send me a coupon code to try it for some time?%0D%0DKind regards';
   public user: User;
@@ -51,8 +52,7 @@ export class UserAccountMembershipComponent implements OnDestroy {
     private stripeService: StripeService,
     private userService: UserService
   ) {
-    const { baseCurrency, globalPermissions, subscriptionOffers } =
-      this.dataService.fetchInfo();
+    const { baseCurrency, globalPermissions } = this.dataService.fetchInfo();
 
     this.baseCurrency = baseCurrency;
 
@@ -81,18 +81,12 @@ export class UserAccountMembershipComponent implements OnDestroy {
             permissions.updateUserSettings
           );
 
-          this.coupon =
-            subscriptionOffers?.[this.user.subscription.offer]?.coupon;
-          this.couponId =
-            subscriptionOffers?.[this.user.subscription.offer]?.couponId;
+          this.coupon = this.user?.subscription?.offer?.coupon;
+          this.couponId = this.user?.subscription?.offer?.couponId;
           this.durationExtension =
-            subscriptionOffers?.[
-              this.user.subscription.offer
-            ]?.durationExtension;
-          this.price =
-            subscriptionOffers?.[this.user.subscription.offer]?.price;
-          this.priceId =
-            subscriptionOffers?.[this.user.subscription.offer]?.priceId;
+            this.user?.subscription?.offer?.durationExtension;
+          this.price = this.user?.subscription?.offer?.price;
+          this.priceId = this.user?.subscription?.offer?.priceId;
 
           this.changeDetectorRef.markForCheck();
         }

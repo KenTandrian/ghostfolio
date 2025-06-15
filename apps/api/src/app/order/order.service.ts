@@ -7,8 +7,8 @@ import { DataGatheringService } from '@ghostfolio/api/services/queues/data-gathe
 import { SymbolProfileService } from '@ghostfolio/api/services/symbol-profile/symbol-profile.service';
 import {
   DATA_GATHERING_QUEUE_PRIORITY_HIGH,
-  GATHER_ASSET_PROFILE_PROCESS,
-  GATHER_ASSET_PROFILE_PROCESS_OPTIONS
+  GATHER_ASSET_PROFILE_PROCESS_JOB_NAME,
+  GATHER_ASSET_PROFILE_PROCESS_JOB_OPTIONS
 } from '@ghostfolio/common/config';
 import { getAssetProfileIdentifier } from '@ghostfolio/common/helper';
 import {
@@ -100,7 +100,7 @@ export class OrderService {
       userId: string;
     }
   ): Promise<Order> {
-    let Account: Prisma.AccountCreateNestedOneWithoutOrderInput;
+    let Account: Prisma.AccountCreateNestedOneWithoutActivitiesInput;
 
     if (data.accountId) {
       Account = {
@@ -147,9 +147,9 @@ export class OrderService {
           dataSource: data.SymbolProfile.connectOrCreate.create.dataSource,
           symbol: data.SymbolProfile.connectOrCreate.create.symbol
         },
-        name: GATHER_ASSET_PROFILE_PROCESS,
+        name: GATHER_ASSET_PROFILE_PROCESS_JOB_NAME,
         opts: {
-          ...GATHER_ASSET_PROFILE_PROCESS_OPTIONS,
+          ...GATHER_ASSET_PROFILE_PROCESS_JOB_OPTIONS,
           jobId: getAssetProfileIdentifier({
             dataSource: data.SymbolProfile.connectOrCreate.create.dataSource,
             symbol: data.SymbolProfile.connectOrCreate.create.symbol
@@ -534,24 +534,46 @@ export class OrderService {
 
         const value = new Big(order.quantity).mul(order.unitPrice).toNumber();
 
+        const [
+          feeInAssetProfileCurrency,
+          feeInBaseCurrency,
+          unitPriceInAssetProfileCurrency,
+          valueInBaseCurrency
+        ] = await Promise.all([
+          this.exchangeRateDataService.toCurrencyAtDate(
+            order.fee,
+            order.currency ?? order.SymbolProfile.currency,
+            order.SymbolProfile.currency,
+            order.date
+          ),
+          this.exchangeRateDataService.toCurrencyAtDate(
+            order.fee,
+            order.currency ?? order.SymbolProfile.currency,
+            userCurrency,
+            order.date
+          ),
+          this.exchangeRateDataService.toCurrencyAtDate(
+            order.unitPrice,
+            order.currency ?? order.SymbolProfile.currency,
+            order.SymbolProfile.currency,
+            order.date
+          ),
+          this.exchangeRateDataService.toCurrencyAtDate(
+            value,
+            order.currency ?? order.SymbolProfile.currency,
+            userCurrency,
+            order.date
+          )
+        ]);
+
         return {
           ...order,
+          feeInAssetProfileCurrency,
+          feeInBaseCurrency,
+          unitPriceInAssetProfileCurrency,
           value,
-          feeInBaseCurrency:
-            await this.exchangeRateDataService.toCurrencyAtDate(
-              order.fee,
-              order.SymbolProfile.currency,
-              userCurrency,
-              order.date
-            ),
-          SymbolProfile: assetProfile,
-          valueInBaseCurrency:
-            await this.exchangeRateDataService.toCurrencyAtDate(
-              value,
-              order.SymbolProfile.currency,
-              userCurrency,
-              order.date
-            )
+          valueInBaseCurrency,
+          SymbolProfile: assetProfile
         };
       })
     );

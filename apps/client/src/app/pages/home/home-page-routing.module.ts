@@ -2,7 +2,12 @@ import { HomeHoldingsComponent } from '@ghostfolio/client/components/home-holdin
 import { HomeMarketComponent } from '@ghostfolio/client/components/home-market/home-market.component';
 import { HomeOverviewComponent } from '@ghostfolio/client/components/home-overview/home-overview.component';
 import { HomeSummaryComponent } from '@ghostfolio/client/components/home-summary/home-summary.component';
+import { HomeWatchlistComponent } from '@ghostfolio/client/components/home-watchlist/home-watchlist.component';
 import { AuthGuard } from '@ghostfolio/client/core/auth.guard';
+import {
+  routes as ghostfolioRoutes,
+  internalRoutes
+} from '@ghostfolio/common/routes/routes';
 
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
@@ -18,28 +23,29 @@ const routes: Routes = [
         component: HomeOverviewComponent
       },
       {
-        path: 'holdings',
+        path: internalRoutes.home.subRoutes.holdings.path,
         component: HomeHoldingsComponent,
-        title: $localize`Holdings`
+        title: internalRoutes.home.subRoutes.holdings.title
       },
       {
-        path: 'holdings',
-        component: HomeHoldingsComponent,
-        title: $localize`Holdings`
-      },
-      {
-        path: 'summary',
+        path: internalRoutes.home.subRoutes.summary.path,
         component: HomeSummaryComponent,
-        title: $localize`Summary`
+        title: internalRoutes.home.subRoutes.summary.title
       },
       {
-        path: 'market',
+        path: ghostfolioRoutes.market,
         component: HomeMarketComponent,
         title: $localize`Markets`
+      },
+      {
+        path: internalRoutes.home.subRoutes.watchlist.path,
+        component: HomeWatchlistComponent,
+        title: internalRoutes.home.subRoutes.watchlist.title
       }
     ],
     component: HomePageComponent,
-    path: ''
+    path: '',
+    title: internalRoutes.home.title
   }
 ];
 

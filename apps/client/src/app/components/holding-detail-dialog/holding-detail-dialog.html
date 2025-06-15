@@ -106,11 +106,11 @@
           [locale]="data.locale"
           [ngClass]="{
             'text-danger':
-              minPrice?.toFixed(2) === marketPrice?.toFixed(2) &&
-              maxPrice?.toFixed(2) !== minPrice?.toFixed(2)
+              marketPriceMin?.toFixed(2) === marketPrice?.toFixed(2) &&
+              marketPriceMax?.toFixed(2) !== marketPriceMin?.toFixed(2)
           }"
           [unit]="SymbolProfile?.currency"
-          [value]="minPrice"
+          [value]="marketPriceMin"
           >Minimum Price</gf-value
         >
       </div>
@@ -122,11 +122,11 @@
           [locale]="data.locale"
           [ngClass]="{
             'text-success':
-              maxPrice?.toFixed(2) === marketPrice?.toFixed(2) &&
-              maxPrice?.toFixed(2) !== minPrice?.toFixed(2)
+              marketPriceMax?.toFixed(2) === marketPrice?.toFixed(2) &&
+              marketPriceMax?.toFixed(2) !== marketPriceMin?.toFixed(2)
           }"
           [unit]="SymbolProfile?.currency"
-          [value]="maxPrice"
+          [value]="marketPriceMax"
           >Maximum Price</gf-value
         >
       </div>
@@ -146,9 +146,9 @@
           size="medium"
           [isCurrency]="true"
           [locale]="data.locale"
-          [precision]="investmentPrecision"
+          [precision]="investmentInBaseCurrencyWithCurrencyEffectPrecision"
           [unit]="data.baseCurrency"
-          [value]="investment"
+          [value]="investmentInBaseCurrencyWithCurrencyEffect"
           >Investment</gf-value
         >
       </div>
@@ -259,11 +259,11 @@
             <gf-portfolio-proportion-chart
               [baseCurrency]="data.baseCurrency"
               [colorScheme]="data.colorScheme"
+              [data]="sectors"
               [isInPercent]="true"
               [keys]="['name']"
               [locale]="data.locale"
               [maxItems]="10"
-              [positions]="sectors"
             />
           </div>
           <div class="col-md-6 mb-3">
@@ -271,11 +271,11 @@
             <gf-portfolio-proportion-chart
               [baseCurrency]="data.baseCurrency"
               [colorScheme]="data.colorScheme"
+              [data]="countries"
               [isInPercent]="true"
               [keys]="['name']"
               [locale]="data.locale"
               [maxItems]="10"
-              [positions]="countries"
             />
           </div>
         }
@@ -308,7 +308,7 @@
     </div>
 
     <mat-tab-group
-      animationDuration="0"
+      animationDuration="0ms"
       class="mb-5"
       [mat-stretch-tabs]="false"
       [ngClass]="{ 'd-none': !dataSource?.data.length }"
@@ -388,9 +388,7 @@
     </mat-tab-group>
 
     <gf-tags-selector
-      [hasPermissionToCreateTag]="
-        hasPermissionToCreateOwnTag && user?.settings?.isExperimentalFeatures
-      "
+      [hasPermissionToCreateTag]="hasPermissionToCreateOwnTag"
       [readonly]="!data.hasPermissionToUpdateOrder"
       [tags]="activityForm.get('tags')?.value"
       [tagsAvailable]="tagsAvailable"
