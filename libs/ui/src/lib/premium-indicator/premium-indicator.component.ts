@@ -1,3 +1,5 @@
+import { publicRoutes } from '@ghostfolio/common/routes/routes';
+
 import { CommonModule } from '@angular/common';
 import {
   CUSTOM_ELEMENTS_SCHEMA,
@@ -17,4 +19,6 @@ import { RouterModule } from '@angular/router';
 })
 export class GfPremiumIndicatorComponent {
   @Input() enableLink = true;
+
+  public routerLinkPricing = publicRoutes.pricing.routerLink;
 }

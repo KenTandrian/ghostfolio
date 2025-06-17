@@ -8,9 +8,11 @@ import { RulesService } from '@ghostfolio/api/app/portfolio/rules.service';
 import { RedisCacheModule } from '@ghostfolio/api/app/redis-cache/redis-cache.module';
 import { UserModule } from '@ghostfolio/api/app/user/user.module';
 import { ApiModule } from '@ghostfolio/api/services/api/api.module';
+import { BenchmarkModule } from '@ghostfolio/api/services/benchmark/benchmark.module';
 import { ConfigurationModule } from '@ghostfolio/api/services/configuration/configuration.module';
 import { DataProviderModule } from '@ghostfolio/api/services/data-provider/data-provider.module';
 import { ExchangeRateDataModule } from '@ghostfolio/api/services/exchange-rate-data/exchange-rate-data.module';
+import { I18nModule } from '@ghostfolio/api/services/i18n/i18n.module';
 import { ImpersonationModule } from '@ghostfolio/api/services/impersonation/impersonation.module';
 import { MarketDataModule } from '@ghostfolio/api/services/market-data/market-data.module';
 import { MarketDataService } from '@ghostfolio/api/services/market-data/market-data.service';
@@ -27,9 +29,11 @@ import { AiService } from './ai.service';
   controllers: [AiController],
   imports: [
     ApiModule,
+    BenchmarkModule,
     ConfigurationModule,
     DataProviderModule,
     ExchangeRateDataModule,
+    I18nModule,
     ImpersonationModule,
     MarketDataModule,
     OrderModule,

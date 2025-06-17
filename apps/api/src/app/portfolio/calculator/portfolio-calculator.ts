@@ -35,6 +35,7 @@ import {
 } from '@ghostfolio/common/interfaces';
 import { PortfolioSnapshot, TimelinePosition } from '@ghostfolio/common/models';
 import { GroupBy } from '@ghostfolio/common/types';
+import { PerformanceCalculationType } from '@ghostfolio/common/types/performance-calculation-type.type';
 
 import { Logger } from '@nestjs/common';
 import { Big } from 'big.js';
@@ -112,12 +113,12 @@ export abstract class PortfolioCalculator {
       .map(
         ({
           date,
-          fee,
+          feeInAssetProfileCurrency,
           quantity,
           SymbolProfile,
           tags = [],
           type,
-          unitPrice
+          unitPriceInAssetProfileCurrency
         }) => {
           if (isBefore(date, dateOfFirstActivity)) {
             dateOfFirstActivity = date;
@@ -134,9 +135,9 @@ export abstract class PortfolioCalculator {
             tags,
             type,
             date: format(date, DATE_FORMAT),
-            fee: new Big(fee),
+            fee: new Big(feeInAssetProfileCurrency),
             quantity: new Big(quantity),
-            unitPrice: new Big(unitPrice)
+            unitPrice: new Big(unitPriceInAssetProfileCurrency)
           };
         }
       )
@@ -623,6 +624,8 @@ export abstract class PortfolioCalculator {
     };
   }
 
+  protected abstract getPerformanceCalculationType(): PerformanceCalculationType;
+
   public getDataProviderInfos() {
     return this.dataProviderInfos;
   }
@@ -899,8 +902,8 @@ export abstract class PortfolioCalculator {
     let lastTransactionPoint: TransactionPoint = null;
 
     for (const {
-      fee,
       date,
+      fee,
       quantity,
       SymbolProfile,
       tags,
@@ -1073,6 +1076,7 @@ export abstract class PortfolioCalculator {
         // Compute in the background
         this.portfolioSnapshotService.addJobToQueue({
           data: {
+            calculationType: this.getPerformanceCalculationType(),
             filters: this.filters,
             userCurrency: this.currency,
             userId: this.userId
@@ -1089,6 +1093,7 @@ export abstract class PortfolioCalculator {
       // Wait for computation
       await this.portfolioSnapshotService.addJobToQueue({
         data: {
+          calculationType: this.getPerformanceCalculationType(),
           filters: this.filters,
           userCurrency: this.currency,
           userId: this.userId

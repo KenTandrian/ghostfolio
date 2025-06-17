@@ -53,14 +53,19 @@ export class OrderController {
   @Delete()
   @HasPermission(permissions.deleteOrder)
   @UseGuards(AuthGuard('jwt'), HasPermissionGuard)
+  @UseInterceptors(TransformDataSourceInRequestInterceptor)
   public async deleteOrders(
     @Query('accounts') filterByAccounts?: string,
     @Query('assetClasses') filterByAssetClasses?: string,
+    @Query('dataSource') filterByDataSource?: string,
+    @Query('symbol') filterBySymbol?: string,
     @Query('tags') filterByTags?: string
   ): Promise<number> {
     const filters = this.apiService.buildFiltersFromQueryParams({
       filterByAccounts,
       filterByAssetClasses,
+      filterByDataSource,
+      filterBySymbol,
       filterByTags
     });
 
@@ -97,7 +102,7 @@ export class OrderController {
   @UseInterceptors(TransformDataSourceInRequestInterceptor)
   @UseInterceptors(TransformDataSourceInResponseInterceptor)
   public async getAllOrders(
-    @Headers(HEADER_KEY_IMPERSONATION.toLowerCase()) impersonationId,
+    @Headers(HEADER_KEY_IMPERSONATION.toLowerCase()) impersonationId: string,
     @Query('accounts') filterByAccounts?: string,
     @Query('assetClasses') filterByAssetClasses?: string,
     @Query('dataSource') filterByDataSource?: string,
@@ -150,7 +155,7 @@ export class OrderController {
   @UseInterceptors(RedactValuesInResponseInterceptor)
   @UseInterceptors(TransformDataSourceInResponseInterceptor)
   public async getOrderById(
-    @Headers(HEADER_KEY_IMPERSONATION.toLowerCase()) impersonationId,
+    @Headers(HEADER_KEY_IMPERSONATION.toLowerCase()) impersonationId: string,
     @Param('id') id: string
   ): Promise<Activity> {
     const impersonationUserId =
@@ -209,7 +214,7 @@ export class OrderController {
           }
         }
       },
-      User: { connect: { id: this.request.user.id } },
+      user: { connect: { id: this.request.user.id } },
       userId: this.request.user.id
     });
 
@@ -282,7 +287,7 @@ export class OrderController {
             name: data.symbol
           }
         },
-        User: { connect: { id: this.request.user.id } }
+        user: { connect: { id: this.request.user.id } }
       },
       where: {
         id

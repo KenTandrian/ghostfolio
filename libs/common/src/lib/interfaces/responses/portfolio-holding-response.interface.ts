@@ -1,5 +1,6 @@
 import { Activity } from '@ghostfolio/api/app/order/interfaces/activities.interface';
 import {
+  Benchmark,
   DataProviderInfo,
   EnhancedSymbolProfile,
   HistoricalDataItem
@@ -7,7 +8,8 @@ import {
 
 import { Tag } from '@prisma/client';
 
-export interface PortfolioHoldingDetail {
+export interface PortfolioHoldingResponse {
+  activities: Activity[];
   averagePrice: number;
   dataProviderInfo: DataProviderInfo;
   dividendInBaseCurrency: number;
@@ -20,15 +22,15 @@ export interface PortfolioHoldingDetail {
   grossPerformancePercentWithCurrencyEffect: number;
   grossPerformanceWithCurrencyEffect: number;
   historicalData: HistoricalDataItem[];
-  investment: number;
+  investmentInBaseCurrencyWithCurrencyEffect: number;
   marketPrice: number;
-  maxPrice: number;
-  minPrice: number;
+  marketPriceMax: number;
+  marketPriceMin: number;
   netPerformance: number;
   netPerformancePercent: number;
   netPerformancePercentWithCurrencyEffect: number;
   netPerformanceWithCurrencyEffect: number;
-  orders: Activity[];
+  performances: Benchmark['performances'];
   quantity: number;
   SymbolProfile: EnhancedSymbolProfile;
   tags: Tag[];
