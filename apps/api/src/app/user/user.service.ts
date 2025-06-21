@@ -104,7 +104,7 @@ export class UserService {
           user: true
         },
         orderBy: { alias: 'asc' },
-        where: { GranteeUser: { id } }
+        where: { granteeUserId: id }
       }),
       this.prismaService.order.count({
         where: { userId: id }
@@ -263,6 +263,8 @@ export class UserService {
           user.Settings.settings
         ),
       AccountClusterRiskSingleAccount: new AccountClusterRiskSingleAccount(
+        undefined,
+        undefined,
         undefined,
         {}
       ).getSettings(user.Settings.settings),
