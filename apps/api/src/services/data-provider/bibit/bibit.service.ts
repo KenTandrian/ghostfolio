@@ -112,6 +112,7 @@ export class BibitService implements DataProviderInterface {
 
   public getDataProviderInfo(): DataProviderInfo {
     return {
+      dataSource: DataSource.BIBIT,
       isPremium: false,
       name: 'Bibit',
       url: 'https://bibit.id/'
