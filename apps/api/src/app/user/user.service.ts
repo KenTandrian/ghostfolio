@@ -104,7 +104,7 @@ export class UserService {
           user: true
         },
         orderBy: { alias: 'asc' },
-        where: { GranteeUser: { id } }
+        where: { granteeUserId: id }
       }),
       this.prismaService.order.count({
         where: { userId: id }
@@ -182,7 +182,7 @@ export class UserService {
       Access,
       accessToken,
       accounts,
-      Analytics,
+      analytics,
       authChallenge,
       createdAt,
       id,
@@ -196,9 +196,9 @@ export class UserService {
       include: {
         Access: true,
         accounts: {
-          include: { Platform: true }
+          include: { platform: true }
         },
-        Analytics: true,
+        analytics: true,
         Settings: true,
         subscriptions: true
       },
@@ -217,9 +217,9 @@ export class UserService {
       Settings: Settings as UserWithSettings['Settings'],
       thirdPartyId,
       updatedAt,
-      activityCount: Analytics?.activityCount,
+      activityCount: analytics?.activityCount,
       dataProviderGhostfolioDailyRequests:
-        Analytics?.dataProviderGhostfolioDailyRequests
+        analytics?.dataProviderGhostfolioDailyRequests
     };
 
     if (user?.Settings) {
@@ -259,28 +259,41 @@ export class UserService {
 
     (user.Settings.settings as UserSettings).xRayRules = {
       AccountClusterRiskCurrentInvestment:
-        new AccountClusterRiskCurrentInvestment(undefined, {}).getSettings(
-          user.Settings.settings
-        ),
+        new AccountClusterRiskCurrentInvestment(
+          undefined,
+          undefined,
+          undefined,
+          {}
+        ).getSettings(user.Settings.settings),
       AccountClusterRiskSingleAccount: new AccountClusterRiskSingleAccount(
+        undefined,
+        undefined,
         undefined,
         {}
       ).getSettings(user.Settings.settings),
       AssetClassClusterRiskEquity: new AssetClassClusterRiskEquity(
         undefined,
+        undefined,
+        undefined,
         undefined
       ).getSettings(user.Settings.settings),
       AssetClassClusterRiskFixedIncome: new AssetClassClusterRiskFixedIncome(
+        undefined,
+        undefined,
         undefined,
         undefined
       ).getSettings(user.Settings.settings),
       CurrencyClusterRiskBaseCurrencyCurrentInvestment:
         new CurrencyClusterRiskBaseCurrencyCurrentInvestment(
           undefined,
+          undefined,
+          undefined,
           undefined
         ).getSettings(user.Settings.settings),
       CurrencyClusterRiskCurrentInvestment:
         new CurrencyClusterRiskCurrentInvestment(
+          undefined,
+          undefined,
           undefined,
           undefined
         ).getSettings(user.Settings.settings),
@@ -341,6 +354,11 @@ export class UserService {
 
     let currentPermissions = getPermissions(user.role);
 
+    if (user.provider === 'ANONYMOUS') {
+      currentPermissions.push(permissions.deleteOwnUser);
+      currentPermissions.push(permissions.updateOwnAccessToken);
+    }
+
     if (!(user.Settings.settings as UserSettings).isExperimentalFeatures) {
       // currentPermissions = without(
       //   currentPermissions,
@@ -375,7 +393,7 @@ export class UserService {
           frequency = 6;
         }
 
-        if (Analytics?.activityCount % frequency === 1) {
+        if (analytics?.activityCount % frequency === 1) {
           currentPermissions.push(permissions.enableSubscriptionInterstitial);
         }
 

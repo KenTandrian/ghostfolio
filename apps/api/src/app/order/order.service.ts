@@ -100,10 +100,10 @@ export class OrderService {
       userId: string;
     }
   ): Promise<Order> {
-    let Account: Prisma.AccountCreateNestedOneWithoutActivitiesInput;
+    let account: Prisma.AccountCreateNestedOneWithoutActivitiesInput;
 
     if (data.accountId) {
-      Account = {
+      account = {
         connect: {
           id_userId: {
             userId: data.userId,
@@ -182,7 +182,7 @@ export class OrderService {
     const order = await this.prismaService.order.create({
       data: {
         ...orderData,
-        Account,
+        account,
         isDraft,
         tags: {
           connect: tags.map(({ id }) => {
@@ -478,8 +478,8 @@ export class OrderService {
 
     if (withExcludedAccounts === false) {
       where.OR = [
-        { Account: null },
-        { Account: { NOT: { isExcluded: true } } }
+        { account: null },
+        { account: { NOT: { isExcluded: true } } }
       ];
     }
 
@@ -490,10 +490,9 @@ export class OrderService {
         take,
         where,
         include: {
-          // eslint-disable-next-line @typescript-eslint/naming-convention
-          Account: {
+          account: {
             include: {
-              Platform: true
+              platform: true
             }
           },
           // eslint-disable-next-line @typescript-eslint/naming-convention
@@ -653,8 +652,8 @@ export class OrderService {
     if (['FEE', 'INTEREST', 'ITEM', 'LIABILITY'].includes(data.type)) {
       delete data.SymbolProfile.connect;
 
-      if (data.Account?.connect?.id_userId?.id === null) {
-        data.Account = { disconnect: true };
+      if (data.account?.connect?.id_userId?.id === null) {
+        data.account = { disconnect: true };
       }
     } else {
       delete data.SymbolProfile.update;

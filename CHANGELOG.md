@@ -7,12 +7,99 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Added
+
+- Added support for generating a new _Security Token_ via the user’s account access panel
+
+### Changed
+
+- Introduced fuzzy search for the holdings of the assistant
+- Introduced fuzzy search for the quick links of the assistant
+- Improved the search results of the assistant to only display categories with content
+- Enhanced the sitemap to dynamically compose public routes
+- Renamed `Account` to `account` in the `Order` database schema
+- Improved the language localization for German (`de`)
+
+## 2.175.0 - 2025-06-28
+
+### Added
+
+- Set up the language localization for the static portfolio analysis rule: _Asset Class Cluster Risks_ (Equity)
+- Set up the language localization for the static portfolio analysis rule: _Asset Class Cluster Risks_ (Fixed Income)
+- Set up the language localization for the static portfolio analysis rule: _Currency Cluster Risks_ (Investment)
+- Set up the language localization for the static portfolio analysis rule: _Currency Cluster Risks_ (Investment: Base Currency)
+
+### Changed
+
+- Extended the selector handling of the scraper configuration for more use cases
+- Extended the _AI_ service by an access to _OpenRouter_ (experimental)
+- Changed `node main` to `exec node main` in the `entrypoint.sh` file to improve the container signal handling
+- Renamed `Account` to `account` in the `AccountBalance` database schema
+- Improved the language localization for Catalan (`ca`)
+- Improved the language localization for Dutch (`nl`)
+- Improved the language localization for Español (`es`)
+- Improved the language localization for German (`de`)
+- Improved the language localization for Turkish (`tr`)
+
+### Fixed
+
+- Fixed an issue with the locale in the scraper configuration
+
+## 2.174.0 - 2025-06-24
+
+### Added
+
+- Set up the language localization for the static portfolio analysis rule: _Account Cluster Risks_ (Current Investment)
+- Extended the data providers management of the admin control panel by the online status
+
+### Changed
+
+- Migrated the `@ghostfolio/ui/value` component to control flow
+- Renamed `Platform` to `platform` in the `Account` database schema
+- Refactored the health check endpoint for data enhancers
+- Refactored the health check endpoint for data providers
+- Improved the language localization for French (`fr`)
+- Improved the language localization for German (`de`)
+- Refreshed the cryptocurrencies list
+
+## 2.173.0 - 2025-06-21
+
+### Added
+
+- Set up `open-color` for CSS variable usage
+
+### Changed
+
+- Simplified the data providers management of the admin control panel
+- Migrated the `@ghostfolio/ui/assistant` component to control flow
+- Migrated the `@ghostfolio/ui/value` component to control flow
+- Renamed `GranteeUser` to `granteeUser` in the `Access` database schema
+- Improved the language localization for French (`fr`)
+- Improved the language localization for German (`de`)
+- Upgraded `class-validator` from version `0.14.1` to `0.14.2`
+- Upgraded `prisma` from version `6.9.0` to `6.10.1`
+
+### Fixed
+
+- Fixed an issue in the `HtmlTemplateMiddleware` related to incorrect variable resolution
+- Eliminated the _Unsupported route path_ warning of the `LegacyRouteConverter` on startup
+
+## 2.172.0 - 2025-06-19
+
+### Added
+
+- Set up the language localization for the static portfolio analysis rule: _Account Cluster Risks_ (Single Account)
+- Included the admin control panel in the quick links of the assistant
+
 ### Changed
 
 - Adapted the options of the date range selector in the assistant dynamically based on the user’s first activity
+- Switched the data provider service to `OnModuleInit`, ensuring (currency) quotes are fetched only once
 - Migrated the `@ghostfolio/ui/assistant` component to control flow
 - Migrated the `@ghostfolio/ui/value` component to control flow
 - Improved the language localization for Chinese (`zh`)
+- Improved the language localization for Español (`es`)
+- Improved the language localization for German (`de`)
 - Improved the language localization for Portuguese (`pt`)
 
 ## 2.171.0 - 2025-06-15
@@ -6036,7 +6123,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Changed the navigation to always show the portfolio page
 - Migrated the data type of currencies from `enum` to `string` in the database
 - Supported unlimited currencies (instead of `CHF`, `EUR`, `GBP` and `USD`)
-- Respected the accounts' currencies in the exchange rate service
+- Respected the accounts’ currencies in the exchange rate service
 
 ### Fixed
 
