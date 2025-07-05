@@ -13,12 +13,12 @@ datasource db {
 model Access {
   alias         String?
   createdAt     DateTime           @default(now())
+  granteeUser   User?              @relation("accessGet", fields: [granteeUserId], onDelete: Cascade, references: [id])
   granteeUserId String?
   id            String             @id @default(uuid())
   permissions   AccessPermission[] @default([READ_RESTRICTED])
   updatedAt     DateTime           @updatedAt
   userId        String
-  GranteeUser   User?              @relation("accessGet", fields: [granteeUserId], onDelete: Cascade, references: [id])
   user          User               @relation("accessGive", fields: [userId], onDelete: Cascade, references: [id])
 
   @@index([alias])
@@ -36,11 +36,11 @@ model Account {
   id         String           @default(uuid())
   isExcluded Boolean          @default(false)
   name       String?
+  platform   Platform?        @relation(fields: [platformId], references: [id])
   platformId String?
   updatedAt  DateTime         @updatedAt
   user       User             @relation(fields: [userId], onDelete: Cascade, references: [id])
   userId     String
-  Platform   Platform?        @relation(fields: [platformId], references: [id])
 
   @@id([id, userId])
   @@index([currency])
@@ -51,6 +51,7 @@ model Account {
 }
 
 model AccountBalance {
+  account   Account  @relation(fields: [accountId, userId], onDelete: Cascade, references: [id, userId])
   accountId String
   createdAt DateTime @default(now())
   date      DateTime @default(now())
@@ -58,7 +59,6 @@ model AccountBalance {
   updatedAt DateTime @updatedAt
   userId    String
   value     Float
-  Account   Account  @relation(fields: [accountId, userId], onDelete: Cascade, references: [id, userId])
 
   @@unique([accountId, date])
   @@index([accountId])
@@ -121,6 +121,7 @@ model MarketData {
 }
 
 model Order {
+  account         Account?      @relation(fields: [accountId, accountUserId], references: [id, userId])
   accountId       String?
   accountUserId   String?
   comment         String?
@@ -138,7 +139,6 @@ model Order {
   updatedAt       DateTime      @updatedAt
   user            User          @relation(fields: [userId], onDelete: Cascade, references: [id])
   userId          String
-  Account         Account?      @relation(fields: [accountId, accountUserId], references: [id, userId])
   SymbolProfile   SymbolProfile @relation(fields: [symbolProfileId], references: [id])
 
   @@index([accountId])
@@ -245,11 +245,14 @@ model Tag {
 }
 
 model User {
+  accessesGet   Access[]        @relation("accessGet")
   accessToken   String?
   accounts      Account[]
   activities    Order[]
+  analytics     Analytics?
   apiKeys       ApiKey[]
   authChallenge String?
+  authDevices   AuthDevice[]
   createdAt     DateTime        @default(now())
   id            String          @id @default(uuid())
   provider      Provider        @default(ANONYMOUS)
@@ -259,10 +262,7 @@ model User {
   thirdPartyId  String?
   updatedAt     DateTime        @updatedAt
   watchlist     SymbolProfile[] @relation("UserWatchlist")
-  Access        Access[]        @relation("accessGet")
   AccessGive    Access[]        @relation("accessGive")
-  Analytics     Analytics?
-  AuthDevice    AuthDevice[]
   Settings      Settings?
   SymbolProfile SymbolProfile[]
 

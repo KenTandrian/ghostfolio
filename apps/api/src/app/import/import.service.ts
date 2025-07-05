@@ -48,11 +48,17 @@ export class ImportService {
 
   public async getDividends({
     dataSource,
-    symbol
-  }: AssetProfileIdentifier): Promise<Activity[]> {
+    symbol,
+    userId
+  }: AssetProfileIdentifier & { userId: string }): Promise<Activity[]> {
     try {
       const { activities, firstBuyDate, historicalData } =
-        await this.portfolioService.getHolding(dataSource, undefined, symbol);
+        await this.portfolioService.getHolding({
+          dataSource,
+          symbol,
+          userId,
+          impersonationId: undefined
+        });
 
       const [[assetProfile], dividends] = await Promise.all([
         this.symbolProfileService.getSymbolProfiles([
@@ -71,14 +77,14 @@ export class ImportService {
       ]);
 
       const accounts = activities
-        .filter(({ Account }) => {
-          return !!Account;
+        .filter(({ account }) => {
+          return !!account;
         })
-        .map(({ Account }) => {
-          return Account;
+        .map(({ account }) => {
+          return account;
         });
 
-      const Account = this.isUniqueAccount(accounts) ? accounts[0] : undefined;
+      const account = this.isUniqueAccount(accounts) ? accounts[0] : undefined;
 
       return await Promise.all(
         Object.entries(dividends).map(async ([dateString, { marketPrice }]) => {
@@ -92,7 +98,7 @@ export class ImportService {
           const date = parseDate(dateString);
           const isDuplicate = activities.some((activity) => {
             return (
-              activity.accountId === Account?.id &&
+              activity.accountId === account?.id &&
               activity.SymbolProfile.currency === assetProfile.currency &&
               activity.SymbolProfile.dataSource === assetProfile.dataSource &&
               isSameSecond(activity.date, date) &&
@@ -108,12 +114,12 @@ export class ImportService {
             : undefined;
 
           return {
-            Account,
+            account,
             date,
             error,
             quantity,
             value,
-            accountId: Account?.id,
+            accountId: account?.id,
             accountUserId: undefined,
             comment: undefined,
             currency: undefined,
@@ -129,7 +135,7 @@ export class ImportService {
             unitPrice: marketPrice,
             unitPriceInAssetProfileCurrency: marketPrice,
             updatedAt: undefined,
-            userId: Account?.userId,
+            userId: account?.userId,
             valueInBaseCurrency: value
           };
         })
@@ -207,7 +213,7 @@ export class ImportService {
           ) {
             accountObject = {
               ...accountObject,
-              Platform: { connect: { id: platformId } }
+              platform: { connect: { id: platformId } }
             };
           }
 
@@ -226,7 +232,7 @@ export class ImportService {
 
     for (const activity of activitiesDto) {
       if (!activity.dataSource) {
-        if (['FEE', 'INTEREST', 'ITEM', 'LIABILITY'].includes(activity.type)) {
+        if (['FEE', 'INTEREST', 'LIABILITY'].includes(activity.type)) {
           activity.dataSource = DataSource.MANUAL;
         } else {
           activity.dataSource =
@@ -558,6 +564,12 @@ export class ImportService {
       index,
       { currency, dataSource, symbol, type }
     ] of activitiesDto.entries()) {
+      if (type === 'ITEM') {
+        throw new Error(
+          `activities.${index}.type ("${type}") is deprecated, please use "BUY" instead`
+        );
+      }
+
       if (!dataSources.includes(dataSource)) {
         throw new Error(
           `activities.${index}.dataSource ("${dataSource}") is not valid`
@@ -589,7 +601,11 @@ export class ImportService {
           )?.[symbol]
         };
 
-        if (type === 'BUY' || type === 'DIVIDEND' || type === 'SELL') {
+        if (
+          (dataSource !== 'MANUAL' && type === 'BUY') ||
+          type === 'DIVIDEND' ||
+          type === 'SELL'
+        ) {
           if (!assetProfile?.name) {
             throw new Error(
               `activities.${index}.symbol ("${symbol}") is not valid for the specified data source ("${dataSource}")`
