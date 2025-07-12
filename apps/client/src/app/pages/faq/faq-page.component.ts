@@ -1,8 +1,11 @@
 import { DataService } from '@ghostfolio/client/services/data.service';
 import { TabConfiguration } from '@ghostfolio/common/interfaces';
 import { hasPermission, permissions } from '@ghostfolio/common/permissions';
+import { publicRoutes } from '@ghostfolio/common/routes/routes';
 
 import { Component, OnDestroy, OnInit } from '@angular/core';
+import { addIcons } from 'ionicons';
+import { cloudyOutline, readerOutline, serverOutline } from 'ionicons/icons';
 import { DeviceDetectorService } from 'ngx-device-detector';
 import { Subject } from 'rxjs';
 
@@ -35,20 +38,22 @@ export class FaqPageComponent implements OnDestroy, OnInit {
       {
         iconName: 'reader-outline',
         label: $localize`General`,
-        path: ['/' + $localize`faq`]
+        routerLink: publicRoutes.faq.routerLink
       },
       {
         iconName: 'cloudy-outline',
         label: $localize`Cloud` + ' (SaaS)',
-        path: ['/' + $localize`faq`, 'saas'],
+        routerLink: publicRoutes.faq.subRoutes.saas.routerLink,
         showCondition: this.hasPermissionForSubscription
       },
       {
         iconName: 'server-outline',
         label: $localize`Self-Hosting`,
-        path: ['/' + $localize`faq`, $localize`self-hosting`]
+        routerLink: publicRoutes.faq.subRoutes.selfHosting.routerLink
       }
     ];
+
+    addIcons({ cloudyOutline, readerOutline, serverOutline });
   }
 
   public ngOnInit() {

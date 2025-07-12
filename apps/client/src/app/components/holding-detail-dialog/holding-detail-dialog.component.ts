@@ -14,6 +14,7 @@ import {
   User
 } from '@ghostfolio/common/interfaces';
 import { hasPermission, permissions } from '@ghostfolio/common/permissions';
+import { internalRoutes } from '@ghostfolio/common/routes/routes';
 import { GfActivitiesTableComponent } from '@ghostfolio/ui/activities-table';
 import { GfDataProviderCreditsComponent } from '@ghostfolio/ui/data-provider-credits';
 import { GfHistoricalMarketDataEditorComponent } from '@ghostfolio/ui/historical-market-data-editor';
@@ -45,9 +46,19 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { SortDirection } from '@angular/material/sort';
 import { MatTableDataSource } from '@angular/material/table';
 import { MatTabsModule } from '@angular/material/tabs';
-import { Router } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
+import { IonIcon } from '@ionic/angular/standalone';
 import { Account, MarketData, Tag } from '@prisma/client';
 import { format, isSameMonth, isToday, parseISO } from 'date-fns';
+import { addIcons } from 'ionicons';
+import {
+  createOutline,
+  flagOutline,
+  readerOutline,
+  serverOutline,
+  swapVerticalOutline,
+  walletOutline
+} from 'ionicons/icons';
 import { NgxSkeletonLoaderModule } from 'ngx-skeleton-loader';
 import { Subject } from 'rxjs';
 import { switchMap, takeUntil } from 'rxjs/operators';
@@ -69,12 +80,14 @@ import { HoldingDetailDialogParams } from './interfaces/interfaces';
     GfPortfolioProportionChartComponent,
     GfTagsSelectorComponent,
     GfValueComponent,
+    IonIcon,
     MatButtonModule,
     MatChipsModule,
     MatDialogModule,
     MatFormFieldModule,
     MatTabsModule,
-    NgxSkeletonLoaderModule
+    NgxSkeletonLoaderModule,
+    RouterModule
   ],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   selector: 'gf-holding-detail-dialog',
@@ -101,12 +114,12 @@ export class GfHoldingDetailDialogComponent implements OnDestroy, OnInit {
   public hasPermissionToCreateOwnTag: boolean;
   public hasPermissionToReadMarketDataOfOwnAssetProfile: boolean;
   public historicalDataItems: LineChartItem[];
-  public investment: number;
-  public investmentPrecision = 2;
+  public investmentInBaseCurrencyWithCurrencyEffect: number;
+  public investmentInBaseCurrencyWithCurrencyEffectPrecision = 2;
   public marketDataItems: MarketData[] = [];
   public marketPrice: number;
-  public maxPrice: number;
-  public minPrice: number;
+  public marketPriceMax: number;
+  public marketPriceMin: number;
   public netPerformance: number;
   public netPerformancePrecision = 2;
   public netPerformancePercent: number;
@@ -116,6 +129,8 @@ export class GfHoldingDetailDialogComponent implements OnDestroy, OnInit {
   public quantity: number;
   public quantityPrecision = 2;
   public reportDataGlitchMail: string;
+  public routerLinkAdminControlMarketData =
+    internalRoutes.adminControl.subRoutes.marketData.routerLink;
   public sectors: {
     [name: string]: { name: string; value: number };
   };
@@ -139,7 +154,16 @@ export class GfHoldingDetailDialogComponent implements OnDestroy, OnInit {
     private formBuilder: FormBuilder,
     private router: Router,
     private userService: UserService
-  ) {}
+  ) {
+    addIcons({
+      createOutline,
+      flagOutline,
+      readerOutline,
+      serverOutline,
+      swapVerticalOutline,
+      walletOutline
+    });
+  }
 
   public ngOnInit() {
     this.activityForm = this.formBuilder.group({
@@ -232,10 +256,10 @@ export class GfHoldingDetailDialogComponent implements OnDestroy, OnInit {
           feeInBaseCurrency,
           firstBuyDate,
           historicalData,
-          investment,
+          investmentInBaseCurrencyWithCurrencyEffect,
           marketPrice,
-          maxPrice,
-          minPrice,
+          marketPriceMax,
+          marketPriceMin,
           netPerformance,
           netPerformancePercent,
           netPerformancePercentWithCurrencyEffect,
@@ -287,18 +311,20 @@ export class GfHoldingDetailDialogComponent implements OnDestroy, OnInit {
             }
           );
 
-          this.investment = investment;
+          this.investmentInBaseCurrencyWithCurrencyEffect =
+            investmentInBaseCurrencyWithCurrencyEffect;
 
           if (
             this.data.deviceType === 'mobile' &&
-            this.investment >= NUMERICAL_PRECISION_THRESHOLD
+            this.investmentInBaseCurrencyWithCurrencyEffect >=
+              NUMERICAL_PRECISION_THRESHOLD
           ) {
-            this.investmentPrecision = 0;
+            this.investmentInBaseCurrencyWithCurrencyEffectPrecision = 0;
           }
 
           this.marketPrice = marketPrice;
-          this.maxPrice = maxPrice;
-          this.minPrice = minPrice;
+          this.marketPriceMax = marketPriceMax;
+          this.marketPriceMin = marketPriceMin;
           this.netPerformance = netPerformance;
 
           if (
@@ -449,10 +475,9 @@ export class GfHoldingDetailDialogComponent implements OnDestroy, OnInit {
         if (state?.user) {
           this.user = state.user;
 
-          this.hasPermissionToCreateOwnTag = hasPermission(
-            this.user.permissions,
-            permissions.createOwnTag
-          );
+          this.hasPermissionToCreateOwnTag =
+            hasPermission(this.user.permissions, permissions.createOwnTag) &&
+            this.user?.settings?.isExperimentalFeatures;
 
           this.tagsAvailable =
             this.user?.tags?.map((tag) => {
@@ -468,9 +493,12 @@ export class GfHoldingDetailDialogComponent implements OnDestroy, OnInit {
   }
 
   public onCloneActivity(aActivity: Activity) {
-    this.router.navigate(['/portfolio', 'activities'], {
-      queryParams: { activityId: aActivity.id, createDialog: true }
-    });
+    this.router.navigate(
+      internalRoutes.portfolio.subRoutes.activities.routerLink,
+      {
+        queryParams: { activityId: aActivity.id, createDialog: true }
+      }
+    );
 
     this.dialogRef.close();
   }
@@ -510,9 +538,12 @@ export class GfHoldingDetailDialogComponent implements OnDestroy, OnInit {
   }
 
   public onUpdateActivity(aActivity: Activity) {
-    this.router.navigate(['/portfolio', 'activities'], {
-      queryParams: { activityId: aActivity.id, editDialog: true }
-    });
+    this.router.navigate(
+      internalRoutes.portfolio.subRoutes.activities.routerLink,
+      {
+        queryParams: { activityId: aActivity.id, editDialog: true }
+      }
+    );
 
     this.dialogRef.close();
   }

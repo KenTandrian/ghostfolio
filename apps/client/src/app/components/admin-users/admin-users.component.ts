@@ -1,11 +1,10 @@
-import { ConfirmationDialogType } from '@ghostfolio/client/core/notification/confirmation-dialog/confirmation-dialog.type';
-import { NotificationService } from '@ghostfolio/client/core/notification/notification.service';
-import { AdminService } from '@ghostfolio/client/services/admin.service';
-import { DataService } from '@ghostfolio/client/services/data.service';
-import { ImpersonationStorageService } from '@ghostfolio/client/services/impersonation-storage.service';
-import { UserService } from '@ghostfolio/client/services/user/user.service';
+import { TokenStorageService } from '@ghostfolio/client/services/token-storage.service';
 import { DEFAULT_PAGE_SIZE } from '@ghostfolio/common/config';
-import { getDateFormatString, getEmojiFlag } from '@ghostfolio/common/helper';
+import {
+  getDateFnsLocale,
+  getDateFormatString,
+  getEmojiFlag
+} from '@ghostfolio/common/helper';
 import { AdminUsers, InfoItem, User } from '@ghostfolio/common/interfaces';
 import { hasPermission, permissions } from '@ghostfolio/common/permissions';
 
@@ -23,14 +22,28 @@ import {
   formatDistanceToNowStrict,
   parseISO
 } from 'date-fns';
+import { addIcons } from 'ionicons';
+import {
+  contractOutline,
+  ellipsisHorizontal,
+  keyOutline,
+  trashOutline
+} from 'ionicons/icons';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 
+import { ConfirmationDialogType } from '../../core/notification/confirmation-dialog/confirmation-dialog.type';
+import { NotificationService } from '../../core/notification/notification.service';
+import { AdminService } from '../../services/admin.service';
+import { DataService } from '../../services/data.service';
+import { ImpersonationStorageService } from '../../services/impersonation-storage.service';
+import { UserService } from '../../services/user/user.service';
+
 @Component({
   selector: 'gf-admin-users',
+  standalone: false,
   styleUrls: ['./admin-users.scss'],
-  templateUrl: './admin-users.html',
-  standalone: false
+  templateUrl: './admin-users.html'
 })
 export class AdminUsersComponent implements OnDestroy, OnInit {
   @ViewChild(MatPaginator) paginator: MatPaginator;
@@ -55,6 +68,7 @@ export class AdminUsersComponent implements OnDestroy, OnInit {
     private dataService: DataService,
     private impersonationStorageService: ImpersonationStorageService,
     private notificationService: NotificationService,
+    private tokenStorageService: TokenStorageService,
     private userService: UserService
   ) {
     this.info = this.dataService.fetchInfo();
@@ -104,6 +118,8 @@ export class AdminUsersComponent implements OnDestroy, OnInit {
           );
         }
       });
+
+    addIcons({ contractOutline, ellipsisHorizontal, keyOutline, trashOutline });
   }
 
   public ngOnInit() {
@@ -113,7 +129,8 @@ export class AdminUsersComponent implements OnDestroy, OnInit {
   public formatDistanceToNow(aDateString: string) {
     if (aDateString) {
       const distanceString = formatDistanceToNowStrict(parseISO(aDateString), {
-        addSuffix: true
+        addSuffix: true,
+        locale: getDateFnsLocale(this.user?.settings?.language)
       });
 
       return Math.abs(differenceInSeconds(parseISO(aDateString), new Date())) <
@@ -137,6 +154,32 @@ export class AdminUsersComponent implements OnDestroy, OnInit {
       },
       confirmType: ConfirmationDialogType.Warn,
       title: $localize`Do you really want to delete this user?`
+    });
+  }
+
+  public onGenerateAccessToken(aUserId: string) {
+    this.notificationService.confirm({
+      confirmFn: () => {
+        this.dataService
+          .updateUserAccessToken(aUserId)
+          .pipe(takeUntil(this.unsubscribeSubject))
+          .subscribe(({ accessToken }) => {
+            this.notificationService.alert({
+              discardFn: () => {
+                if (aUserId === this.user.id) {
+                  this.tokenStorageService.signOut();
+                  this.userService.remove();
+
+                  document.location.href = `/${document.documentElement.lang}`;
+                }
+              },
+              message: accessToken,
+              title: $localize`Security token`
+            });
+          });
+      },
+      confirmType: ConfirmationDialogType.Warn,
+      title: $localize`Do you really want to generate a new security token for this user?`
     });
   }
 

@@ -3,9 +3,12 @@ import { DataService } from '@ghostfolio/client/services/data.service';
 import { UserService } from '@ghostfolio/client/services/user/user.service';
 import { User } from '@ghostfolio/common/interfaces';
 import { hasPermission, permissions } from '@ghostfolio/common/permissions';
+import { publicRoutes } from '@ghostfolio/common/routes/routes';
 import { translate } from '@ghostfolio/ui/i18n';
 
 import { ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
+import { addIcons } from 'ionicons';
+import { checkmarkCircleOutline, checkmarkOutline } from 'ionicons/icons';
 import { StringValue } from 'ms';
 import { StripeService } from 'ngx-stripe';
 import { Subject } from 'rxjs';
@@ -40,8 +43,8 @@ export class PricingPageComponent implements OnDestroy, OnInit {
   public professionalDataProviderTooltipPremium = translate(
     'PROFESSIONAL_DATA_PROVIDER_TOOLTIP_PREMIUM'
   );
-  public routerLinkFeatures = ['/' + $localize`:snake-case:features`];
-  public routerLinkRegister = ['/' + $localize`:snake-case:register`];
+  public routerLinkFeatures = publicRoutes.features.routerLink;
+  public routerLinkRegister = publicRoutes.register.routerLink;
   public user: User;
 
   private unsubscribeSubject = new Subject<void>();
@@ -52,16 +55,18 @@ export class PricingPageComponent implements OnDestroy, OnInit {
     private notificationService: NotificationService,
     private stripeService: StripeService,
     private userService: UserService
-  ) {}
+  ) {
+    addIcons({ checkmarkCircleOutline, checkmarkOutline });
+  }
 
   public ngOnInit() {
-    const { baseCurrency, subscriptionOffers } = this.dataService.fetchInfo();
+    const { baseCurrency, subscriptionOffer } = this.dataService.fetchInfo();
     this.baseCurrency = baseCurrency;
 
-    this.coupon = subscriptionOffers?.default?.coupon;
-    this.durationExtension = subscriptionOffers?.default?.durationExtension;
-    this.label = subscriptionOffers?.default?.label;
-    this.price = subscriptionOffers?.default?.price;
+    this.coupon = subscriptionOffer?.coupon;
+    this.durationExtension = subscriptionOffer?.durationExtension;
+    this.label = subscriptionOffer?.label;
+    this.price = subscriptionOffer?.price;
 
     this.userService.stateChanged
       .pipe(takeUntil(this.unsubscribeSubject))
@@ -74,20 +79,13 @@ export class PricingPageComponent implements OnDestroy, OnInit {
             permissions.updateUserSettings
           );
 
-          this.coupon =
-            subscriptionOffers?.[this.user?.subscription?.offer]?.coupon;
-          this.couponId =
-            subscriptionOffers?.[this.user.subscription.offer]?.couponId;
+          this.coupon = this.user?.subscription?.offer?.coupon;
+          this.couponId = this.user?.subscription?.offer?.couponId;
           this.durationExtension =
-            subscriptionOffers?.[
-              this.user?.subscription?.offer
-            ]?.durationExtension;
-          this.label =
-            subscriptionOffers?.[this.user?.subscription?.offer]?.label;
-          this.price =
-            subscriptionOffers?.[this.user?.subscription?.offer]?.price;
-          this.priceId =
-            subscriptionOffers?.[this.user.subscription.offer]?.priceId;
+            this.user?.subscription?.offer?.durationExtension;
+          this.label = this.user?.subscription?.offer?.label;
+          this.price = this.user?.subscription?.offer?.price;
+          this.priceId = this.user?.subscription?.offer?.priceId;
 
           this.changeDetectorRef.markForCheck();
         }

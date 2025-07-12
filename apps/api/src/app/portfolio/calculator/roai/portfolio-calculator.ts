@@ -9,6 +9,7 @@ import {
 } from '@ghostfolio/common/interfaces';
 import { PortfolioSnapshot, TimelinePosition } from '@ghostfolio/common/models';
 import { DateRange } from '@ghostfolio/common/types';
+import { PerformanceCalculationType } from '@ghostfolio/common/types/performance-calculation-type.type';
 
 import { Logger } from '@nestjs/common';
 import { Big } from 'big.js';
@@ -107,9 +108,12 @@ export class RoaiPortfolioCalculator extends PortfolioCalculator {
       createdAt: new Date(),
       errors: [],
       historicalData: [],
-      totalLiabilitiesWithCurrencyEffect: new Big(0),
-      totalValuablesWithCurrencyEffect: new Big(0)
+      totalLiabilitiesWithCurrencyEffect: new Big(0)
     };
+  }
+
+  protected getPerformanceCalculationType() {
+    return PerformanceCalculationType.ROAI;
   }
 
   protected getSymbolMetrics({
@@ -176,8 +180,6 @@ export class RoaiPortfolioCalculator extends PortfolioCalculator {
     let totalLiabilitiesInBaseCurrency = new Big(0);
     let totalQuantityFromBuyTransactions = new Big(0);
     let totalUnits = new Big(0);
-    let totalValuables = new Big(0);
-    let totalValuablesInBaseCurrency = new Big(0);
     let valueAtStartDate: Big;
     let valueAtStartDateWithCurrencyEffect: Big;
 
@@ -221,9 +223,7 @@ export class RoaiPortfolioCalculator extends PortfolioCalculator {
         totalInvestment: new Big(0),
         totalInvestmentWithCurrencyEffect: new Big(0),
         totalLiabilities: new Big(0),
-        totalLiabilitiesInBaseCurrency: new Big(0),
-        totalValuables: new Big(0),
-        totalValuablesInBaseCurrency: new Big(0)
+        totalLiabilitiesInBaseCurrency: new Big(0)
       };
     }
 
@@ -233,7 +233,20 @@ export class RoaiPortfolioCalculator extends PortfolioCalculator {
     const startDateString = format(start, DATE_FORMAT);
 
     const unitPriceAtStartDate = marketSymbolMap[startDateString]?.[symbol];
-    const unitPriceAtEndDate = marketSymbolMap[endDateString]?.[symbol];
+    let unitPriceAtEndDate = marketSymbolMap[endDateString]?.[symbol];
+
+    let latestActivity = orders.at(-1);
+
+    if (
+      dataSource === 'MANUAL' &&
+      ['BUY', 'SELL'].includes(latestActivity?.type) &&
+      latestActivity?.unitPrice &&
+      !unitPriceAtEndDate
+    ) {
+      // For BUY / SELL activities with a MANUAL data source where no historical market price is available,
+      // the calculation should fall back to using the activity’s unit price.
+      unitPriceAtEndDate = latestActivity.unitPrice;
+    }
 
     if (
       !unitPriceAtEndDate ||
@@ -271,9 +284,7 @@ export class RoaiPortfolioCalculator extends PortfolioCalculator {
         totalInvestment: new Big(0),
         totalInvestmentWithCurrencyEffect: new Big(0),
         totalLiabilities: new Big(0),
-        totalLiabilitiesInBaseCurrency: new Big(0),
-        totalValuables: new Big(0),
-        totalValuablesInBaseCurrency: new Big(0)
+        totalLiabilitiesInBaseCurrency: new Big(0)
       };
     }
 
@@ -348,9 +359,10 @@ export class RoaiPortfolioCalculator extends PortfolioCalculator {
         });
       }
 
-      const lastOrder = orders.at(-1);
+      latestActivity = orders.at(-1);
 
-      lastUnitPrice = lastOrder.unitPriceFromMarketData ?? lastOrder.unitPrice;
+      lastUnitPrice =
+        latestActivity.unitPriceFromMarketData ?? latestActivity.unitPrice;
     }
 
     // Sort orders so that the start and end placeholder order are at the correct
@@ -409,13 +421,6 @@ export class RoaiPortfolioCalculator extends PortfolioCalculator {
         totalInterestInBaseCurrency = totalInterestInBaseCurrency.plus(
           interest.mul(exchangeRateAtOrderDate ?? 1)
         );
-      } else if (order.type === 'ITEM') {
-        const valuables = order.quantity.mul(order.unitPrice);
-
-        totalValuables = totalValuables.plus(valuables);
-        totalValuablesInBaseCurrency = totalValuablesInBaseCurrency.plus(
-          valuables.mul(exchangeRateAtOrderDate ?? 1)
-        );
       } else if (order.type === 'LIABILITY') {
         const liabilities = order.quantity.mul(order.unitPrice);
 
@@ -453,12 +458,19 @@ export class RoaiPortfolioCalculator extends PortfolioCalculator {
         );
       }
 
+      const marketPriceInBaseCurrency =
+        order.unitPriceFromMarketData?.mul(currentExchangeRate ?? 1) ??
+        new Big(0);
+      const marketPriceInBaseCurrencyWithCurrencyEffect =
+        order.unitPriceFromMarketData?.mul(exchangeRateAtOrderDate ?? 1) ??
+        new Big(0);
+
       const valueOfInvestmentBeforeTransaction = totalUnits.mul(
-        order.unitPriceInBaseCurrency
+        marketPriceInBaseCurrency
       );
 
       const valueOfInvestmentBeforeTransactionWithCurrencyEffect =
-        totalUnits.mul(order.unitPriceInBaseCurrencyWithCurrencyEffect);
+        totalUnits.mul(marketPriceInBaseCurrencyWithCurrencyEffect);
 
       if (!investmentAtStartDate && i >= indexOfStartOrder) {
         investmentAtStartDate = totalInvestment ?? new Big(0);
@@ -555,10 +567,10 @@ export class RoaiPortfolioCalculator extends PortfolioCalculator {
 
       totalUnits = totalUnits.plus(order.quantity.mul(getFactor(order.type)));
 
-      const valueOfInvestment = totalUnits.mul(order.unitPriceInBaseCurrency);
+      const valueOfInvestment = totalUnits.mul(marketPriceInBaseCurrency);
 
       const valueOfInvestmentWithCurrencyEffect = totalUnits.mul(
-        order.unitPriceInBaseCurrencyWithCurrencyEffect
+        marketPriceInBaseCurrencyWithCurrencyEffect
       );
 
       const grossPerformanceFromSell =
@@ -710,17 +722,23 @@ export class RoaiPortfolioCalculator extends PortfolioCalculator {
           investmentValuesWithCurrencyEffect[order.date] ?? new Big(0)
         ).add(transactionInvestmentWithCurrencyEffect);
 
+        // If duration is effectively zero (first day), use the actual investment as the base.
+        // Otherwise, use the calculated time-weighted average.
         timeWeightedInvestmentValues[order.date] =
-          totalInvestmentDays > 0
+          totalInvestmentDays > Number.EPSILON
             ? sumOfTimeWeightedInvestments.div(totalInvestmentDays)
-            : new Big(0);
+            : totalInvestment.gt(0)
+              ? totalInvestment
+              : new Big(0);
 
         timeWeightedInvestmentValuesWithCurrencyEffect[order.date] =
-          totalInvestmentDays > 0
+          totalInvestmentDays > Number.EPSILON
             ? sumOfTimeWeightedInvestmentsWithCurrencyEffect.div(
                 totalInvestmentDays
               )
-            : new Big(0);
+            : totalInvestmentWithCurrencyEffect.gt(0)
+              ? totalInvestmentWithCurrencyEffect
+              : new Big(0);
       }
 
       if (PortfolioCalculator.ENABLE_LOGGING) {
@@ -967,8 +985,6 @@ export class RoaiPortfolioCalculator extends PortfolioCalculator {
       totalInvestmentWithCurrencyEffect,
       totalLiabilities,
       totalLiabilitiesInBaseCurrency,
-      totalValuables,
-      totalValuablesInBaseCurrency,
       grossPerformance: totalGrossPerformance,
       grossPerformanceWithCurrencyEffect:
         totalGrossPerformanceWithCurrencyEffect,

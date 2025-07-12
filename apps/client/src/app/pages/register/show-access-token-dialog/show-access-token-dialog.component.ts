@@ -1,14 +1,25 @@
 import { DataService } from '@ghostfolio/client/services/data.service';
+import { publicRoutes } from '@ghostfolio/common/routes/routes';
 
 import {
   ChangeDetectionStrategy,
   ChangeDetectorRef,
   Component,
+  Inject,
   ViewChild
 } from '@angular/core';
+import { MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { MatStepper } from '@angular/material/stepper';
+import { addIcons } from 'ionicons';
+import {
+  arrowForwardOutline,
+  checkmarkOutline,
+  copyOutline
+} from 'ionicons/icons';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
+
+import { ShowAccessTokenDialogParams } from './interfaces/interfaces';
 
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -25,13 +36,18 @@ export class ShowAccessTokenDialog {
   public isCreateAccountButtonDisabled = true;
   public isDisclaimerChecked = false;
   public role: string;
+  public routerLinkAboutTermsOfService =
+    publicRoutes.about.subRoutes.termsOfService.routerLink;
 
   private unsubscribeSubject = new Subject<void>();
 
   public constructor(
     private changeDetectorRef: ChangeDetectorRef,
+    @Inject(MAT_DIALOG_DATA) public data: ShowAccessTokenDialogParams,
     private dataService: DataService
-  ) {}
+  ) {
+    addIcons({ arrowForwardOutline, checkmarkOutline, copyOutline });
+  }
 
   public createAccount() {
     this.dataService

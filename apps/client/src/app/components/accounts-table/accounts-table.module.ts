@@ -1,4 +1,4 @@
-import { GfAssetProfileIconComponent } from '@ghostfolio/client/components/asset-profile-icon/asset-profile-icon.component';
+import { GfEntityLogoComponent } from '@ghostfolio/ui/entity-logo';
 import { GfValueComponent } from '@ghostfolio/ui/value';
 
 import { CommonModule } from '@angular/common';
@@ -8,6 +8,7 @@ import { MatMenuModule } from '@angular/material/menu';
 import { MatSortModule } from '@angular/material/sort';
 import { MatTableModule } from '@angular/material/table';
 import { RouterModule } from '@angular/router';
+import { IonIcon } from '@ionic/angular/standalone';
 import { NgxSkeletonLoaderModule } from 'ngx-skeleton-loader';
 
 import { AccountsTableComponent } from './accounts-table.component';
@@ -17,8 +18,9 @@ import { AccountsTableComponent } from './accounts-table.component';
   exports: [AccountsTableComponent],
   imports: [
     CommonModule,
-    GfAssetProfileIconComponent,
+    GfEntityLogoComponent,
     GfValueComponent,
+    IonIcon,
     MatButtonModule,
     MatMenuModule,
     MatSortModule,

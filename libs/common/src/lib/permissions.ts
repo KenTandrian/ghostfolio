@@ -17,15 +17,17 @@ export const permissions = {
   createPlatform: 'createPlatform',
   createTag: 'createTag',
   createUserAccount: 'createUserAccount',
+  createWatchlistItem: 'createWatchlistItem',
   deleteAccess: 'deleteAccess',
-  deleteAccount: 'deleteAcccount',
-  deleteAccountBalance: 'deleteAcccountBalance',
+  deleteAccount: 'deleteAccount',
+  deleteAccountBalance: 'deleteAccountBalance',
   deleteAuthDevice: 'deleteAuthDevice',
   deleteOrder: 'deleteOrder',
   deleteOwnUser: 'deleteOwnUser',
   deletePlatform: 'deletePlatform',
   deleteTag: 'deleteTag',
   deleteUser: 'deleteUser',
+  deleteWatchlistItem: 'deleteWatchlistItem',
   enableDataProviderGhostfolio: 'enableDataProviderGhostfolio',
   enableFearAndGreedIndex: 'enableFearAndGreedIndex',
   enableImport: 'enableImport',
@@ -38,16 +40,20 @@ export const permissions = {
   impersonateAllUsers: 'impersonateAllUsers',
   readAiPrompt: 'readAiPrompt',
   readMarketData: 'readMarketData',
+  readMarketDataOfMarkets: 'readMarketDataOfMarkets',
   readMarketDataOfOwnAssetProfile: 'readMarketDataOfOwnAssetProfile',
   readPlatforms: 'readPlatforms',
   readTags: 'readTags',
+  readWatchlist: 'readWatchlist',
   reportDataGlitch: 'reportDataGlitch',
+  syncDemoUserAccount: 'syncDemoUserAccount',
   toggleReadOnlyMode: 'toggleReadOnlyMode',
   updateAccount: 'updateAccount',
   updateAuthDevice: 'updateAuthDevice',
   updateMarketData: 'updateMarketData',
   updateMarketDataOfOwnAssetProfile: 'updateMarketDataOfOwnAssetProfile',
   updateOrder: 'updateOrder',
+  updateOwnAccessToken: 'updateOwnAccessToken',
   updatePlatform: 'updatePlatform',
   updateTag: 'updateTag',
   updateUserSettings: 'updateUserSettings',
@@ -64,7 +70,9 @@ export function getPermissions(aRole: Role): string[] {
         permissions.createAccess,
         permissions.createAccount,
         permissions.createAccountBalance,
+        permissions.createWatchlistItem,
         permissions.deleteAccountBalance,
+        permissions.deleteWatchlistItem,
         permissions.createMarketData,
         permissions.createMarketDataOfOwnAssetProfile,
         permissions.createOrder,
@@ -75,7 +83,6 @@ export function getPermissions(aRole: Role): string[] {
         permissions.deleteAccount,
         permissions.deleteAuthDevice,
         permissions.deleteOrder,
-        permissions.deleteOwnUser,
         permissions.deletePlatform,
         permissions.deleteTag,
         permissions.deleteUser,
@@ -84,6 +91,7 @@ export function getPermissions(aRole: Role): string[] {
         permissions.readMarketDataOfOwnAssetProfile,
         permissions.readPlatforms,
         permissions.readTags,
+        permissions.readWatchlist,
         permissions.updateAccount,
         permissions.updateAuthDevice,
         permissions.updateMarketData,
@@ -100,7 +108,8 @@ export function getPermissions(aRole: Role): string[] {
         permissions.accessAssistant,
         permissions.accessHoldingsChart,
         permissions.createUserAccount,
-        permissions.readAiPrompt
+        permissions.readAiPrompt,
+        permissions.readWatchlist
       ];
 
     case 'USER':
@@ -113,14 +122,16 @@ export function getPermissions(aRole: Role): string[] {
         permissions.createMarketDataOfOwnAssetProfile,
         permissions.createOrder,
         permissions.createOwnTag,
+        permissions.createWatchlistItem,
         permissions.deleteAccess,
         permissions.deleteAccount,
         permissions.deleteAccountBalance,
         permissions.deleteAuthDevice,
         permissions.deleteOrder,
-        permissions.deleteOwnUser,
+        permissions.deleteWatchlistItem,
         permissions.readAiPrompt,
         permissions.readMarketDataOfOwnAssetProfile,
+        permissions.readWatchlist,
         permissions.updateAccount,
         permissions.updateAuthDevice,
         permissions.updateMarketDataOfOwnAssetProfile,
@@ -174,7 +185,7 @@ export function hasReadRestrictedAccessPermission({
     return false;
   }
 
-  const access = user.Access?.find(({ id }) => {
+  const access = user.accessesGet?.find(({ id }) => {
     return id === impersonationId;
   });
 
@@ -186,5 +197,5 @@ export function hasRole(aUser: UserWithSettings, aRole: Role) {
 }
 
 export function isRestrictedView(aUser: UserWithSettings) {
-  return aUser.Settings.settings.isRestrictedView ?? false;
+  return aUser.settings.settings.isRestrictedView ?? false;
 }

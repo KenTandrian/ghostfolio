@@ -1,5 +1,6 @@
 import { PlatformService } from '@ghostfolio/api/app/platform/platform.service';
 import { RedisCacheService } from '@ghostfolio/api/app/redis-cache/redis-cache.service';
+import { SubscriptionService } from '@ghostfolio/api/app/subscription/subscription.service';
 import { UserService } from '@ghostfolio/api/app/user/user.service';
 import { BenchmarkService } from '@ghostfolio/api/services/benchmark/benchmark.service';
 import { ConfigurationService } from '@ghostfolio/api/services/configuration/configuration.service';
@@ -13,21 +14,15 @@ import {
   PROPERTY_DEMO_USER_ID,
   PROPERTY_IS_READ_ONLY_MODE,
   PROPERTY_SLACK_COMMUNITY_USERS,
-  PROPERTY_STRIPE_CONFIG,
-  ghostfolioFearAndGreedIndexDataSource
+  ghostfolioFearAndGreedIndexDataSourceStocks
 } from '@ghostfolio/common/config';
 import {
   DATE_FORMAT,
   encodeDataSource,
   extractNumberFromString
 } from '@ghostfolio/common/helper';
-import {
-  InfoItem,
-  Statistics,
-  SubscriptionOffer
-} from '@ghostfolio/common/interfaces';
+import { InfoItem, Statistics } from '@ghostfolio/common/interfaces';
 import { permissions } from '@ghostfolio/common/permissions';
-import { SubscriptionOfferKey } from '@ghostfolio/common/types';
 
 import { Injectable, Logger } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
@@ -46,6 +41,7 @@ export class InfoService {
     private readonly platformService: PlatformService,
     private readonly propertyService: PropertyService,
     private readonly redisCacheService: RedisCacheService,
+    private readonly subscriptionService: SubscriptionService,
     private readonly userService: UserService
   ) {}
 
@@ -58,19 +54,20 @@ export class InfoService {
     if (this.configurationService.get('ENABLE_FEATURE_FEAR_AND_GREED_INDEX')) {
       if (this.configurationService.get('ENABLE_FEATURE_SUBSCRIPTION')) {
         info.fearAndGreedDataSource = encodeDataSource(
-          ghostfolioFearAndGreedIndexDataSource
+          ghostfolioFearAndGreedIndexDataSourceStocks
         );
       } else {
-        info.fearAndGreedDataSource = ghostfolioFearAndGreedIndexDataSource;
+        info.fearAndGreedDataSource =
+          ghostfolioFearAndGreedIndexDataSourceStocks;
       }
 
       globalPermissions.push(permissions.enableFearAndGreedIndex);
     }
 
     if (this.configurationService.get('ENABLE_FEATURE_READ_ONLY_MODE')) {
-      isReadOnlyMode = (await this.propertyService.getByKey(
+      isReadOnlyMode = await this.propertyService.getByKey<boolean>(
         PROPERTY_IS_READ_ONLY_MODE
-      )) as boolean;
+      );
     }
 
     if (this.configurationService.get('ENABLE_FEATURE_SOCIAL_LOGIN')) {
@@ -85,9 +82,9 @@ export class InfoService {
       globalPermissions.push(permissions.enableSubscription);
 
       info.countriesOfSubscribers =
-        ((await this.propertyService.getByKey(
+        (await this.propertyService.getByKey<string[]>(
           PROPERTY_COUNTRIES_OF_SUBSCRIBERS
-        )) as string[]) ?? [];
+        )) ?? [];
       info.stripePublicKey = this.configurationService.get('STRIPE_PUBLIC_KEY');
     }
 
@@ -101,7 +98,7 @@ export class InfoService {
       isUserSignupEnabled,
       platforms,
       statistics,
-      subscriptionOffers
+      subscriptionOffer
     ] = await Promise.all([
       this.benchmarkService.getBenchmarkAssetProfiles(),
       this.getDemoAuthToken(),
@@ -110,7 +107,7 @@ export class InfoService {
         orderBy: { name: 'asc' }
       }),
       this.getStatistics(),
-      this.getSubscriptionOffers()
+      this.subscriptionService.getSubscriptionOffer({ key: 'default' })
     ]);
 
     if (isUserSignupEnabled) {
@@ -125,7 +122,7 @@ export class InfoService {
       isReadOnlyMode,
       platforms,
       statistics,
-      subscriptionOffers,
+      subscriptionOffer,
       baseCurrency: DEFAULT_CURRENCY,
       currencies: this.exchangeRateDataService.getCurrencies()
     };
@@ -137,11 +134,11 @@ export class InfoService {
         AND: [
           {
             NOT: {
-              Analytics: null
+              analytics: null
             }
           },
           {
-            Analytics: {
+            analytics: {
               lastRequestAt: {
                 gt: subDays(new Date(), aDays)
               }
@@ -220,7 +217,7 @@ export class InfoService {
         AND: [
           {
             NOT: {
-              Analytics: null
+              analytics: null
             }
           },
           {
@@ -234,15 +231,15 @@ export class InfoService {
   }
 
   private async countSlackCommunityUsers() {
-    return (await this.propertyService.getByKey(
+    return await this.propertyService.getByKey<string>(
       PROPERTY_SLACK_COMMUNITY_USERS
-    )) as string;
+    );
   }
 
   private async getDemoAuthToken() {
-    const demoUserId = (await this.propertyService.getByKey(
+    const demoUserId = await this.propertyService.getByKey<string>(
       PROPERTY_DEMO_USER_ID
-    )) as string;
+    );
 
     if (demoUserId) {
       return this.jwtService.sign({
@@ -299,25 +296,12 @@ export class InfoService {
     return statistics;
   }
 
-  private async getSubscriptionOffers(): Promise<{
-    [offer in SubscriptionOfferKey]: SubscriptionOffer;
-  }> {
-    if (!this.configurationService.get('ENABLE_FEATURE_SUBSCRIPTION')) {
-      return undefined;
-    }
-
-    return (
-      ((await this.propertyService.getByKey(PROPERTY_STRIPE_CONFIG)) as any) ??
-      {}
-    );
-  }
-
   private async getUptime(): Promise<number> {
     {
       try {
-        const monitorId = (await this.propertyService.getByKey(
+        const monitorId = await this.propertyService.getByKey<string>(
           PROPERTY_BETTER_UPTIME_MONITOR_ID
-        )) as string;
+        );
 
         const { data } = await fetch(
           `https://uptime.betterstack.com/api/v2/monitors/${monitorId}/sla?from=${format(

@@ -1,9 +1,10 @@
 import { AdminMarketDataService } from '@ghostfolio/client/components/admin-market-data/admin-market-data.service';
-import { GfAssetProfileIconComponent } from '@ghostfolio/client/components/asset-profile-icon/asset-profile-icon.component';
 import { GfCurrencySelectorComponent } from '@ghostfolio/ui/currency-selector';
+import { GfEntityLogoComponent } from '@ghostfolio/ui/entity-logo';
 import { GfHistoricalMarketDataEditorComponent } from '@ghostfolio/ui/historical-market-data-editor';
 import { GfLineChartComponent } from '@ghostfolio/ui/line-chart';
 import { GfPortfolioProportionChartComponent } from '@ghostfolio/ui/portfolio-proportion-chart';
+import { GfSymbolAutocompleteComponent } from '@ghostfolio/ui/symbol-autocomplete';
 import { GfValueComponent } from '@ghostfolio/ui/value';
 
 import { TextFieldModule } from '@angular/cdk/text-field';
@@ -18,6 +19,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatSelectModule } from '@angular/material/select';
 import { MatSnackBarModule } from '@angular/material/snack-bar';
+import { IonIcon } from '@ionic/angular/standalone';
 
 import { AssetProfileDialog } from './asset-profile-dialog.component';
 
@@ -26,12 +28,14 @@ import { AssetProfileDialog } from './asset-profile-dialog.component';
   imports: [
     CommonModule,
     FormsModule,
-    GfAssetProfileIconComponent,
     GfCurrencySelectorComponent,
+    GfEntityLogoComponent,
     GfHistoricalMarketDataEditorComponent,
     GfLineChartComponent,
     GfPortfolioProportionChartComponent,
+    GfSymbolAutocompleteComponent,
     GfValueComponent,
+    IonIcon,
     MatButtonModule,
     MatCheckboxModule,
     MatDialogModule,

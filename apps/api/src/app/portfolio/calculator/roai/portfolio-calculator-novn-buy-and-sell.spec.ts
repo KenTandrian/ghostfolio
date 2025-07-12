@@ -6,10 +6,7 @@ import {
   symbolProfileDummyData,
   userDummyData
 } from '@ghostfolio/api/app/portfolio/calculator/portfolio-calculator-test-utils';
-import {
-  PerformanceCalculationType,
-  PortfolioCalculatorFactory
-} from '@ghostfolio/api/app/portfolio/calculator/portfolio-calculator.factory';
+import { PortfolioCalculatorFactory } from '@ghostfolio/api/app/portfolio/calculator/portfolio-calculator.factory';
 import { CurrentRateService } from '@ghostfolio/api/app/portfolio/current-rate.service';
 import { CurrentRateServiceMock } from '@ghostfolio/api/app/portfolio/current-rate.service.mock';
 import { RedisCacheService } from '@ghostfolio/api/app/redis-cache/redis-cache.service';
@@ -19,6 +16,7 @@ import { ExchangeRateDataService } from '@ghostfolio/api/services/exchange-rate-
 import { PortfolioSnapshotService } from '@ghostfolio/api/services/queues/portfolio-snapshot/portfolio-snapshot.service';
 import { PortfolioSnapshotServiceMock } from '@ghostfolio/api/services/queues/portfolio-snapshot/portfolio-snapshot.service.mock';
 import { parseDate } from '@ghostfolio/common/helper';
+import { PerformanceCalculationType } from '@ghostfolio/common/types/performance-calculation-type.type';
 
 import { Big } from 'big.js';
 import { join } from 'path';
@@ -67,7 +65,7 @@ describe('PortfolioCalculator', () => {
     activityDtos = loadActivityExportFile(
       join(
         __dirname,
-        '../../../../../../../test/import/ok-novn-buy-and-sell.json'
+        '../../../../../../../test/import/ok/novn-buy-and-sell.json'
       )
     );
   });
@@ -105,13 +103,15 @@ describe('PortfolioCalculator', () => {
         ...activityDummyData,
         ...activity,
         date: parseDate(activity.date),
+        feeInAssetProfileCurrency: activity.fee,
         SymbolProfile: {
           ...symbolProfileDummyData,
           currency: activity.currency,
           dataSource: activity.dataSource,
           name: 'Novartis AG',
           symbol: activity.symbol
-        }
+        },
+        unitPriceInAssetProfileCurrency: activity.unitPrice
       }));
 
       const portfolioCalculator = portfolioCalculatorFactory.createCalculator({
@@ -145,19 +145,23 @@ describe('PortfolioCalculator', () => {
         valueWithCurrencyEffect: 0
       });
 
+      /**
+       * Closing price on 2022-03-07 is unknown,
+       * hence it uses the last unit price (2022-04-11): 87.8
+       */
       expect(portfolioSnapshot.historicalData[1]).toEqual({
         date: '2022-03-07',
         investmentValueWithCurrencyEffect: 151.6,
-        netPerformance: 0,
-        netPerformanceInPercentage: 0,
-        netPerformanceInPercentageWithCurrencyEffect: 0,
-        netPerformanceWithCurrencyEffect: 0,
-        netWorth: 151.6,
+        netPerformance: 24, // 2 * (87.8 - 75.8) = 24
+        netPerformanceInPercentage: 0.158311345646438, // 24 ÷ 151.6 = 0.158311345646438
+        netPerformanceInPercentageWithCurrencyEffect: 0.158311345646438, // 24 ÷ 151.6 = 0.158311345646438
+        netPerformanceWithCurrencyEffect: 24,
+        netWorth: 175.6, // 2 * 87.8 = 175.6
         totalAccountBalance: 0,
         totalInvestment: 151.6,
         totalInvestmentValueWithCurrencyEffect: 151.6,
-        value: 151.6,
-        valueWithCurrencyEffect: 151.6
+        value: 175.6, // 2 * 87.8 = 175.6
+        valueWithCurrencyEffect: 175.6
       });
 
       expect(
@@ -224,8 +228,7 @@ describe('PortfolioCalculator', () => {
         totalInterestWithCurrencyEffect: new Big('0'),
         totalInvestment: new Big('0'),
         totalInvestmentWithCurrencyEffect: new Big('0'),
-        totalLiabilitiesWithCurrencyEffect: new Big('0'),
-        totalValuablesWithCurrencyEffect: new Big('0')
+        totalLiabilitiesWithCurrencyEffect: new Big('0')
       });
 
       expect(portfolioSnapshot.historicalData.at(-1)).toMatchObject(

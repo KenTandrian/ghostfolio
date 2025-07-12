@@ -159,7 +159,8 @@ export class DataGatheringService {
     );
 
     if (!assetProfileIdentifiers) {
-      assetProfileIdentifiers = await this.getAllAssetProfileIdentifiers();
+      assetProfileIdentifiers =
+        await this.getAllActiveAssetProfileIdentifiers();
     }
 
     if (assetProfileIdentifiers.length <= 0) {
@@ -296,11 +297,14 @@ export class DataGatheringService {
     );
   }
 
-  public async getAllAssetProfileIdentifiers(): Promise<
+  public async getAllActiveAssetProfileIdentifiers(): Promise<
     AssetProfileIdentifier[]
   > {
     const symbolProfiles = await this.prismaService.symbolProfile.findMany({
-      orderBy: [{ symbol: 'asc' }]
+      orderBy: [{ symbol: 'asc' }],
+      where: {
+        isActive: true
+      }
     });
 
     return symbolProfiles
@@ -370,9 +374,11 @@ export class DataGatheringService {
     withUserSubscription?: boolean;
   }): Promise<IDataGatheringItem[]> {
     const symbolProfiles =
-      await this.symbolProfileService.getSymbolProfilesByUserSubscription({
-        withUserSubscription
-      });
+      await this.symbolProfileService.getActiveSymbolProfilesByUserSubscription(
+        {
+          withUserSubscription
+        }
+      );
 
     const assetProfileIdentifiersWithCompleteMarketData =
       await this.getAssetProfileIdentifiersWithCompleteMarketData();
@@ -400,9 +406,9 @@ export class DataGatheringService {
   private async getSymbolsMax(): Promise<IDataGatheringItem[]> {
     const benchmarkAssetProfileIdMap: { [key: string]: boolean } = {};
     (
-      ((await this.propertyService.getByKey(
+      (await this.propertyService.getByKey<BenchmarkProperty[]>(
         PROPERTY_BENCHMARKS
-      )) as BenchmarkProperty[]) ?? []
+      )) ?? []
     ).forEach(({ symbolProfileId }) => {
       benchmarkAssetProfileIdMap[symbolProfileId] = true;
     });
@@ -427,15 +433,18 @@ export class DataGatheringService {
       await this.prismaService.symbolProfile.findMany({
         orderBy: [{ symbol: 'asc' }],
         select: {
-          dataSource: true,
-          id: true,
-          Order: {
+          activities: {
             orderBy: [{ date: 'asc' }],
             select: { date: true },
             take: 1
           },
+          dataSource: true,
+          id: true,
           scraperConfiguration: true,
           symbol: true
+        },
+        where: {
+          isActive: true
         }
       })
     )
@@ -450,7 +459,7 @@ export class DataGatheringService {
         );
       })
       .map((symbolProfile) => {
-        let date = symbolProfile.Order?.[0]?.date ?? startDate;
+        let date = symbolProfile.activities?.[0]?.date ?? startDate;
 
         if (benchmarkAssetProfileIdMap[symbolProfile.id]) {
           date = this.getEarliestDate(startDate);

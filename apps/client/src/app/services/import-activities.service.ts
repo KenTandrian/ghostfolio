@@ -126,6 +126,7 @@ export class ImportActivitiesService {
   private convertToCreateOrderDto({
     accountId,
     comment,
+    currency,
     date,
     fee,
     quantity,
@@ -142,7 +143,7 @@ export class ImportActivitiesService {
       type,
       unitPrice,
       updateAccountBalance,
-      currency: SymbolProfile.currency,
+      currency: currency ?? SymbolProfile.currency,
       dataSource: SymbolProfile.dataSource,
       date: date.toString(),
       symbol: SymbolProfile.symbol
@@ -342,8 +343,6 @@ export class ImportActivitiesService {
             return 'FEE';
           case 'interest':
             return 'INTEREST';
-          case 'item':
-            return 'ITEM';
           case 'liability':
             return 'LIABILITY';
           case 'sell':
