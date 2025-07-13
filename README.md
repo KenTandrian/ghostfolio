@@ -7,7 +7,7 @@
 **Open Source Wealth Management Software**
 
 [**Ghostfol.io**](https://ghostfol.io) | [**Live Demo**](https://ghostfol.io/en/demo) | [**Ghostfolio Premium**](https://ghostfol.io/en/pricing) | [**FAQ**](https://ghostfol.io/en/faq) |
-[**Blog**](https://ghostfol.io/en/blog) | [**Slack**](https://join.slack.com/t/ghostfolio/shared_invite/zt-vsaan64h-F_I0fEo5M0P88lP9ibCxFg) | [**X**](https://x.com/ghostfolio_)
+[**Blog**](https://ghostfol.io/en/blog) | [**LinkedIn**](https://www.linkedin.com/company/ghostfolio) | [**Slack**](https://join.slack.com/t/ghostfolio/shared_invite/zt-vsaan64h-F_I0fEo5M0P88lP9ibCxFg) | [**X**](https://x.com/ghostfolio_)
 
 [![Shield: Buy me a coffee](https://img.shields.io/badge/Buy%20me%20a%20coffee-Support-yellow?logo=buymeacoffee)](https://www.buymeacoffee.com/ghostfolio)
 [![Shield: Contributions Welcome](https://img.shields.io/badge/Contributions-Welcome-limegreen.svg)](#contributing) [![Shield: Docker Pulls](https://img.shields.io/docker/pulls/ghostfolio/ghostfolio?label=Docker%20Pulls)](https://hub.docker.com/r/ghostfolio/ghostfolio)
@@ -138,7 +138,6 @@ docker compose -f docker/docker-compose.build.yml up -d
 #### Upgrade Version
 
 1. Update the _Ghostfolio_ Docker image
-
    - Increase the version of the `ghostfolio/ghostfolio` Docker image in `docker/docker-compose.yml`
    - Run the following command if `ghostfolio:latest` is set:
      ```bash
@@ -222,18 +221,18 @@ Deprecated: `GET http://localhost:3333/api/v1/auth/anonymous/<INSERT_SECURITY_TO
 }
 ```
 
-| Field        | Type                | Description                                                                   |
-| ------------ | ------------------- | ----------------------------------------------------------------------------- |
-| `accountId`  | `string` (optional) | Id of the account                                                             |
-| `comment`    | `string` (optional) | Comment of the activity                                                       |
-| `currency`   | `string`            | `CHF` \| `EUR` \| `USD` etc.                                                  |
-| `dataSource` | `string`            | `COINGECKO` \| `MANUAL` (for type `ITEM`) \| `YAHOO`                          |
-| `date`       | `string`            | Date in the format `ISO-8601`                                                 |
-| `fee`        | `number`            | Fee of the activity                                                           |
-| `quantity`   | `number`            | Quantity of the activity                                                      |
-| `symbol`     | `string`            | Symbol of the activity (suitable for `dataSource`)                            |
-| `type`       | `string`            | `BUY` \| `DIVIDEND` \| `FEE` \| `INTEREST` \| `ITEM` \| `LIABILITY` \| `SELL` |
-| `unitPrice`  | `number`            | Price per unit of the activity                                                |
+| Field        | Type                | Description                                                         |
+| ------------ | ------------------- | ------------------------------------------------------------------- |
+| `accountId`  | `string` (optional) | Id of the account                                                   |
+| `comment`    | `string` (optional) | Comment of the activity                                             |
+| `currency`   | `string`            | `CHF` \| `EUR` \| `USD` etc.                                        |
+| `dataSource` | `string`            | `COINGECKO` \| `MANUAL` \| `YAHOO`                                  |
+| `date`       | `string`            | Date in the format `ISO-8601`                                       |
+| `fee`        | `number`            | Fee of the activity                                                 |
+| `quantity`   | `number`            | Quantity of the activity                                            |
+| `symbol`     | `string`            | Symbol of the activity (suitable for `dataSource`)                  |
+| `type`       | `string`            | `BUY` \| `DIVIDEND` \| `FEE` \| `INTEREST` \| `LIABILITY` \| `SELL` |
+| `unitPrice`  | `number`            | Price per unit of the activity                                      |
 
 #### Response
 

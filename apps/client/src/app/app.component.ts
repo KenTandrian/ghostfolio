@@ -3,6 +3,7 @@ import { HoldingDetailDialogParams } from '@ghostfolio/client/components/holding
 import { getCssVariable } from '@ghostfolio/common/helper';
 import { InfoItem, User } from '@ghostfolio/common/interfaces';
 import { hasPermission, permissions } from '@ghostfolio/common/permissions';
+import { internalRoutes, publicRoutes } from '@ghostfolio/common/routes/routes';
 import { ColorScheme } from '@ghostfolio/common/types';
 
 import { DOCUMENT } from '@angular/common';
@@ -25,6 +26,8 @@ import {
 } from '@angular/router';
 import { DataSource } from '@prisma/client';
 import { Chart } from 'chart.js';
+import { addIcons } from 'ionicons';
+import { openOutline } from 'ionicons/icons';
 import { DeviceDetectorService } from 'ngx-device-detector';
 import { Subject } from 'rxjs';
 import { filter, takeUntil } from 'rxjs/operators';
@@ -63,25 +66,23 @@ export class AppComponent implements OnDestroy, OnInit {
   public hasTabs = false;
   public info: InfoItem;
   public pageTitle: string;
-  public routerLinkAbout = ['/' + $localize`:snake-case:about`];
-  public routerLinkAboutChangelog = [
-    '/' + $localize`:snake-case:about`,
-    'changelog'
-  ];
-  public routerLinkAboutLicense = [
-    '/' + $localize`:snake-case:about`,
-    $localize`:snake-case:license`
-  ];
-  public routerLinkAboutPrivacyPolicy = [
-    '/' + $localize`:snake-case:about`,
-    $localize`:snake-case:privacy-policy`
-  ];
-  public routerLinkFaq = ['/' + $localize`:snake-case:faq`];
-  public routerLinkFeatures = ['/' + $localize`:snake-case:features`];
-  public routerLinkMarkets = ['/' + $localize`:snake-case:markets`];
-  public routerLinkPricing = ['/' + $localize`:snake-case:pricing`];
-  public routerLinkRegister = ['/' + $localize`:snake-case:register`];
-  public routerLinkResources = ['/' + $localize`:snake-case:resources`];
+  public routerLinkAbout = publicRoutes.about.routerLink;
+  public routerLinkAboutChangelog =
+    publicRoutes.about.subRoutes.changelog.routerLink;
+  public routerLinkAboutLicense =
+    publicRoutes.about.subRoutes.license.routerLink;
+  public routerLinkAboutPrivacyPolicy =
+    publicRoutes.about.subRoutes.privacyPolicy.routerLink;
+  public routerLinkAboutTermsOfService =
+    publicRoutes.about.subRoutes.termsOfService.routerLink;
+  public routerLinkBlog = publicRoutes.blog.routerLink;
+  public routerLinkFaq = publicRoutes.faq.routerLink;
+  public routerLinkFeatures = publicRoutes.features.routerLink;
+  public routerLinkMarkets = publicRoutes.markets.routerLink;
+  public routerLinkOpenStartup = publicRoutes.openStartup.routerLink;
+  public routerLinkPricing = publicRoutes.pricing.routerLink;
+  public routerLinkRegister = publicRoutes.register.routerLink;
+  public routerLinkResources = publicRoutes.resources.routerLink;
   public showFooter = false;
   public user: User;
 
@@ -118,6 +119,8 @@ export class AppComponent implements OnDestroy, OnInit {
           });
         }
       });
+
+    addIcons({ openOutline });
   }
 
   public ngOnInit() {
@@ -140,8 +143,8 @@ export class AppComponent implements OnDestroy, OnInit {
     );
 
     this.hasPromotion =
-      !!this.info?.subscriptionOffers?.default?.coupon ||
-      !!this.info?.subscriptionOffers?.default?.durationExtension;
+      !!this.info?.subscriptionOffer?.coupon ||
+      !!this.info?.subscriptionOffer?.durationExtension;
 
     this.impersonationStorageService
       .onChangeHasImpersonation()
@@ -160,12 +163,14 @@ export class AppComponent implements OnDestroy, OnInit {
         this.currentSubRoute = urlSegments[1]?.path;
 
         if (
-          (this.currentRoute === 'home' && !this.currentSubRoute) ||
-          (this.currentRoute === 'home' &&
-            this.currentSubRoute === 'holdings') ||
-          (this.currentRoute === 'portfolio' && !this.currentSubRoute) ||
-          (this.currentRoute === 'zen' && !this.currentSubRoute) ||
-          (this.currentRoute === 'zen' && this.currentSubRoute === 'holdings')
+          ((this.currentRoute === internalRoutes.home.path &&
+            !this.currentSubRoute) ||
+            (this.currentRoute === internalRoutes.home.path &&
+              this.currentSubRoute ===
+                internalRoutes.home.subRoutes.holdings.path) ||
+            (this.currentRoute === internalRoutes.portfolio.path &&
+              !this.currentSubRoute)) &&
+          this.user?.settings?.viewMode !== 'ZEN'
         ) {
           this.hasPermissionToChangeDateRange = true;
         } else {
@@ -173,14 +178,20 @@ export class AppComponent implements OnDestroy, OnInit {
         }
 
         if (
-          (this.currentRoute === 'home' &&
-            this.currentSubRoute === 'holdings') ||
-          (this.currentRoute === 'portfolio' && !this.currentSubRoute) ||
-          (this.currentRoute === 'portfolio' &&
-            this.currentSubRoute === 'activities') ||
-          (this.currentRoute === 'portfolio' &&
-            this.currentSubRoute === 'allocations') ||
-          (this.currentRoute === 'zen' && this.currentSubRoute === 'holdings')
+          (this.currentRoute === internalRoutes.home.path &&
+            this.currentSubRoute ===
+              internalRoutes.home.subRoutes.holdings.path) ||
+          (this.currentRoute === internalRoutes.portfolio.path &&
+            !this.currentSubRoute) ||
+          (this.currentRoute === internalRoutes.portfolio.path &&
+            this.currentSubRoute ===
+              internalRoutes.portfolio.subRoutes.activities.path) ||
+          (this.currentRoute === internalRoutes.portfolio.path &&
+            this.currentSubRoute ===
+              internalRoutes.portfolio.subRoutes.allocations.path) ||
+          (this.currentRoute === internalRoutes.zen.path &&
+            this.currentSubRoute ===
+              internalRoutes.home.subRoutes.holdings.path)
         ) {
           this.hasPermissionToChangeFilters = true;
         } else {
@@ -188,25 +199,25 @@ export class AppComponent implements OnDestroy, OnInit {
         }
 
         this.hasTabs =
-          (this.currentRoute === this.routerLinkAbout[0].slice(1) ||
-            this.currentRoute === this.routerLinkFaq[0].slice(1) ||
-            this.currentRoute === this.routerLinkResources[0].slice(1) ||
-            this.currentRoute === 'account' ||
-            this.currentRoute === 'admin' ||
-            this.currentRoute === 'home' ||
-            this.currentRoute === 'portfolio' ||
-            this.currentRoute === 'zen') &&
+          (this.currentRoute === publicRoutes.about.path ||
+            this.currentRoute === publicRoutes.faq.path ||
+            this.currentRoute === publicRoutes.resources.path ||
+            this.currentRoute === internalRoutes.account.path ||
+            this.currentRoute === internalRoutes.adminControl.path ||
+            this.currentRoute === internalRoutes.home.path ||
+            this.currentRoute === internalRoutes.portfolio.path ||
+            this.currentRoute === internalRoutes.zen.path) &&
           this.deviceType !== 'mobile';
 
         this.showFooter =
-          (this.currentRoute === 'blog' ||
-            this.currentRoute === this.routerLinkFeatures[0].slice(1) ||
-            this.currentRoute === this.routerLinkMarkets[0].slice(1) ||
-            this.currentRoute === 'open' ||
-            this.currentRoute === 'p' ||
-            this.currentRoute === this.routerLinkPricing[0].slice(1) ||
-            this.currentRoute === this.routerLinkRegister[0].slice(1) ||
-            this.currentRoute === 'start') &&
+          (this.currentRoute === publicRoutes.blog.path ||
+            this.currentRoute === publicRoutes.features.path ||
+            this.currentRoute === publicRoutes.markets.path ||
+            this.currentRoute === publicRoutes.openStartup.path ||
+            this.currentRoute === publicRoutes.public.path ||
+            this.currentRoute === publicRoutes.pricing.path ||
+            this.currentRoute === publicRoutes.register.path ||
+            this.currentRoute === publicRoutes.start.path) &&
           this.deviceType !== 'mobile';
 
         if (this.deviceType === 'mobile') {
@@ -239,12 +250,8 @@ export class AppComponent implements OnDestroy, OnInit {
           this.canCreateAccount || !!this.user?.systemMessage;
 
         this.hasPromotion =
-          !!this.info?.subscriptionOffers?.[
-            this.user?.subscription?.offer ?? 'default'
-          ]?.coupon ||
-          !!this.info?.subscriptionOffers?.[
-            this.user?.subscription?.offer ?? 'default'
-          ]?.durationExtension;
+          !!this.user?.subscription?.offer?.coupon ||
+          !!this.user?.subscription?.offer?.durationExtension;
 
         this.initializeTheme(this.user?.settings.colorScheme);
 
@@ -317,6 +324,10 @@ export class AppComponent implements OnDestroy, OnInit {
             colorScheme: this.user?.settings?.colorScheme,
             deviceType: this.deviceType,
             hasImpersonationId: this.hasImpersonationId,
+            hasPermissionToAccessAdminControl: hasPermission(
+              this.user?.permissions,
+              permissions.accessAdminControl
+            ),
             hasPermissionToCreateOrder:
               !this.hasImpersonationId &&
               hasPermission(this.user?.permissions, permissions.createOrder) &&

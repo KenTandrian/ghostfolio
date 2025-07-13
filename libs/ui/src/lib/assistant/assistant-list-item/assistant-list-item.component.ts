@@ -1,5 +1,10 @@
 import { GfSymbolModule } from '@ghostfolio/client/pipes/symbol/symbol.module';
-import { ISearchResultItem } from '@ghostfolio/ui/assistant/interfaces/interfaces';
+import { internalRoutes } from '@ghostfolio/common/routes/routes';
+import { SearchMode } from '@ghostfolio/ui/assistant/enums/search-mode';
+import {
+  IAssetSearchResultItem,
+  ISearchResultItem
+} from '@ghostfolio/ui/assistant/interfaces/interfaces';
 
 import { FocusableOption } from '@angular/cdk/a11y';
 import {
@@ -32,7 +37,6 @@ export class GfAssistantListItemComponent
   }
 
   @Input() item: ISearchResultItem;
-  @Input() mode: 'assetProfile' | 'holding';
 
   @Output() clicked = new EventEmitter<void>();
 
@@ -45,23 +49,26 @@ export class GfAssistantListItemComponent
   public constructor(private changeDetectorRef: ChangeDetectorRef) {}
 
   public ngOnChanges() {
-    const dataSource = this.item?.dataSource;
-    const symbol = this.item?.symbol;
+    if (this.item?.mode === SearchMode.ASSET_PROFILE) {
+      this.queryParams = {
+        assetProfileDialog: true,
+        dataSource: this.item?.dataSource,
+        symbol: this.item?.symbol
+      };
 
-    if (this.mode === 'assetProfile') {
+      this.routerLink =
+        internalRoutes.adminControl.subRoutes.marketData.routerLink;
+    } else if (this.item?.mode === SearchMode.HOLDING) {
       this.queryParams = {
-        dataSource,
-        symbol,
-        assetProfileDialog: true
+        dataSource: this.item?.dataSource,
+        holdingDetailDialog: true,
+        symbol: this.item?.symbol
       };
-      this.routerLink = ['/admin', 'market-data'];
-    } else if (this.mode === 'holding') {
-      this.queryParams = {
-        dataSource,
-        symbol,
-        holdingDetailDialog: true
-      };
+
       this.routerLink = [];
+    } else if (this.item?.mode === SearchMode.QUICK_LINK) {
+      this.queryParams = {};
+      this.routerLink = this.item.routerLink;
     }
   }
 
@@ -69,6 +76,15 @@ export class GfAssistantListItemComponent
     this.hasFocus = true;
 
     this.changeDetectorRef.markForCheck();
+  }
+
+  public isAsset(item: ISearchResultItem): item is IAssetSearchResultItem {
+    return (
+      (item.mode === SearchMode.ASSET_PROFILE ||
+        item.mode === SearchMode.HOLDING) &&
+      !!item.dataSource &&
+      !!item.symbol
+    );
   }
 
   public onClick() {

@@ -4,20 +4,17 @@ import {
   symbolProfileDummyData,
   userDummyData
 } from '@ghostfolio/api/app/portfolio/calculator/portfolio-calculator-test-utils';
-import {
-  PerformanceCalculationType,
-  PortfolioCalculatorFactory
-} from '@ghostfolio/api/app/portfolio/calculator/portfolio-calculator.factory';
+import { PortfolioCalculatorFactory } from '@ghostfolio/api/app/portfolio/calculator/portfolio-calculator.factory';
 import { CurrentRateService } from '@ghostfolio/api/app/portfolio/current-rate.service';
 import { CurrentRateServiceMock } from '@ghostfolio/api/app/portfolio/current-rate.service.mock';
 import { RedisCacheService } from '@ghostfolio/api/app/redis-cache/redis-cache.service';
 import { RedisCacheServiceMock } from '@ghostfolio/api/app/redis-cache/redis-cache.service.mock';
 import { ConfigurationService } from '@ghostfolio/api/services/configuration/configuration.service';
 import { ExchangeRateDataService } from '@ghostfolio/api/services/exchange-rate-data/exchange-rate-data.service';
-import { ExchangeRateDataServiceMock } from '@ghostfolio/api/services/exchange-rate-data/exchange-rate-data.service.mock';
 import { PortfolioSnapshotService } from '@ghostfolio/api/services/queues/portfolio-snapshot/portfolio-snapshot.service';
 import { PortfolioSnapshotServiceMock } from '@ghostfolio/api/services/queues/portfolio-snapshot/portfolio-snapshot.service.mock';
 import { parseDate } from '@ghostfolio/common/helper';
+import { PerformanceCalculationType } from '@ghostfolio/common/types/performance-calculation-type.type';
 
 import { Big } from 'big.js';
 
@@ -50,18 +47,6 @@ jest.mock('@ghostfolio/api/app/redis-cache/redis-cache.service', () => {
     })
   };
 });
-
-jest.mock(
-  '@ghostfolio/api/services/exchange-rate-data/exchange-rate-data.service',
-  () => {
-    return {
-      // eslint-disable-next-line @typescript-eslint/naming-convention
-      ExchangeRateDataService: jest.fn().mockImplementation(() => {
-        return ExchangeRateDataServiceMock;
-      })
-    };
-  }
-);
 
 describe('PortfolioCalculator', () => {
   let configurationService: ConfigurationService;
@@ -104,7 +89,7 @@ describe('PortfolioCalculator', () => {
         {
           ...activityDummyData,
           date: new Date('2021-09-16'),
-          fee: 19,
+          feeInAssetProfileCurrency: 19,
           quantity: 1,
           SymbolProfile: {
             ...symbolProfileDummyData,
@@ -114,12 +99,12 @@ describe('PortfolioCalculator', () => {
             symbol: 'MSFT'
           },
           type: 'BUY',
-          unitPrice: 298.58
+          unitPriceInAssetProfileCurrency: 298.58
         },
         {
           ...activityDummyData,
           date: new Date('2021-11-16'),
-          fee: 0,
+          feeInAssetProfileCurrency: 0,
           quantity: 1,
           SymbolProfile: {
             ...symbolProfileDummyData,
@@ -129,7 +114,7 @@ describe('PortfolioCalculator', () => {
             symbol: 'MSFT'
           },
           type: 'DIVIDEND',
-          unitPrice: 0.62
+          unitPriceInAssetProfileCurrency: 0.62
         }
       ];
 
@@ -185,8 +170,7 @@ describe('PortfolioCalculator', () => {
         totalInterestWithCurrencyEffect: new Big('0'),
         totalInvestment: new Big('298.58'),
         totalInvestmentWithCurrencyEffect: new Big('298.58'),
-        totalLiabilitiesWithCurrencyEffect: new Big('0'),
-        totalValuablesWithCurrencyEffect: new Big('0')
+        totalLiabilitiesWithCurrencyEffect: new Big('0')
       });
 
       expect(portfolioSnapshot.historicalData.at(-1)).toMatchObject(

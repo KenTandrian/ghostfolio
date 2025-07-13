@@ -6,6 +6,7 @@ import type { AiPromptMode } from './ai-prompt-mode.type';
 import type { BenchmarkTrend } from './benchmark-trend.type';
 import type { ColorScheme } from './color-scheme.type';
 import type { DateRange } from './date-range.type';
+import type { FearAndGreedIndexMode } from './fear-and-greed-index.type';
 import type { Granularity } from './granularity.type';
 import type { GroupBy } from './group-by.type';
 import type { HoldingType } from './holding-type.type';
@@ -17,6 +18,7 @@ import type { Market } from './market.type';
 import type { OrderWithAccount } from './order-with-account.type';
 import type { RequestWithUser } from './request-with-user.type';
 import type { SubscriptionOfferKey } from './subscription-offer-key.type';
+import type { SubscriptionType } from './subscription-type.type';
 import type { UserWithSettings } from './user-with-settings.type';
 import type { ViewMode } from './view-mode.type';
 
@@ -29,6 +31,7 @@ export type {
   BenchmarkTrend,
   ColorScheme,
   DateRange,
+  FearAndGreedIndexMode,
   Granularity,
   GroupBy,
   HoldingType,
@@ -40,6 +43,7 @@ export type {
   OrderWithAccount,
   RequestWithUser,
   SubscriptionOfferKey,
+  SubscriptionType,
   UserWithSettings,
   ViewMode
 };

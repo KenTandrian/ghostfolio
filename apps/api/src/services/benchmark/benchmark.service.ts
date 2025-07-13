@@ -106,9 +106,9 @@ export class BenchmarkService {
     enableSharing = false
   } = {}): Promise<Partial<SymbolProfile>[]> {
     const symbolProfileIds: string[] = (
-      ((await this.propertyService.getByKey(
+      (await this.propertyService.getByKey<BenchmarkProperty[]>(
         PROPERTY_BENCHMARKS
-      )) as BenchmarkProperty[]) ?? []
+      )) ?? []
     )
       .filter((benchmark) => {
         if (enableSharing) {
@@ -154,9 +154,9 @@ export class BenchmarkService {
     }
 
     let benchmarks =
-      ((await this.propertyService.getByKey(
+      (await this.propertyService.getByKey<BenchmarkProperty[]>(
         PROPERTY_BENCHMARKS
-      )) as BenchmarkProperty[]) ?? [];
+      )) ?? [];
 
     benchmarks.push({ symbolProfileId: assetProfile.id });
 
@@ -191,9 +191,9 @@ export class BenchmarkService {
     }
 
     let benchmarks =
-      ((await this.propertyService.getByKey(
+      (await this.propertyService.getByKey<BenchmarkProperty[]>(
         PROPERTY_BENCHMARKS
-      )) as BenchmarkProperty[]) ?? [];
+      )) ?? [];
 
     benchmarks = benchmarks.filter(({ symbolProfileId }) => {
       return symbolProfileId !== assetProfile.id;
@@ -210,6 +210,18 @@ export class BenchmarkService {
       id: assetProfile.id,
       name: assetProfile.name
     };
+  }
+
+  public getMarketCondition(
+    aPerformanceInPercent: number
+  ): Benchmark['marketCondition'] {
+    if (aPerformanceInPercent >= 0) {
+      return 'ALL_TIME_HIGH';
+    } else if (aPerformanceInPercent <= -0.2) {
+      return 'BEAR_MARKET';
+    } else {
+      return 'NEUTRAL_MARKET';
+    }
   }
 
   private async calculateAndCacheBenchmarks({
@@ -301,17 +313,5 @@ export class BenchmarkService {
     }
 
     return benchmarks;
-  }
-
-  private getMarketCondition(
-    aPerformanceInPercent: number
-  ): Benchmark['marketCondition'] {
-    if (aPerformanceInPercent >= 0) {
-      return 'ALL_TIME_HIGH';
-    } else if (aPerformanceInPercent <= -0.2) {
-      return 'BEAR_MARKET';
-    } else {
-      return 'NEUTRAL_MARKET';
-    }
   }
 }

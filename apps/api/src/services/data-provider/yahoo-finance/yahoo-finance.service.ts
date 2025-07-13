@@ -1,5 +1,6 @@
 import { CryptocurrencyService } from '@ghostfolio/api/services/cryptocurrency/cryptocurrency.service';
 import { YahooFinanceDataEnhancerService } from '@ghostfolio/api/services/data-provider/data-enhancer/yahoo-finance/yahoo-finance.service';
+import { AssetProfileDelistedError } from '@ghostfolio/api/services/data-provider/errors/asset-profile-delisted.error';
 import {
   DataProviderInterface,
   GetAssetProfileParams,
@@ -23,16 +24,24 @@ import {
 import { Injectable, Logger } from '@nestjs/common';
 import { DataSource, SymbolProfile } from '@prisma/client';
 import { addDays, format, isSameDay } from 'date-fns';
-import yahooFinance from 'yahoo-finance2';
-import { ChartResultArray } from 'yahoo-finance2/dist/esm/src/modules/chart';
+import YahooFinance from 'yahoo-finance2';
+import { ChartResultArray } from 'yahoo-finance2/esm/src/modules/chart';
 import {
   HistoricalDividendsResult,
   HistoricalHistoryResult
-} from 'yahoo-finance2/dist/esm/src/modules/historical';
-import { Quote } from 'yahoo-finance2/dist/esm/src/modules/quote';
+} from 'yahoo-finance2/esm/src/modules/historical';
+import {
+  Quote,
+  QuoteResponseArray
+} from 'yahoo-finance2/esm/src/modules/quote';
+import { SearchQuoteNonYahoo } from 'yahoo-finance2/esm/src/modules/search';
 
 @Injectable()
 export class YahooFinanceService implements DataProviderInterface {
+  private readonly yahooFinance = new YahooFinance({
+    suppressNotices: ['yahooSurvey']
+  });
+
   public constructor(
     private readonly cryptocurrencyService: CryptocurrencyService,
     private readonly yahooFinanceDataEnhancerService: YahooFinanceDataEnhancerService
@@ -50,6 +59,7 @@ export class YahooFinanceService implements DataProviderInterface {
 
   public getDataProviderInfo(): DataProviderInfo {
     return {
+      dataSource: DataSource.YAHOO,
       isPremium: false,
       name: 'Yahoo Finance',
       url: 'https://finance.yahoo.com'
@@ -68,7 +78,7 @@ export class YahooFinanceService implements DataProviderInterface {
 
     try {
       const historicalResult = this.convertToDividendResult(
-        await yahooFinance.chart(
+        await this.yahooFinance.chart(
           this.yahooFinanceDataEnhancerService.convertToYahooFinanceSymbol(
             symbol
           ),
@@ -117,7 +127,7 @@ export class YahooFinanceService implements DataProviderInterface {
 
     try {
       const historicalResult = this.convertToHistoricalResult(
-        await yahooFinance.chart(
+        await this.yahooFinance.chart(
           this.yahooFinanceDataEnhancerService.convertToYahooFinanceSymbol(
             symbol
           ),
@@ -143,12 +153,18 @@ export class YahooFinanceService implements DataProviderInterface {
 
       return response;
     } catch (error) {
-      throw new Error(
-        `Could not get historical market data for ${symbol} (${this.getName()}) from ${format(
-          from,
-          DATE_FORMAT
-        )} to ${format(to, DATE_FORMAT)}: [${error.name}] ${error.message}`
-      );
+      if (error.message === 'No data found, symbol may be delisted') {
+        throw new AssetProfileDelistedError(
+          `No data found, ${symbol} (${this.getName()}) may be delisted`
+        );
+      } else {
+        throw new Error(
+          `Could not get historical market data for ${symbol} (${this.getName()}) from ${format(
+            from,
+            DATE_FORMAT
+          )} to ${format(to, DATE_FORMAT)}: [${error.name}] ${error.message}`
+        );
+      }
     }
   }
 
@@ -180,7 +196,7 @@ export class YahooFinanceService implements DataProviderInterface {
       >[] = [];
 
       try {
-        quotes = await yahooFinance.quote(yahooFinanceSymbols);
+        quotes = await this.yahooFinance.quote(yahooFinanceSymbols);
       } catch (error) {
         Logger.error(error, 'YahooFinanceService');
 
@@ -236,13 +252,15 @@ export class YahooFinanceService implements DataProviderInterface {
         quoteTypes.push('INDEX');
       }
 
-      const searchResult = await yahooFinance.search(query);
+      const searchResult = await this.yahooFinance.search(query);
 
       const quotes = searchResult.quotes
-        .filter((quote) => {
-          // Filter out undefined symbols
-          return quote.symbol;
-        })
+        .filter(
+          (quote): quote is Exclude<typeof quote, SearchQuoteNonYahoo> => {
+            // Filter out undefined symbols
+            return !!quote.symbol;
+          }
+        )
         .filter(({ quoteType, symbol }) => {
           return (
             (quoteType === 'CRYPTOCURRENCY' &&
@@ -268,11 +286,19 @@ export class YahooFinanceService implements DataProviderInterface {
           return true;
         });
 
-      const marketData = await yahooFinance.quote(
-        quotes.map(({ symbol }) => {
-          return symbol;
-        })
-      );
+      let marketData: QuoteResponseArray = [];
+
+      try {
+        marketData = await this.yahooFinance.quote(
+          quotes.map(({ symbol }) => {
+            return symbol;
+          })
+        );
+      } catch (error) {
+        if (error?.result?.length > 0) {
+          marketData = error.result;
+        }
+      }
 
       for (const marketDataItem of marketData) {
         const quote = quotes.find((currentQuote) => {
@@ -328,7 +354,7 @@ export class YahooFinanceService implements DataProviderInterface {
 
   private async getQuotesWithQuoteSummary(aYahooFinanceSymbols: string[]) {
     const quoteSummaryPromises = aYahooFinanceSymbols.map((symbol) => {
-      return yahooFinance.quoteSummary(symbol).catch(() => {
+      return this.yahooFinance.quoteSummary(symbol).catch(() => {
         Logger.error(
           `Could not get quote summary for ${symbol}`,
           'YahooFinanceService'

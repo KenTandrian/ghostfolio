@@ -1,6 +1,5 @@
 import type { Access } from './access.interface';
 import type { AccountBalance } from './account-balance.interface';
-import type { Accounts } from './accounts.interface';
 import type { AdminData } from './admin-data.interface';
 import type { AdminJobs } from './admin-jobs.interface';
 import type { AdminMarketDataDetails } from './admin-market-data-details.interface';
@@ -30,32 +29,37 @@ import type { PortfolioChart } from './portfolio-chart.interface';
 import type { PortfolioDetails } from './portfolio-details.interface';
 import type { PortfolioDividends } from './portfolio-dividends.interface';
 import type { PortfolioInvestments } from './portfolio-investments.interface';
-import type { PortfolioItem } from './portfolio-item.interface';
-import type { PortfolioOverview } from './portfolio-overview.interface';
 import type { PortfolioPerformance } from './portfolio-performance.interface';
 import type { PortfolioPosition } from './portfolio-position.interface';
 import type { PortfolioReportRule } from './portfolio-report-rule.interface';
 import type { PortfolioSummary } from './portfolio-summary.interface';
 import type { Position } from './position.interface';
 import type { Product } from './product';
+import type { AccessTokenResponse } from './responses/access-token-response.interface';
 import type { AccountBalancesResponse } from './responses/account-balances-response.interface';
+import type { AccountsResponse } from './responses/accounts-response.interface';
 import type { AiPromptResponse } from './responses/ai-prompt-response.interface';
 import type { ApiKeyResponse } from './responses/api-key-response.interface';
 import type { BenchmarkResponse } from './responses/benchmark-response.interface';
+import type { DataEnhancerHealthResponse } from './responses/data-enhancer-health-response.interface';
 import type { DataProviderGhostfolioAssetProfileResponse } from './responses/data-provider-ghostfolio-asset-profile-response.interface';
 import type { DataProviderGhostfolioStatusResponse } from './responses/data-provider-ghostfolio-status-response.interface';
+import type { DataProviderHealthResponse } from './responses/data-provider-health-response.interface';
 import type { DividendsResponse } from './responses/dividends-response.interface';
 import type { ResponseError } from './responses/errors.interface';
 import type { HistoricalResponse } from './responses/historical-response.interface';
 import type { ImportResponse } from './responses/import-response.interface';
 import type { LookupResponse } from './responses/lookup-response.interface';
 import type { MarketDataDetailsResponse } from './responses/market-data-details-response.interface';
+import type { MarketDataOfMarketsResponse } from './responses/market-data-of-markets-response.interface';
 import type { OAuthResponse } from './responses/oauth-response.interface';
+import { PortfolioHoldingResponse } from './responses/portfolio-holding-response.interface';
 import type { PortfolioHoldingsResponse } from './responses/portfolio-holdings-response.interface';
 import type { PortfolioPerformanceResponse } from './responses/portfolio-performance-response.interface';
 import type { PortfolioReportResponse } from './responses/portfolio-report.interface';
 import type { PublicPortfolioResponse } from './responses/public-portfolio-response.interface';
 import type { QuotesResponse } from './responses/quotes-response.interface';
+import type { WatchlistResponse } from './responses/watchlist-response.interface';
 import type { ScraperConfiguration } from './scraper-configuration.interface';
 import type { Statistics } from './statistics.interface';
 import type { SubscriptionOffer } from './subscription-offer.interface';
@@ -69,9 +73,10 @@ import type { XRayRulesSettings } from './x-ray-rules-settings.interface';
 
 export {
   Access,
+  AccessTokenResponse,
   AccountBalance,
   AccountBalancesResponse,
-  Accounts,
+  AccountsResponse,
   AdminData,
   AdminJobs,
   AdminMarketData,
@@ -86,8 +91,10 @@ export {
   BenchmarkProperty,
   BenchmarkResponse,
   Coupon,
+  DataEnhancerHealthResponse,
   DataProviderGhostfolioAssetProfileResponse,
   DataProviderGhostfolioStatusResponse,
+  DataProviderHealthResponse,
   DataProviderInfo,
   DividendsResponse,
   EnhancedSymbolProfile,
@@ -105,14 +112,14 @@ export {
   LookupItem,
   LookupResponse,
   MarketDataDetailsResponse,
+  MarketDataOfMarketsResponse,
   OAuthResponse,
   PortfolioChart,
   PortfolioDetails,
   PortfolioDividends,
+  PortfolioHoldingResponse,
   PortfolioHoldingsResponse,
   PortfolioInvestments,
-  PortfolioItem,
-  PortfolioOverview,
   PortfolioPerformance,
   PortfolioPerformanceResponse,
   PortfolioPosition,
@@ -133,5 +140,6 @@ export {
   ToggleOption,
   User,
   UserSettings,
+  WatchlistResponse,
   XRayRulesSettings
 };

@@ -1,5 +1,6 @@
 import { ConfigurationService } from '@ghostfolio/api/services/configuration/configuration.service';
 import { DataProviderService } from '@ghostfolio/api/services/data-provider/data-provider.service';
+import { GhostfolioService as GhostfolioDataProviderService } from '@ghostfolio/api/services/data-provider/ghostfolio/ghostfolio.service';
 import {
   GetAssetProfileParams,
   GetDividendsParams,
@@ -163,9 +164,9 @@ export class GhostfolioService {
 
   public async getMaxDailyRequests() {
     return parseInt(
-      ((await this.propertyService.getByKey(
+      (await this.propertyService.getByKey<string>(
         PROPERTY_DATA_SOURCES_GHOSTFOLIO_DATA_PROVIDER_MAX_REQUESTS
-      )) as string) || '0',
+      )) || '0',
       10
     );
   }
@@ -327,10 +328,15 @@ export class GhostfolioService {
   }
 
   private getDataProviderInfo(): DataProviderInfo {
+    const ghostfolioDataProviderService = new GhostfolioDataProviderService(
+      this.configurationService,
+      this.propertyService
+    );
+
     return {
+      ...ghostfolioDataProviderService.getDataProviderInfo(),
       isPremium: false,
-      name: 'Ghostfolio Premium',
-      url: 'https://ghostfol.io'
+      name: 'Ghostfolio Premium'
     };
   }
 

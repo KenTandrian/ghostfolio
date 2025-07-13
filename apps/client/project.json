@@ -2,13 +2,63 @@
   "name": "client",
   "$schema": "../../node_modules/nx/schemas/project-schema.json",
   "projectType": "application",
+  "sourceRoot": "apps/client/src",
+  "prefix": "gf",
+  "i18n": {
+    "locales": {
+      "ca": {
+        "baseHref": "/ca/",
+        "translation": "apps/client/src/locales/messages.ca.xlf"
+      },
+      "de": {
+        "baseHref": "/de/",
+        "translation": "apps/client/src/locales/messages.de.xlf"
+      },
+      "es": {
+        "baseHref": "/es/",
+        "translation": "apps/client/src/locales/messages.es.xlf"
+      },
+      "fr": {
+        "baseHref": "/fr/",
+        "translation": "apps/client/src/locales/messages.fr.xlf"
+      },
+      "it": {
+        "baseHref": "/it/",
+        "translation": "apps/client/src/locales/messages.it.xlf"
+      },
+      "nl": {
+        "baseHref": "/nl/",
+        "translation": "apps/client/src/locales/messages.nl.xlf"
+      },
+      "pl": {
+        "baseHref": "/pl/",
+        "translation": "apps/client/src/locales/messages.pl.xlf"
+      },
+      "pt": {
+        "baseHref": "/pt/",
+        "translation": "apps/client/src/locales/messages.pt.xlf"
+      },
+      "tr": {
+        "baseHref": "/tr/",
+        "translation": "apps/client/src/locales/messages.tr.xlf"
+      },
+      "uk": {
+        "baseHref": "/uk/",
+        "translation": "apps/client/src/locales/messages.uk.xlf"
+      },
+      "zh": {
+        "baseHref": "/zh/",
+        "translation": "apps/client/src/locales/messages.zh.xlf"
+      }
+    },
+    "sourceLocale": "en"
+  },
+  "tags": [],
   "generators": {
     "@schematics/angular:component": {
       "style": "scss"
     }
   },
-  "sourceRoot": "apps/client/src",
-  "prefix": "gf",
   "targets": {
     "build": {
       "executor": "@nx/angular:browser-esbuild",
@@ -23,7 +73,8 @@
         "styles": [
           "apps/client/src/assets/fonts/inter.css",
           "apps/client/src/styles/theme.scss",
-          "apps/client/src/styles.scss"
+          "apps/client/src/styles.scss",
+          "node_modules/open-color/open-color.css"
         ],
         "stylePreprocessorOptions": {
           "includePaths": ["node_modules"]
@@ -133,13 +184,10 @@
             "command": "shx mkdir -p dist/apps/client/assets"
           },
           {
-            "command": "shx mkdir -p dist/apps/client/ionicons"
-          },
-          {
             "command": "shx cp -r apps/client/src/assets/* dist/apps/client/assets"
           },
           {
-            "command": "shx cp -r apps/client/src/assets/.well-known/* dist/apps/client/.well-known"
+            "command": "shx cp -r apps/client/src/assets/.well-known/assetlinks.json dist/apps/client/.well-known"
           },
           {
             "command": "shx cp apps/client/src/assets/favicon.ico dist/apps/client"
@@ -149,18 +197,6 @@
           },
           {
             "command": "shx cp apps/client/src/assets/robots.txt dist/apps/client"
-          },
-          {
-            "command": "shx cp apps/client/src/assets/site.webmanifest dist/apps/client"
-          },
-          {
-            "command": "shx cp node_modules/ionicons/dist/index.js dist/apps/client"
-          },
-          {
-            "command": "shx cp node_modules/ionicons/dist/ionicons.js dist/apps/client"
-          },
-          {
-            "command": "shx cp -r node_modules/ionicons/dist/ionicons/* dist/apps/client/ionicons"
           },
           {
             "command": "shx cp CHANGELOG.md dist/apps/client/assets"
@@ -218,7 +254,8 @@
         "production": {
           "buildTarget": "client:build:production"
         }
-      }
+      },
+      "continuous": true
     },
     "extract-i18n": {
       "executor": "ng-extract-i18n-merge:ng-extract-i18n-merge",
@@ -254,55 +291,5 @@
       },
       "outputs": ["{workspaceRoot}/coverage/apps/client"]
     }
-  },
-  "i18n": {
-    "locales": {
-      "ca": {
-        "baseHref": "/ca/",
-        "translation": "apps/client/src/locales/messages.ca.xlf"
-      },
-      "de": {
-        "baseHref": "/de/",
-        "translation": "apps/client/src/locales/messages.de.xlf"
-      },
-      "es": {
-        "baseHref": "/es/",
-        "translation": "apps/client/src/locales/messages.es.xlf"
-      },
-      "fr": {
-        "baseHref": "/fr/",
-        "translation": "apps/client/src/locales/messages.fr.xlf"
-      },
-      "it": {
-        "baseHref": "/it/",
-        "translation": "apps/client/src/locales/messages.it.xlf"
-      },
-      "nl": {
-        "baseHref": "/nl/",
-        "translation": "apps/client/src/locales/messages.nl.xlf"
-      },
-      "pl": {
-        "baseHref": "/pl/",
-        "translation": "apps/client/src/locales/messages.pl.xlf"
-      },
-      "pt": {
-        "baseHref": "/pt/",
-        "translation": "apps/client/src/locales/messages.pt.xlf"
-      },
-      "tr": {
-        "baseHref": "/tr/",
-        "translation": "apps/client/src/locales/messages.tr.xlf"
-      },
-      "uk": {
-        "baseHref": "/uk/",
-        "translation": "apps/client/src/locales/messages.uk.xlf"
-      },
-      "zh": {
-        "baseHref": "/zh/",
-        "translation": "apps/client/src/locales/messages.zh.xlf"
-      }
-    },
-    "sourceLocale": "en"
-  },
-  "tags": []
+  }
 }

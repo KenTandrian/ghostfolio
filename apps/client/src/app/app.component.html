@@ -10,7 +10,7 @@
                 (click)="onCreateAccount()"
               >
                 <span i18n>You are using the Live Demo.</span>
-                <span class="a ml-2" i18n>Create Account</span>
+                <span class="a ml-2 p-1" i18n>Create Account</span>
               </div></a
             >
           }
@@ -70,7 +70,7 @@
             <li><a i18n [routerLink]="routerLinkAbout">About</a></li>
             @if (hasPermissionForSubscription) {
               <li>
-                <a i18n [routerLink]="['/blog']">Blog</a>
+                <a i18n [routerLink]="routerLinkBlog">Blog</a>
               </li>
             }
             <li>
@@ -84,12 +84,14 @@
                 >
               </li>
             }
-            <li>
-              <a i18n [routerLink]="routerLinkAboutLicense">License</a>
-            </li>
+            @if (!hasPermissionForSubscription) {
+              <li>
+                <a i18n [routerLink]="routerLinkAboutLicense">License</a>
+              </li>
+            }
             @if (hasPermissionForStatistics) {
               <li>
-                <a [routerLink]="['/open']">Open Startup</a>
+                <a [routerLink]="routerLinkOpenStartup">Open Startup</a>
               </li>
             }
             @if (hasPermissionForSubscription) {
@@ -101,6 +103,13 @@
               <li>
                 <a i18n [routerLink]="routerLinkAboutPrivacyPolicy"
                   >Privacy Policy</a
+                >
+              </li>
+            }
+            @if (hasPermissionForSubscription) {
+              <li>
+                <a i18n [routerLink]="routerLinkAboutTermsOfService"
+                  >Terms of Service</a
                 >
               </li>
             }
@@ -163,6 +172,9 @@
               </li>
             -->
             <li>
+              <a href="../zh" title="Ghostfolio in Chinese">Chinese</a>
+            </li>
+            <li>
               <a href="../de" title="Ghostfolio in Deutsch">Deutsch</a>
             </li>
             <li>
@@ -192,11 +204,6 @@
             <!--
               <li>
                 <a href="../uk" title="Ghostfolio in Українська">Українська</a>
-              </li>
-            -->
-            <!--
-              <li>
-                <a href="../zh" title="Ghostfolio in Chinese">Chinese</a>
               </li>
             -->
           </ul>

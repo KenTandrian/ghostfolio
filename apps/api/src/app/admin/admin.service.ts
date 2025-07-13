@@ -1,5 +1,4 @@
 import { OrderService } from '@ghostfolio/api/app/order/order.service';
-import { SubscriptionService } from '@ghostfolio/api/app/subscription/subscription.service';
 import { environment } from '@ghostfolio/api/environments/environment';
 import { BenchmarkService } from '@ghostfolio/api/services/benchmark/benchmark.service';
 import { ConfigurationService } from '@ghostfolio/api/services/configuration/configuration.service';
@@ -30,18 +29,25 @@ import {
   Filter
 } from '@ghostfolio/common/interfaces';
 import { Sector } from '@ghostfolio/common/interfaces/sector.interface';
-import { MarketDataPreset } from '@ghostfolio/common/types';
+import { MarketDataPreset, UserWithSettings } from '@ghostfolio/common/types';
 
-import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import {
+  BadRequestException,
+  HttpException,
+  Injectable,
+  Logger
+} from '@nestjs/common';
 import {
   AssetClass,
   AssetSubClass,
+  DataSource,
   Prisma,
   PrismaClient,
   Property,
   SymbolProfile
 } from '@prisma/client';
 import { differenceInDays } from 'date-fns';
+import { StatusCodes, getReasonPhrase } from 'http-status-codes';
 import { groupBy } from 'lodash';
 
 @Injectable()
@@ -55,7 +61,6 @@ export class AdminService {
     private readonly orderService: OrderService,
     private readonly prismaService: PrismaService,
     private readonly propertyService: PropertyService,
-    private readonly subscriptionService: SubscriptionService,
     private readonly symbolProfileService: SymbolProfileService
   ) {}
 
@@ -109,9 +114,8 @@ export class AdminService {
     await this.marketDataService.deleteMany({ dataSource, symbol });
 
     const currency = getCurrencyFromSymbol(symbol);
-    const customCurrencies = (await this.propertyService.getByKey(
-      PROPERTY_CURRENCIES
-    )) as string[];
+    const customCurrencies =
+      await this.propertyService.getByKey<string[]>(PROPERTY_CURRENCIES);
 
     if (customCurrencies.includes(currency)) {
       const updatedCustomCurrencies = customCurrencies.filter(
@@ -129,14 +133,39 @@ export class AdminService {
     }
   }
 
-  public async get(): Promise<AdminData> {
+  public async get({ user }: { user: UserWithSettings }): Promise<AdminData> {
+    const dataSources = await this.dataProviderService.getDataSources({
+      user,
+      includeGhostfolio: true
+    });
+
     const [settings, transactionCount, userCount] = await Promise.all([
       this.propertyService.get(),
       this.prismaService.order.count(),
       this.countUsersWithAnalytics()
     ]);
 
+    const dataProviders = await Promise.all(
+      dataSources.map(async (dataSource) => {
+        const dataProviderInfo = this.dataProviderService
+          .getDataProvider(dataSource)
+          .getDataProviderInfo();
+
+        const assetProfileCount = await this.prismaService.symbolProfile.count({
+          where: {
+            dataSource
+          }
+        });
+
+        return {
+          ...dataProviderInfo,
+          assetProfileCount
+        };
+      })
+    );
+
     return {
+      dataProviders,
       settings,
       transactionCount,
       userCount,
@@ -215,7 +244,7 @@ export class AdminService {
 
       if (sortColumn === 'activitiesCount') {
         orderBy = {
-          Order: {
+          activities: {
             _count: sortDirection
           }
         };
@@ -233,7 +262,15 @@ export class AdminService {
           where,
           select: {
             _count: {
-              select: { Order: true }
+              select: {
+                activities: true,
+                watchedBy: true
+              }
+            },
+            activities: {
+              orderBy: [{ date: 'asc' }],
+              select: { date: true },
+              take: 1
             },
             assetClass: true,
             assetSubClass: true,
@@ -242,13 +279,9 @@ export class AdminService {
             currency: true,
             dataSource: true,
             id: true,
+            isActive: true,
             isUsedByUsersWithSubscription: true,
             name: true,
-            Order: {
-              orderBy: [{ date: 'asc' }],
-              select: { date: true },
-              take: 1
-            },
             scraperConfiguration: true,
             sectors: true,
             symbol: true,
@@ -295,6 +328,7 @@ export class AdminService {
         assetProfiles.map(
           async ({
             _count,
+            activities,
             assetClass,
             assetSubClass,
             comment,
@@ -302,9 +336,9 @@ export class AdminService {
             currency,
             dataSource,
             id,
+            isActive,
             isUsedByUsersWithSubscription,
             name,
-            Order,
             sectors,
             symbol,
             SymbolProfileOverrides
@@ -360,14 +394,17 @@ export class AdminService {
               countriesCount,
               dataSource,
               id,
+              isActive,
               lastMarketPrice,
               name,
               symbol,
               marketDataItemCount,
               sectorsCount,
-              activitiesCount: _count.Order,
-              date: Order?.[0]?.date,
-              isUsedByUsersWithSubscription: await isUsedByUsersWithSubscription
+              activitiesCount: _count.activities,
+              date: activities?.[0]?.date,
+              isUsedByUsersWithSubscription:
+                await isUsedByUsersWithSubscription,
+              watchedByCount: _count.watchedBy
             };
           }
         )
@@ -443,7 +480,8 @@ export class AdminService {
         currency,
         dataSource,
         dateOfFirstActivity,
-        symbol
+        symbol,
+        isActive: true
       }
     };
   }
@@ -463,61 +501,126 @@ export class AdminService {
     return { count, users };
   }
 
-  public async patchAssetProfileData({
-    assetClass,
-    assetSubClass,
-    comment,
-    countries,
-    currency,
-    dataSource,
-    holdings,
-    name,
-    scraperConfiguration,
-    sectors,
-    symbol,
-    symbolMapping,
-    url
-  }: AssetProfileIdentifier & Prisma.SymbolProfileUpdateInput) {
-    const symbolProfileOverrides = {
-      assetClass: assetClass as AssetClass,
-      assetSubClass: assetSubClass as AssetSubClass,
-      name: name as string,
-      url: url as string
-    };
-
-    const updatedSymbolProfile: AssetProfileIdentifier &
-      Prisma.SymbolProfileUpdateInput = {
+  public async patchAssetProfileData(
+    { dataSource, symbol }: AssetProfileIdentifier,
+    {
+      assetClass,
+      assetSubClass,
       comment,
       countries,
       currency,
-      dataSource,
+      dataSource: newDataSource,
       holdings,
+      isActive,
+      name,
       scraperConfiguration,
       sectors,
-      symbol,
+      symbol: newSymbol,
       symbolMapping,
-      ...(dataSource === 'MANUAL'
-        ? { assetClass, assetSubClass, name, url }
-        : {
-            SymbolProfileOverrides: {
-              upsert: {
-                create: symbolProfileOverrides,
-                update: symbolProfileOverrides
-              }
-            }
-          })
-    };
+      url
+    }: Prisma.SymbolProfileUpdateInput
+  ) {
+    if (
+      newSymbol &&
+      newDataSource &&
+      (newSymbol !== symbol || newDataSource !== dataSource)
+    ) {
+      const [assetProfile] = await this.symbolProfileService.getSymbolProfiles([
+        {
+          dataSource: DataSource[newDataSource.toString()],
+          symbol: newSymbol as string
+        }
+      ]);
 
-    await this.symbolProfileService.updateSymbolProfile(updatedSymbolProfile);
-
-    const [symbolProfile] = await this.symbolProfileService.getSymbolProfiles([
-      {
-        dataSource,
-        symbol
+      if (assetProfile) {
+        throw new HttpException(
+          getReasonPhrase(StatusCodes.CONFLICT),
+          StatusCodes.CONFLICT
+        );
       }
-    ]);
 
-    return symbolProfile;
+      try {
+        Promise.all([
+          await this.symbolProfileService.updateAssetProfileIdentifier(
+            {
+              dataSource,
+              symbol
+            },
+            {
+              dataSource: DataSource[newDataSource.toString()],
+              symbol: newSymbol as string
+            }
+          ),
+          await this.marketDataService.updateAssetProfileIdentifier(
+            {
+              dataSource,
+              symbol
+            },
+            {
+              dataSource: DataSource[newDataSource.toString()],
+              symbol: newSymbol as string
+            }
+          )
+        ]);
+
+        return this.symbolProfileService.getSymbolProfiles([
+          {
+            dataSource: DataSource[newDataSource.toString()],
+            symbol: newSymbol as string
+          }
+        ])?.[0];
+      } catch {
+        throw new HttpException(
+          getReasonPhrase(StatusCodes.BAD_REQUEST),
+          StatusCodes.BAD_REQUEST
+        );
+      }
+    } else {
+      const symbolProfileOverrides = {
+        assetClass: assetClass as AssetClass,
+        assetSubClass: assetSubClass as AssetSubClass,
+        name: name as string,
+        url: url as string
+      };
+
+      const updatedSymbolProfile: Prisma.SymbolProfileUpdateInput = {
+        comment,
+        countries,
+        currency,
+        dataSource,
+        holdings,
+        isActive,
+        scraperConfiguration,
+        sectors,
+        symbol,
+        symbolMapping,
+        ...(dataSource === 'MANUAL'
+          ? { assetClass, assetSubClass, name, url }
+          : {
+              SymbolProfileOverrides: {
+                upsert: {
+                  create: symbolProfileOverrides,
+                  update: symbolProfileOverrides
+                }
+              }
+            })
+      };
+
+      await this.symbolProfileService.updateSymbolProfile(
+        {
+          dataSource,
+          symbol
+        },
+        updatedSymbolProfile
+      );
+
+      return this.symbolProfileService.getSymbolProfiles([
+        {
+          dataSource: dataSource as DataSource,
+          symbol: symbol as string
+        }
+      ])?.[0];
+    }
   }
 
   public async putSetting(key: string, value: string) {
@@ -544,7 +647,7 @@ export class AdminService {
     if (this.configurationService.get('ENABLE_FEATURE_SUBSCRIPTION')) {
       where = {
         NOT: {
-          Analytics: null
+          analytics: null
         }
       };
     }
@@ -568,10 +671,10 @@ export class AdminService {
                     select: {
                       _count: {
                         select: {
-                          Order: {
+                          activities: {
                             where: {
-                              User: {
-                                Subscription: {
+                              user: {
+                                subscriptions: {
                                   some: {
                                     expiresAt: {
                                       gt: new Date()
@@ -589,7 +692,7 @@ export class AdminService {
                     }
                   });
 
-                return _count.Order > 0;
+                return _count.activities > 0;
               }
             }
           }
@@ -676,8 +779,10 @@ export class AdminService {
           countriesCount: 0,
           date: dateOfFirstActivity,
           id: undefined,
+          isActive: true,
           name: symbol,
-          sectorsCount: 0
+          sectorsCount: 0,
+          watchedByCount: 0
         };
       }
     );
@@ -700,13 +805,13 @@ export class AdminService {
 
     if (this.configurationService.get('ENABLE_FEATURE_SUBSCRIPTION')) {
       orderBy = {
-        Analytics: {
+        analytics: {
           lastRequestAt: 'desc'
         }
       };
       where = {
         NOT: {
-          Analytics: null
+          analytics: null
         }
       };
     }
@@ -718,9 +823,9 @@ export class AdminService {
       where,
       select: {
         _count: {
-          select: { Account: true, Order: true }
+          select: { accounts: true, activities: true }
         },
-        Analytics: {
+        analytics: {
           select: {
             activityCount: true,
             country: true,
@@ -731,26 +836,33 @@ export class AdminService {
         createdAt: true,
         id: true,
         role: true,
-        Subscription: true
+        subscriptions: {
+          orderBy: {
+            expiresAt: 'desc'
+          },
+          take: 1,
+          where: {
+            expiresAt: {
+              gt: new Date()
+            }
+          }
+        }
       }
     });
 
     return usersWithAnalytics.map(
-      ({ _count, Analytics, createdAt, id, role, Subscription }) => {
+      ({ _count, analytics, createdAt, id, role, subscriptions }) => {
         const daysSinceRegistration =
           differenceInDays(new Date(), createdAt) + 1;
-        const engagement = Analytics
-          ? Analytics.activityCount / daysSinceRegistration
+        const engagement = analytics
+          ? analytics.activityCount / daysSinceRegistration
           : undefined;
 
-        const subscription = this.configurationService.get(
-          'ENABLE_FEATURE_SUBSCRIPTION'
-        )
-          ? this.subscriptionService.getSubscription({
-              createdAt,
-              subscriptions: Subscription
-            })
-          : undefined;
+        const subscription =
+          this.configurationService.get('ENABLE_FEATURE_SUBSCRIPTION') &&
+          subscriptions?.length > 0
+            ? subscriptions[0]
+            : undefined;
 
         return {
           createdAt,
@@ -758,11 +870,11 @@ export class AdminService {
           id,
           role,
           subscription,
-          accountCount: _count.Account || 0,
-          country: Analytics?.country,
-          dailyApiRequests: Analytics?.dataProviderGhostfolioDailyRequests || 0,
-          lastActivity: Analytics?.updatedAt,
-          transactionCount: _count.Order || 0
+          accountCount: _count.accounts || 0,
+          activityCount: _count.activities || 0,
+          country: analytics?.country,
+          dailyApiRequests: analytics?.dataProviderGhostfolioDailyRequests || 0,
+          lastActivity: analytics?.updatedAt
         };
       }
     );

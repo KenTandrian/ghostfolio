@@ -22,12 +22,21 @@ import { hasPermission, permissions } from '@ghostfolio/common/permissions';
 
 import { ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
 import { MatSlideToggleChange } from '@angular/material/slide-toggle';
+import { MatSnackBar } from '@angular/material/snack-bar';
 import {
   differenceInSeconds,
   formatDistanceToNowStrict,
   parseISO
 } from 'date-fns';
-import { StringValue } from 'ms';
+import { addIcons } from 'ionicons';
+import {
+  closeCircleOutline,
+  ellipsisHorizontal,
+  informationCircleOutline,
+  syncOutline,
+  trashOutline
+} from 'ionicons/icons';
+import ms, { StringValue } from 'ms';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 
@@ -42,6 +51,7 @@ export class AdminOverviewComponent implements OnDestroy, OnInit {
   public coupons: Coupon[];
   public hasPermissionForSubscription: boolean;
   public hasPermissionForSystemMessage: boolean;
+  public hasPermissionToSyncDemoUserAccount: boolean;
   public hasPermissionToToggleReadOnlyMode: boolean;
   public info: InfoItem;
   public isDataGatheringEnabled: boolean;
@@ -60,6 +70,7 @@ export class AdminOverviewComponent implements OnDestroy, OnInit {
     private changeDetectorRef: ChangeDetectorRef,
     private dataService: DataService,
     private notificationService: NotificationService,
+    private snackBar: MatSnackBar,
     private userService: UserService
   ) {
     this.info = this.dataService.fetchInfo();
@@ -80,12 +91,25 @@ export class AdminOverviewComponent implements OnDestroy, OnInit {
             permissions.enableSystemMessage
           );
 
+          this.hasPermissionToSyncDemoUserAccount = hasPermission(
+            this.user.permissions,
+            permissions.syncDemoUserAccount
+          );
+
           this.hasPermissionToToggleReadOnlyMode = hasPermission(
             this.user.permissions,
             permissions.toggleReadOnlyMode
           );
         }
       });
+
+    addIcons({
+      closeCircleOutline,
+      ellipsisHorizontal,
+      informationCircleOutline,
+      syncOutline,
+      trashOutline
+    });
   }
 
   public ngOnInit() {
@@ -204,6 +228,21 @@ export class AdminOverviewComponent implements OnDestroy, OnInit {
         value: JSON.parse(systemMessage)
       });
     }
+  }
+
+  public onSyncDemoUserAccount() {
+    this.adminService
+      .syncDemoUserAccount()
+      .pipe(takeUntil(this.unsubscribeSubject))
+      .subscribe(() => {
+        this.snackBar.open(
+          '✅ ' + $localize`Demo user account has been synced.`,
+          undefined,
+          {
+            duration: ms('3 seconds')
+          }
+        );
+      });
   }
 
   public ngOnDestroy() {
