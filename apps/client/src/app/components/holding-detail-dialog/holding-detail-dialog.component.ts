@@ -1,5 +1,5 @@
 import { Activity } from '@ghostfolio/api/app/order/interfaces/activities.interface';
-import { GfAccountsTableModule } from '@ghostfolio/client/components/accounts-table/accounts-table.module';
+import { GfAccountsTableComponent } from '@ghostfolio/client/components/accounts-table/accounts-table.component';
 import { GfDialogFooterModule } from '@ghostfolio/client/components/dialog-footer/dialog-footer.module';
 import { GfDialogHeaderModule } from '@ghostfolio/client/components/dialog-header/dialog-header.module';
 import { DataService } from '@ghostfolio/client/services/data.service';
@@ -49,6 +49,7 @@ import { MatTabsModule } from '@angular/material/tabs';
 import { Router, RouterModule } from '@angular/router';
 import { IonIcon } from '@ionic/angular/standalone';
 import { Account, MarketData, Tag } from '@prisma/client';
+import { isUUID } from 'class-validator';
 import { format, isSameMonth, isToday, parseISO } from 'date-fns';
 import { addIcons } from 'ionicons';
 import {
@@ -70,7 +71,7 @@ import { HoldingDetailDialogParams } from './interfaces/interfaces';
   host: { class: 'd-flex flex-column h-100' },
   imports: [
     CommonModule,
-    GfAccountsTableModule,
+    GfAccountsTableComponent,
     GfActivitiesTableComponent,
     GfDataProviderCreditsComponent,
     GfDialogFooterModule,
@@ -101,6 +102,7 @@ export class GfHoldingDetailDialogComponent implements OnDestroy, OnInit {
   public assetSubClass: string;
   public averagePrice: number;
   public benchmarkDataItems: LineChartItem[];
+  public benchmarkLabel = $localize`Average Unit Price`;
   public countries: {
     [code: string]: { name: string; value: number };
   };
@@ -116,6 +118,7 @@ export class GfHoldingDetailDialogComponent implements OnDestroy, OnInit {
   public historicalDataItems: LineChartItem[];
   public investmentInBaseCurrencyWithCurrencyEffect: number;
   public investmentInBaseCurrencyWithCurrencyEffectPrecision = 2;
+  public isUUID = isUUID;
   public marketDataItems: MarketData[] = [];
   public marketPrice: number;
   public marketPriceMax: number;
