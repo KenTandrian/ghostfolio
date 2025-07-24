@@ -9,9 +9,101 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Refactored the toggle component to standalone
+- Improved the language localization for Dutch (`nl`)
+- Improved the language localization for Turkish (`tr`)
+- Upgraded the _Stripe_ dependencies
+- Upgraded `angular` from version `19.2.1` to `20.0.7`
+- Upgraded `ngx-device-detector` from version `9.0.0` to `10.0.2`
+- Upgraded `ngx-markdown` from version `19.0.0` to `20.0.0`
+- Upgraded `ngx-stripe` from version `19.7.0` to `20.7.0`
+- Upgraded `Nx` from version `21.1.2` to `21.2.4`
+- Upgraded `storybook` from version `8.6.12` to `9.0.17`
+
+### Fixed
+
+- Fixed an issue with the permissions of the impersonation mode related to the onboarding on the overview tab of the home page
+- Fixed an issue with the permissions of the impersonation mode related to the manage activities button of the holdings tab on the home page
+
+## 2.184.0 - 2025-07-22
+
+### Added
+
+- Set up the language localization for the static portfolio analysis rule: _Regional Market Cluster Risks_ (Asia-Pacific)
+- Set up the language localization for the static portfolio analysis rule: _Regional Market Cluster Risks_ (Emerging Markets)
+- Set up the language localization for the static portfolio analysis rule: _Regional Market Cluster Risks_ (Europe)
+- Set up the language localization for the static portfolio analysis rule: _Regional Market Cluster Risks_ (Japan)
+- Set up the language localization for the static portfolio analysis rule: _Regional Market Cluster Risks_ (North America)
+
+### Changed
+
+- Localized the tooltips of the about page
+- Improved the language localization for Catalan (`ca`)
+- Improved the language localization for Dutch (`nl`)
+- Improved the language localization for German (`de`)
+- Improved the language localization for Spanish (`es`)
+- Upgraded `countries-and-timezones` from version `3.7.2` to `3.8.0`
+- Upgraded `prisma` from version `6.11.1` to `6.12.0`
+
+### Fixed
+
+- Fixed an issue with the landing page related to the public page routes of the `AuthGuard`
+
+## 2.183.0 - 2025-07-20
+
+### Added
+
+- Set up the language localization for the static portfolio analysis rule: _Economic Market Cluster Risks_ (Developed Markets)
+- Set up the language localization for the static portfolio analysis rule: _Economic Market Cluster Risks_ (Emerging Markets)
+
+### Changed
+
+- Extended the export functionality by custom asset profiles
+- Improved the platform icon in the create or update platform dialog of the admin control
+- Localized the durations of the coupon system
+- Refactored the admin pages to standalone
+- Refactored the Frequently Asked Questions (FAQ) pages to standalone
+- Refactored the home pages to standalone
+- Refactored the resources pages to standalone
+- Refactored the access table component to standalone
+- Refactored the accounts table component to standalone
+- Improved the language localization for Catalan (`ca`)
+- Improved the language localization for Dutch (`nl`)
+- Improved the language localization for German (`de`)
+- Improved the language localization for Italian (`it`)
+- Improved the language localization for Portuguese (`pt`)
+- Improved the language localization for Spanish (`es`)
+
+### Fixed
+
+- Fixed the horizontal ellipsis icon in the accounts table component
+- Fixed the quantity value in the update activity dialog
+- Fixed the static portfolio analysis rule for no accounts: _Account Cluster Risks_ (Current Investment)
+- Fixed the static portfolio analysis rule for no accounts: _Account Cluster Risks_ (Single Account)
+
+## 2.182.0 - 2025-07-16
+
+### Added
+
+- Added a message to the assistant if no results have been found
+- Added the category title to the settings dialog to customize the rule thresholds of the _X-ray_ page (experimental)
+
+### Changed
+
+- Improved the label for asset profiles with `MANUAL` data source in the chart of the asset profile details dialog in the admin control panel
+- Improved the label for asset profiles with `MANUAL` data source in the chart of the holding detail dialog
+- Skipped errors for the custom asset profiles in the portfolio snapshot calculation
+- Removed the date range query parameter from the search for the holdings in the assistant
+- Improved the language localization for Chinese (`zh`)
 - Improved the language localization for Dutch (`nl`)
 - Improved the language localization for French (`fr`)
+- Improved the language localization for German (`de`)
 - Improved the language localization for Portuguese (`pt`)
+- Improved the language localization for Spanish (`es`)
+
+### Fixed
+
+- Fixed an issue with the clone functionality related to a custom asset profile activity
 
 ## 2.181.0 - 2025-07-11
 

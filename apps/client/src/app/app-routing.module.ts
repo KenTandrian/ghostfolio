@@ -28,7 +28,7 @@ const routes: Routes = [
   {
     path: internalRoutes.adminControl.path,
     loadChildren: () =>
-      import('./pages/admin/admin-page.module').then((m) => m.AdminPageModule)
+      import('./pages/admin/admin-page.routes').then((m) => m.routes)
   },
   {
     canActivate: [AuthGuard],
@@ -61,7 +61,7 @@ const routes: Routes = [
   {
     path: publicRoutes.faq.path,
     loadChildren: () =>
-      import('./pages/faq/faq-page.module').then((m) => m.FaqPageModule)
+      import('./pages/faq/faq-page.routes').then((m) => m.routes)
   },
   {
     canActivate: [AuthGuard],
@@ -75,7 +75,7 @@ const routes: Routes = [
   {
     path: internalRoutes.home.path,
     loadChildren: () =>
-      import('./pages/home/home-page.module').then((m) => m.HomePageModule)
+      import('./pages/home/home-page.routes').then((m) => m.routes)
   },
   {
     canActivate: [AuthGuard],
@@ -127,9 +127,7 @@ const routes: Routes = [
   {
     path: publicRoutes.resources.path,
     loadChildren: () =>
-      import('./pages/resources/resources-page.module').then(
-        (m) => m.ResourcesPageModule
-      )
+      import('./pages/resources/resources-page.routes').then((m) => m.routes)
   },
   {
     path: publicRoutes.start.path,

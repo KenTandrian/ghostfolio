@@ -1223,13 +1223,17 @@ export class PortfolioService {
               [
                 new EconomicMarketClusterRiskDevelopedMarkets(
                   this.exchangeRateDataService,
+                  this.i18nService,
                   marketsTotalInBaseCurrency,
-                  markets.developedMarkets.valueInBaseCurrency
+                  markets.developedMarkets.valueInBaseCurrency,
+                  userSettings.language
                 ),
                 new EconomicMarketClusterRiskEmergingMarkets(
                   this.exchangeRateDataService,
+                  this.i18nService,
                   marketsTotalInBaseCurrency,
-                  markets.emergingMarkets.valueInBaseCurrency
+                  markets.emergingMarkets.valueInBaseCurrency,
+                  userSettings.language
                 )
               ],
               userSettings
@@ -1268,26 +1272,36 @@ export class PortfolioService {
               [
                 new RegionalMarketClusterRiskAsiaPacific(
                   this.exchangeRateDataService,
+                  this.i18nService,
+                  userSettings.language,
                   marketsAdvancedTotalInBaseCurrency,
                   marketsAdvanced.asiaPacific.valueInBaseCurrency
                 ),
                 new RegionalMarketClusterRiskEmergingMarkets(
                   this.exchangeRateDataService,
+                  this.i18nService,
+                  userSettings.language,
                   marketsAdvancedTotalInBaseCurrency,
                   marketsAdvanced.emergingMarkets.valueInBaseCurrency
                 ),
                 new RegionalMarketClusterRiskEurope(
                   this.exchangeRateDataService,
+                  this.i18nService,
+                  userSettings.language,
                   marketsAdvancedTotalInBaseCurrency,
                   marketsAdvanced.europe.valueInBaseCurrency
                 ),
                 new RegionalMarketClusterRiskJapan(
                   this.exchangeRateDataService,
+                  this.i18nService,
+                  userSettings.language,
                   marketsAdvancedTotalInBaseCurrency,
                   marketsAdvanced.japan.valueInBaseCurrency
                 ),
                 new RegionalMarketClusterRiskNorthAmerica(
                   this.exchangeRateDataService,
+                  this.i18nService,
+                  userSettings.language,
                   marketsAdvancedTotalInBaseCurrency,
                   marketsAdvanced.northAmerica.valueInBaseCurrency
                 )
