@@ -2,14 +2,13 @@ import { Activity } from '@ghostfolio/api/app/order/interfaces/activities.interf
 import { ConfirmationDialogType } from '@ghostfolio/client/core/notification/confirmation-dialog/confirmation-dialog.type';
 import { NotificationService } from '@ghostfolio/client/core/notification/notification.service';
 import { GfSymbolModule } from '@ghostfolio/client/pipes/symbol/symbol.module';
-import { DEFAULT_PAGE_SIZE } from '@ghostfolio/common/config';
+import {
+  DEFAULT_PAGE_SIZE,
+  TAG_ID_EXCLUDE_FROM_ANALYSIS
+} from '@ghostfolio/common/config';
 import { getDateFormatString, getLocale } from '@ghostfolio/common/helper';
 import { AssetProfileIdentifier } from '@ghostfolio/common/interfaces';
 import { OrderWithAccount } from '@ghostfolio/common/types';
-import { GfActivityTypeComponent } from '@ghostfolio/ui/activity-type';
-import { GfEntityLogoComponent } from '@ghostfolio/ui/entity-logo';
-import { GfNoTransactionsInfoComponent } from '@ghostfolio/ui/no-transactions-info';
-import { GfValueComponent } from '@ghostfolio/ui/value';
 
 import { SelectionModel } from '@angular/cdk/collections';
 import { CommonModule } from '@angular/common';
@@ -61,6 +60,11 @@ import {
 } from 'ionicons/icons';
 import { NgxSkeletonLoaderModule } from 'ngx-skeleton-loader';
 import { Subject, Subscription, takeUntil } from 'rxjs';
+
+import { GfActivityTypeComponent } from '../activity-type/activity-type.component';
+import { GfEntityLogoComponent } from '../entity-logo/entity-logo.component';
+import { GfNoTransactionsInfoComponent } from '../no-transactions-info/no-transactions-info.component';
+import { GfValueComponent } from '../value/value.component';
 
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -170,12 +174,6 @@ export class GfActivitiesTableComponent
     });
   }
 
-  public areAllRowsSelected() {
-    const numSelectedRows = this.selectedRows.selected.length;
-    const numTotalRows = this.dataSource.data.length;
-    return numSelectedRows === numTotalRows;
-  }
-
   public ngOnChanges() {
     this.defaultDateFormat = getDateFormatString(this.locale);
 
@@ -214,6 +212,21 @@ export class GfActivitiesTableComponent
     }
   }
 
+  public areAllRowsSelected() {
+    const numSelectedRows = this.selectedRows.selected.length;
+    const numTotalRows = this.dataSource.data.length;
+    return numSelectedRows === numTotalRows;
+  }
+
+  public isExcludedFromAnalysis(activity: Activity) {
+    return (
+      activity.account?.isExcluded ||
+      activity.tags?.some(({ id }) => {
+        return id === TAG_ID_EXCLUDE_FROM_ANALYSIS;
+      })
+    );
+  }
+
   public onChangePage(page: PageEvent) {
     this.pageChanged.emit(page);
   }
@@ -225,7 +238,7 @@ export class GfActivitiesTableComponent
       }
     } else if (
       this.hasPermissionToOpenDetails &&
-      activity.account?.isExcluded !== true &&
+      this.isExcludedFromAnalysis(activity) === false &&
       activity.isDraft === false &&
       ['BUY', 'DIVIDEND', 'SELL'].includes(activity.type)
     ) {

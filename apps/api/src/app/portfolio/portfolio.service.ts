@@ -33,6 +33,7 @@ import {
 import {
   DEFAULT_CURRENCY,
   TAG_ID_EMERGENCY_FUND,
+  TAG_ID_EXCLUDE_FROM_ANALYSIS,
   UNKNOWN_KEY
 } from '@ghostfolio/common/config';
 import { DATE_FORMAT, getSum, parseDate } from '@ghostfolio/common/helper';
@@ -191,6 +192,7 @@ export class PortfolioService {
         ...account,
         transactionCount,
         valueInBaseCurrency,
+        allocationInPercentage: null, // TODO
         balanceInBaseCurrency: this.exchangeRateDataService.toCurrency(
           account.balance,
           account.currency,
@@ -1156,7 +1158,7 @@ export class PortfolioService {
       })
     ).toNumber();
 
-    const rules: PortfolioReportResponse['rules'] = {
+    const rules: PortfolioReportResponse['xRay']['rules'] = {
       accountClusterRisk:
         summary.activityCount > 0
           ? await this.rulesService.evaluate(
@@ -1223,13 +1225,17 @@ export class PortfolioService {
               [
                 new EconomicMarketClusterRiskDevelopedMarkets(
                   this.exchangeRateDataService,
+                  this.i18nService,
                   marketsTotalInBaseCurrency,
-                  markets.developedMarkets.valueInBaseCurrency
+                  markets.developedMarkets.valueInBaseCurrency,
+                  userSettings.language
                 ),
                 new EconomicMarketClusterRiskEmergingMarkets(
                   this.exchangeRateDataService,
+                  this.i18nService,
                   marketsTotalInBaseCurrency,
-                  markets.emergingMarkets.valueInBaseCurrency
+                  markets.emergingMarkets.valueInBaseCurrency,
+                  userSettings.language
                 )
               ],
               userSettings
@@ -1268,26 +1274,36 @@ export class PortfolioService {
               [
                 new RegionalMarketClusterRiskAsiaPacific(
                   this.exchangeRateDataService,
+                  this.i18nService,
+                  userSettings.language,
                   marketsAdvancedTotalInBaseCurrency,
                   marketsAdvanced.asiaPacific.valueInBaseCurrency
                 ),
                 new RegionalMarketClusterRiskEmergingMarkets(
                   this.exchangeRateDataService,
+                  this.i18nService,
+                  userSettings.language,
                   marketsAdvancedTotalInBaseCurrency,
                   marketsAdvanced.emergingMarkets.valueInBaseCurrency
                 ),
                 new RegionalMarketClusterRiskEurope(
                   this.exchangeRateDataService,
+                  this.i18nService,
+                  userSettings.language,
                   marketsAdvancedTotalInBaseCurrency,
                   marketsAdvanced.europe.valueInBaseCurrency
                 ),
                 new RegionalMarketClusterRiskJapan(
                   this.exchangeRateDataService,
+                  this.i18nService,
+                  userSettings.language,
                   marketsAdvancedTotalInBaseCurrency,
                   marketsAdvanced.japan.valueInBaseCurrency
                 ),
                 new RegionalMarketClusterRiskNorthAmerica(
                   this.exchangeRateDataService,
+                  this.i18nService,
+                  userSettings.language,
                   marketsAdvancedTotalInBaseCurrency,
                   marketsAdvanced.northAmerica.valueInBaseCurrency
                 )
@@ -1297,7 +1313,12 @@ export class PortfolioService {
           : undefined
     };
 
-    return { rules, statistics: this.getReportStatistics(rules) };
+    return {
+      xRay: {
+        rules,
+        statistics: this.getReportStatistics(rules)
+      }
+    };
   }
 
   public async updateTags({
@@ -1717,8 +1738,8 @@ export class PortfolioService {
   }
 
   private getReportStatistics(
-    evaluatedRules: PortfolioReportResponse['rules']
-  ): PortfolioReportResponse['statistics'] {
+    evaluatedRules: PortfolioReportResponse['xRay']['rules']
+  ): PortfolioReportResponse['xRay']['statistics'] {
     const rulesActiveCount = Object.values(evaluatedRules)
       .flat()
       .filter((rule) => {
@@ -1779,14 +1800,19 @@ export class PortfolioService {
     const { activities } = await this.orderService.getOrders({
       userCurrency,
       userId,
-      withExcludedAccounts: true
+      withExcludedAccountsAndActivities: true
     });
 
     const excludedActivities: Activity[] = [];
     const nonExcludedActivities: Activity[] = [];
 
     for (const activity of activities) {
-      if (activity.account?.isExcluded) {
+      if (
+        activity.account?.isExcluded ||
+        activity.tags?.some(({ id }) => {
+          return id === TAG_ID_EXCLUDE_FROM_ANALYSIS;
+        })
+      ) {
         excludedActivities.push(activity);
       } else {
         nonExcludedActivities.push(activity);

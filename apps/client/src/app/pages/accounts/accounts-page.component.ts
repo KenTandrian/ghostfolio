@@ -4,13 +4,13 @@ import { UpdateAccountDto } from '@ghostfolio/api/app/account/update-account.dto
 import { AccountDetailDialog } from '@ghostfolio/client/components/account-detail-dialog/account-detail-dialog.component';
 import { GfAccountDetailDialogModule } from '@ghostfolio/client/components/account-detail-dialog/account-detail-dialog.module';
 import { AccountDetailDialogParams } from '@ghostfolio/client/components/account-detail-dialog/interfaces/interfaces';
-import { GfAccountsTableModule } from '@ghostfolio/client/components/accounts-table/accounts-table.module';
 import { NotificationService } from '@ghostfolio/client/core/notification/notification.service';
 import { DataService } from '@ghostfolio/client/services/data.service';
 import { ImpersonationStorageService } from '@ghostfolio/client/services/impersonation-storage.service';
 import { UserService } from '@ghostfolio/client/services/user/user.service';
 import { User } from '@ghostfolio/common/interfaces';
 import { hasPermission, permissions } from '@ghostfolio/common/permissions';
+import { GfAccountsTableComponent } from '@ghostfolio/ui/accounts-table';
 
 import { ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
@@ -30,7 +30,7 @@ import { GfTransferBalanceDialogComponent } from './transfer-balance/transfer-ba
   host: { class: 'has-fab page' },
   imports: [
     GfAccountDetailDialogModule,
-    GfAccountsTableModule,
+    GfAccountsTableComponent,
     MatButtonModule,
     RouterModule
   ],
@@ -239,7 +239,7 @@ export class GfAccountsPageComponent implements OnDestroy, OnInit {
         accountId: aAccountId,
         deviceType: this.deviceType,
         hasImpersonationId: this.hasImpersonationId,
-        hasPermissionToCreateOrder:
+        hasPermissionToCreateActivity:
           !this.hasImpersonationId &&
           hasPermission(this.user?.permissions, permissions.createOrder) &&
           !this.user?.settings?.isRestrictedView

@@ -302,10 +302,14 @@ export class UserService {
         new EconomicMarketClusterRiskDevelopedMarkets(
           undefined,
           undefined,
+          undefined,
+          undefined,
           undefined
         ).getSettings(user.settings.settings),
       EconomicMarketClusterRiskEmergingMarkets:
         new EconomicMarketClusterRiskEmergingMarkets(
+          undefined,
+          undefined,
           undefined,
           undefined,
           undefined
@@ -327,10 +331,14 @@ export class UserService {
         new RegionalMarketClusterRiskAsiaPacific(
           undefined,
           undefined,
+          undefined,
+          undefined,
           undefined
         ).getSettings(user.settings.settings),
       RegionalMarketClusterRiskEmergingMarkets:
         new RegionalMarketClusterRiskEmergingMarkets(
+          undefined,
+          undefined,
           undefined,
           undefined,
           undefined
@@ -338,15 +346,21 @@ export class UserService {
       RegionalMarketClusterRiskEurope: new RegionalMarketClusterRiskEurope(
         undefined,
         undefined,
+        undefined,
+        undefined,
         undefined
       ).getSettings(user.settings.settings),
       RegionalMarketClusterRiskJapan: new RegionalMarketClusterRiskJapan(
+        undefined,
+        undefined,
         undefined,
         undefined,
         undefined
       ).getSettings(user.settings.settings),
       RegionalMarketClusterRiskNorthAmerica:
         new RegionalMarketClusterRiskNorthAmerica(
+          undefined,
+          undefined,
           undefined,
           undefined,
           undefined
