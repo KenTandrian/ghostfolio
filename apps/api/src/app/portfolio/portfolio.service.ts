@@ -220,11 +220,27 @@ export class PortfolioService {
     userId: string;
     withExcludedAccounts?: boolean;
   }): Promise<AccountsResponse> {
-    const accounts = await this.getAccounts({
+    let accounts = await this.getAccounts({
       filters,
       userId,
       withExcludedAccounts
     });
+
+    const searchQuery = filters.find(({ type }) => {
+      return type === 'SEARCH_QUERY';
+    })?.id;
+
+    if (searchQuery) {
+      const fuse = new Fuse(accounts, {
+        keys: ['name', 'platform.name'],
+        threshold: 0.3
+      });
+
+      accounts = fuse.search(searchQuery).map(({ item }) => {
+        return item;
+      });
+    }
+
     let totalBalanceInBaseCurrency = new Big(0);
     let totalValueInBaseCurrency = new Big(0);
     let transactionCount = 0;
@@ -276,13 +292,11 @@ export class PortfolioService {
     dateRange,
     filters,
     impersonationId,
-    query,
     userId
   }: {
     dateRange: DateRange;
     filters?: Filter[];
     impersonationId: string;
-    query?: string;
     userId: string;
   }) {
     userId = await this.getUserId(impersonationId, userId);
@@ -295,13 +309,17 @@ export class PortfolioService {
 
     let holdings = Object.values(holdingsMap);
 
-    if (query) {
+    const searchQuery = filters.find(({ type }) => {
+      return type === 'SEARCH_QUERY';
+    })?.id;
+
+    if (searchQuery) {
       const fuse = new Fuse(holdings, {
         keys: ['isin', 'name', 'symbol'],
         threshold: 0.3
       });
 
-      holdings = fuse.search(query).map(({ item }) => {
+      holdings = fuse.search(searchQuery).map(({ item }) => {
         return item;
       });
     }
