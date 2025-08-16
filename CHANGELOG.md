@@ -7,9 +7,65 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Added
+
+- Included accounts in the search results of the assistant
+
 ### Changed
 
+- Migrated the prompt dialog component from `ngModel` to form control
+
+## 2.191.1 - 2025-08-14
+
+### Added
+
+- Added a new static portfolio analysis rule: _Liquidity_ (Buying Power)
+- Added the interest and dividend values to the account detail dialog
+
+### Changed
+
+- Moved the chart of the account detail dialog from experimental to general availability
+- Improved the dynamic numerical precision for various values in the account detail dialog
+- Improved the usability of the _Cancel_ / _Close_ and _Save_ buttons in various dialogs
+- Extended the accounts endpoint by allocations
+- Extended the accounts endpoint by dividend and interest
+- Refactored the portfolio performance component to standalone
+- Improved the language localization for German (`de`)
+- Improved the language localization for Portuguese (`pt`)
+- Improved the language localization for Spanish (`es`)
+
+## 2.190.0 - 2025-08-09
+
+### Changed
+
+- Extended the import functionality by tags
+- Improved the dynamic numerical precision for various values in the holding detail dialog
+- Shortened the date in the activities table on mobile
+- Introduced the fuzzy search for the accounts endpoint
+- Refactored the fuzzy search for the holdings of the assistant
+- Eliminated the warnings of the database seeding process
+- Improved the language localization for German (`de`)
 - Improved the language localization for Polish (`pl`)
+- Improved the language localization for Spanish (`es`)
+- Removed the unused `codelyzer` dependency
+
+## 2.189.0 - 2025-08-05
+
+### Changed
+
+- Improved the meta data in `html` files
+- Removed `ts-node` from the database seeding process
+- Improved the language localization for Catalan (`ca`)
+- Improved the language localization for German (`de`)
+- Upgraded the `Node.js` engine from version `>=22` to `>=22.18.0` (`package.json`)
+
+## 2.188.0 - 2025-08-02
+
+### Changed
+
+- Enhanced the performance of the dynamically composed sitemap
+- Improved the language localization for Polish (`pl`)
+- Improved the language localization for Spanish (`es`)
 
 ## 2.187.0 - 2025-08-02
 
