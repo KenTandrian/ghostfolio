@@ -120,9 +120,7 @@ const routes: Routes = [
   {
     path: publicRoutes.register.path,
     loadChildren: () =>
-      import('./pages/register/register-page.module').then(
-        (m) => m.RegisterPageModule
-      )
+      import('./pages/register/register-page.routes').then((m) => m.routes)
   },
   {
     path: publicRoutes.resources.path,
@@ -132,9 +130,7 @@ const routes: Routes = [
   {
     path: publicRoutes.start.path,
     loadChildren: () =>
-      import('./pages/landing/landing-page.module').then(
-        (m) => m.LandingPageModule
-      )
+      import('./pages/landing/landing-page.routes').then((m) => m.routes)
   },
   {
     loadComponent: () =>
