@@ -101,6 +101,7 @@ export class PluangService implements DataProviderInterface {
 
   public getDataProviderInfo(): DataProviderInfo {
     return {
+      dataSource: DataSource.PLUANG,
       isPremium: false,
       name: 'Pluang',
       url: 'https://pluang.com'
