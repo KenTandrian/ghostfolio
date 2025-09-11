@@ -5,6 +5,7 @@ import {
   XRayRulesSettings
 } from '@ghostfolio/common/interfaces';
 
+import { CommonModule } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -13,28 +14,41 @@ import {
   OnInit,
   Output
 } from '@angular/core';
+import { MatButtonModule } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
+import { MatMenuModule } from '@angular/material/menu';
+import { IonIcon } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
 import {
+  addCircleOutline,
   checkmarkCircleOutline,
   ellipsisHorizontal,
+  optionsOutline,
   removeCircleOutline,
   warningOutline
 } from 'ionicons/icons';
 import { DeviceDetectorService } from 'ngx-device-detector';
+import { NgxSkeletonLoaderModule } from 'ngx-skeleton-loader';
 import { Subject, takeUntil } from 'rxjs';
 
 import { IRuleSettingsDialogParams } from './rule-settings-dialog/interfaces/interfaces';
 import { GfRuleSettingsDialogComponent } from './rule-settings-dialog/rule-settings-dialog.component';
 
 @Component({
-  selector: 'gf-rule',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  templateUrl: './rule.component.html',
+  imports: [
+    CommonModule,
+    IonIcon,
+    MatButtonModule,
+    MatMenuModule,
+    NgxSkeletonLoaderModule
+  ],
+  selector: 'gf-rule',
   styleUrls: ['./rule.component.scss'],
-  standalone: false
+  templateUrl: './rule.component.html'
 })
-export class RuleComponent implements OnInit {
+export class GfRuleComponent implements OnInit {
+  @Input() categoryName: string;
   @Input() hasPermissionToUpdateUserSettings: boolean;
   @Input() isLoading: boolean;
   @Input() rule: PortfolioReportRule;
@@ -50,8 +64,10 @@ export class RuleComponent implements OnInit {
     private dialog: MatDialog
   ) {
     addIcons({
+      addCircleOutline,
       checkmarkCircleOutline,
       ellipsisHorizontal,
+      optionsOutline,
       removeCircleOutline,
       warningOutline
     });
@@ -65,6 +81,7 @@ export class RuleComponent implements OnInit {
     const dialogRef = this.dialog.open(GfRuleSettingsDialogComponent, {
       data: {
         rule,
+        categoryName: this.categoryName,
         settings: this.settings
       } as IRuleSettingsDialogParams,
       width: this.deviceType === 'mobile' ? '100vw' : '50rem'

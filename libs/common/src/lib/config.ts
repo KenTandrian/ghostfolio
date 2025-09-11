@@ -1,4 +1,4 @@
-import { AssetClass, AssetSubClass, DataSource } from '@prisma/client';
+import { AssetClass, AssetSubClass, DataSource, Type } from '@prisma/client';
 import { JobOptions, JobStatus } from 'bull';
 import ms from 'ms';
 
@@ -118,6 +118,12 @@ export const GATHER_HISTORICAL_MARKET_DATA_PROCESS_JOB_OPTIONS: JobOptions = {
   removeOnComplete: true
 };
 
+export const INVESTMENT_ACTIVITY_TYPES = [
+  Type.BUY,
+  Type.DIVIDEND,
+  Type.SELL
+] as Type[];
+
 export const PORTFOLIO_SNAPSHOT_PROCESS_JOB_NAME = 'PORTFOLIO';
 export const PORTFOLIO_SNAPSHOT_PROCESS_JOB_OPTIONS: JobOptions = {
   attempts: 3,
@@ -131,7 +137,9 @@ export const HEADER_KEY_SKIP_INTERCEPTOR = 'X-Skip-Interceptor';
 
 export const MAX_TOP_HOLDINGS = 50;
 
-export const NUMERICAL_PRECISION_THRESHOLD = 100000;
+export const NUMERICAL_PRECISION_THRESHOLD_3_FIGURES = 100;
+export const NUMERICAL_PRECISION_THRESHOLD_5_FIGURES = 10000;
+export const NUMERICAL_PRECISION_THRESHOLD_6_FIGURES = 100000;
 
 export const PROPERTY_API_KEY_GHOSTFOLIO = 'API_KEY_GHOSTFOLIO';
 export const PROPERTY_API_KEY_OPENROUTER = 'API_KEY_OPENROUTER';
@@ -195,6 +203,8 @@ export const SUPPORTED_LANGUAGE_CODES = [
 ];
 
 export const TAG_ID_EMERGENCY_FUND = '4452656d-9fa4-4bd0-ba38-70492e31d180';
+export const TAG_ID_EXCLUDE_FROM_ANALYSIS =
+  'f2e868af-8333-459f-b161-cbc6544c24bd';
 export const TAG_ID_DEMO = 'efa08cb3-9b9d-4974-ac68-db13a19c4874';
 
 export const UNKNOWN_KEY = 'UNKNOWN';

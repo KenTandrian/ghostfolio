@@ -6,7 +6,6 @@ import {
   PortfolioPosition
 } from '@ghostfolio/common/interfaces';
 import { ColorScheme } from '@ghostfolio/common/types';
-import { translate } from '@ghostfolio/ui/i18n';
 
 import { CommonModule } from '@angular/common';
 import {
@@ -33,6 +32,8 @@ import { isUUID } from 'class-validator';
 import Color from 'color';
 import { NgxSkeletonLoaderModule } from 'ngx-skeleton-loader';
 import OpenColor from 'open-color';
+
+import { translate } from '../i18n';
 
 const {
   blue,

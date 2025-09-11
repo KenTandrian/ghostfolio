@@ -30,8 +30,7 @@ import { CustomDateAdapter } from './adapter/custom-date-adapter';
 import { DateFormats } from './adapter/date-formats';
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
-import { GfHeaderModule } from './components/header/header.module';
-import { GfSubscriptionInterstitialDialogModule } from './components/subscription-interstitial-dialog/subscription-interstitial-dialog.module';
+import { GfHeaderComponent } from './components/header/header.component';
 import { authInterceptorProviders } from './core/auth.interceptor';
 import { httpResponseInterceptorProviders } from './core/http-response.interceptor';
 import { LanguageService } from './core/language.service';
@@ -48,10 +47,9 @@ export function NgxStripeFactory(): string {
     AppRoutingModule,
     BrowserAnimationsModule,
     BrowserModule,
-    GfHeaderModule,
+    GfHeaderComponent,
     GfLogoComponent,
     GfNotificationModule,
-    GfSubscriptionInterstitialDialogModule,
     IonIcon,
     MatAutocompleteModule,
     MatChipsModule,

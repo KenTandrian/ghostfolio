@@ -1,7 +1,5 @@
-import { GfBenchmarkComparatorModule } from '@ghostfolio/client/components/benchmark-comparator/benchmark-comparator.module';
-import { GfInvestmentChartModule } from '@ghostfolio/client/components/investment-chart/investment-chart.module';
-import { ToggleComponent } from '@ghostfolio/client/components/toggle/toggle.component';
-import { GfToggleModule } from '@ghostfolio/client/components/toggle/toggle.module';
+import { GfBenchmarkComparatorComponent } from '@ghostfolio/client/components/benchmark-comparator/benchmark-comparator.component';
+import { GfInvestmentChartComponent } from '@ghostfolio/client/components/investment-chart/investment-chart.component';
 import { DataService } from '@ghostfolio/client/services/data.service';
 import { ImpersonationStorageService } from '@ghostfolio/client/services/impersonation-storage.service';
 import { UserService } from '@ghostfolio/client/services/user/user.service';
@@ -18,6 +16,7 @@ import { hasPermission, permissions } from '@ghostfolio/common/permissions';
 import type { AiPromptMode, GroupBy } from '@ghostfolio/common/types';
 import { translate } from '@ghostfolio/ui/i18n';
 import { GfPremiumIndicatorComponent } from '@ghostfolio/ui/premium-indicator';
+import { GfToggleComponent } from '@ghostfolio/ui/toggle';
 import { GfValueComponent } from '@ghostfolio/ui/value';
 
 import { Clipboard } from '@angular/cdk/clipboard';
@@ -33,6 +32,7 @@ import { MatCardModule } from '@angular/material/card';
 import { MatMenuModule, MatMenuTrigger } from '@angular/material/menu';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { RouterModule } from '@angular/router';
 import { IonIcon } from '@ionic/angular/standalone';
 import { SymbolProfile } from '@prisma/client';
 import { addIcons } from 'ionicons';
@@ -46,17 +46,18 @@ import { takeUntil } from 'rxjs/operators';
 
 @Component({
   imports: [
-    GfBenchmarkComparatorModule,
-    GfInvestmentChartModule,
+    GfBenchmarkComparatorComponent,
+    GfInvestmentChartComponent,
     GfPremiumIndicatorComponent,
-    GfToggleModule,
+    GfToggleComponent,
     GfValueComponent,
     IonIcon,
     MatButtonModule,
     MatCardModule,
     MatMenuModule,
     MatProgressSpinnerModule,
-    NgxSkeletonLoaderModule
+    NgxSkeletonLoaderModule,
+    RouterModule
   ],
   selector: 'gf-analysis-page',
   styleUrls: ['./analysis-page.scss'],
@@ -69,7 +70,6 @@ export class GfAnalysisPageComponent implements OnDestroy, OnInit {
   public benchmarkDataItems: HistoricalDataItem[] = [];
   public benchmarks: Partial<SymbolProfile>[];
   public bottom3: PortfolioPosition[];
-  public dateRangeOptions = ToggleComponent.DEFAULT_DATE_RANGE_OPTIONS;
   public deviceType: string;
   public dividendsByGroup: InvestmentItem[];
   public dividendTimelineDataLabel = $localize`Dividend`;
@@ -344,13 +344,20 @@ export class GfAnalysisPageComponent implements OnDestroy, OnInit {
           'netPerformancePercentWithCurrencyEffect'
         ).reverse();
 
-        this.top3 = holdingsSorted.slice(0, 3);
+        this.top3 = holdingsSorted
+          .filter(
+            ({ netPerformancePercentWithCurrencyEffect }) =>
+              netPerformancePercentWithCurrencyEffect > 0
+          )
+          .slice(0, 3);
 
-        if (holdings?.length > 3) {
-          this.bottom3 = holdingsSorted.slice(-3).reverse();
-        } else {
-          this.bottom3 = [];
-        }
+        this.bottom3 = holdingsSorted
+          .filter(
+            ({ netPerformancePercentWithCurrencyEffect }) =>
+              netPerformancePercentWithCurrencyEffect < 0
+          )
+          .slice(-3)
+          .reverse();
 
         this.changeDetectorRef.markForCheck();
       });

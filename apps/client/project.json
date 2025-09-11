@@ -275,7 +275,8 @@
           "messages.tr.xlf",
           "messages.uk.xlf",
           "messages.zh.xlf"
-        ]
+        ],
+        "trim": true
       }
     },
     "lint": {
@@ -287,7 +288,8 @@
     "test": {
       "executor": "@nx/jest:jest",
       "options": {
-        "jestConfig": "apps/client/jest.config.ts"
+        "jestConfig": "apps/client/jest.config.ts",
+        "tsConfig": "apps/client/tsconfig.spec.json"
       },
       "outputs": ["{workspaceRoot}/coverage/apps/client"]
     }
