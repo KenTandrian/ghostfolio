@@ -7,6 +7,57 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Added
+
+- Added the symbol to the benchmark component
+- Added pagination to the activities table of the activities import dialog
+- Added an option to configure the account column of the activities table component
+
+### Changed
+
+- Hid the account column from the activities table of the account detail dialog to avoid redundant information
+- Renamed the show access token dialog component to user account registration dialog component
+- Refreshed the cryptocurrencies list
+- Upgraded `countup.js` from version `2.8.2` to `2.9.0`
+
+### Fixed
+
+- Fixed an issue with `unitPriceInAssetProfileCurrency` in the value redaction interceptor for the impersonation mode
+
+## 2.200.0 - 2025-09-17
+
+### Changed
+
+- Refactored the show access token dialog component to standalone
+- Upgraded `prisma` from version `6.15.0` to `6.16.1`
+
+### Fixed
+
+- Removed a temporary element from the activities table component
+
+## 2.199.0 - 2025-09-14
+
+### Added
+
+- Extended the content of the performance calculation method by dividends on the Frequently Asked Questions (FAQ) page
+- Added a _Storybook_ story for the entity logo image component
+
+### Changed
+
+- Improved the search in the _Yahoo Finance_ service
+- Moved the holdings table into the holdings section on the public page
+- Migrated to the _Prisma Configuration File_ approach (`prisma.config.ts`)
+- Refactored the login with access token dialog component to standalone
+- Prefixed the `crypto`, `fs` and `path` imports with `node:`
+- Upgraded `yahoo-finance2` from version `3.8.0` to `3.10.0`
+
+### Fixed
+
+- Fixed a pagination issue in the market data endpoint by adding `id` as a secondary sort criterion to ensure consistent ordering in the admin control panel
+- Fixed a pagination issue in the user endpoint by adding `id` as a secondary sort criterion to ensure consistent ordering in the admin control panel
+
+## 2.198.0 - 2025-09-11
+
 ### Changed
 
 - Extended the variations of the interstitials for the subscription
@@ -19,6 +70,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Refactored the rules component to standalone
 - Refactored the subscription interstitial dialog component to standalone
 - Removed the `IonIcon` import from the landing page
+- Improved the language localization for German (`de`)
 - Upgraded `angular` from version `20.1.3` to `20.2.4`
 - Upgraded `eslint` dependencies
 - Upgraded `Nx` from version `21.3.9` to `21.5.1`
