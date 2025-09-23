@@ -131,7 +131,7 @@ export class PluangService implements DataProviderInterface {
         return {
           [symbol]: data.history.reduce((acc, item) => {
             acc[item.updated_at.split('T')[0]] = {
-              marketPrice: item.midPrice
+              marketPrice: item.midPrice ?? (item.sell + item.buy) / 2
             };
             return acc;
           }, {})
