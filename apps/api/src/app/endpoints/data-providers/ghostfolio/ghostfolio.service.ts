@@ -8,7 +8,7 @@ import {
   GetQuotesParams,
   GetSearchParams
 } from '@ghostfolio/api/services/data-provider/interfaces/data-provider.interface';
-import { IDataProviderHistoricalResponse } from '@ghostfolio/api/services/interfaces/interfaces';
+import { DataProviderHistoricalResponse } from '@ghostfolio/api/services/interfaces/interfaces';
 import { PrismaService } from '@ghostfolio/api/services/prisma/prisma.service';
 import { PropertyService } from '@ghostfolio/api/services/property/property.service';
 import {
@@ -40,10 +40,7 @@ export class GhostfolioService {
     private readonly propertyService: PropertyService
   ) {}
 
-  public async getAssetProfile({
-    requestTimeout = this.configurationService.get('REQUEST_TIMEOUT'),
-    symbol
-  }: GetAssetProfileParams) {
+  public async getAssetProfile({ symbol }: GetAssetProfileParams) {
     let result: DataProviderGhostfolioAssetProfileResponse = {};
 
     try {
@@ -51,12 +48,15 @@ export class GhostfolioService {
 
       for (const dataProviderService of this.getDataProviderServices()) {
         promises.push(
-          dataProviderService
-            .getAssetProfile({
-              requestTimeout,
-              symbol
-            })
-            .then(async (assetProfile) => {
+          this.dataProviderService
+            .getAssetProfiles([
+              {
+                symbol,
+                dataSource: dataProviderService.getName()
+              }
+            ])
+            .then(async (assetProfiles) => {
+              const assetProfile = assetProfiles[symbol];
               const dataSourceOrigin = DataSource.GHOSTFOLIO;
 
               if (assetProfile) {
@@ -114,7 +114,7 @@ export class GhostfolioService {
 
     try {
       const promises: Promise<{
-        [date: string]: IDataProviderHistoricalResponse;
+        [date: string]: DataProviderHistoricalResponse;
       }>[] = [];
 
       for (const dataProviderService of this.getDataProviderServices()) {
@@ -156,7 +156,7 @@ export class GhostfolioService {
 
     try {
       const promises: Promise<{
-        [symbol: string]: { [date: string]: IDataProviderHistoricalResponse };
+        [symbol: string]: { [date: string]: DataProviderHistoricalResponse };
       }>[] = [];
 
       for (const dataProviderService of this.getDataProviderServices()) {
