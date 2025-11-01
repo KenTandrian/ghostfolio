@@ -61,14 +61,16 @@
   },
   "targets": {
     "build": {
-      "executor": "@nx/angular:browser-esbuild",
+      "executor": "@nx/angular:application",
       "options": {
         "deleteOutputPath": false,
         "localize": true,
-        "outputPath": "dist/apps/client",
+        "outputPath": {
+          "base": "dist/apps/client",
+          "browser": ""
+        },
         "index": "apps/client/src/index.html",
-        "main": "apps/client/src/main.ts",
-        "polyfills": "apps/client/src/polyfills.ts",
+        "polyfills": ["apps/client/src/polyfills.ts"],
         "tsConfig": "apps/client/tsconfig.app.json",
         "styles": [
           "apps/client/src/assets/fonts/inter.css",
@@ -76,19 +78,12 @@
           "apps/client/src/styles.scss",
           "node_modules/open-color/open-color.css"
         ],
-        "stylePreprocessorOptions": {
-          "includePaths": ["node_modules"]
-        },
-        "externalDependencies": ["ionicons/ionicons.esm.js"],
         "scripts": ["node_modules/marked/marked.min.js"],
-        "vendorChunk": true,
         "extractLicenses": false,
-        "buildOptimizer": false,
         "sourceMap": true,
         "optimization": false,
         "namedChunks": true,
-        "serviceWorker": true,
-        "ngswConfigPath": "apps/client/ngsw-config.json"
+        "serviceWorker": "apps/client/ngsw-config.json"
       },
       "configurations": {
         "development-ca": {
@@ -151,8 +146,6 @@
           "sourceMap": false,
           "namedChunks": false,
           "extractLicenses": true,
-          "vendorChunk": false,
-          "buildOptimizer": true,
           "budgets": [
             {
               "type": "initial",
