@@ -7,15 +7,82 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Changed
+
+- Changed the build executor of the client from `@nx/angular:webpack-browser` to `@nx/angular:browser-esbuild`
+
+### Fixed
+
+- Fixed the style of the safe withdrawal rate selector in the _FIRE_ section (experimental)
+
+## 2.214.0 - 2025-11-01
+
+### Changed
+
+- Improved the icon of the _View Holding_ menu item in the activities table
+- Ensured atomic data replacement during historical market data gathering
+- Removed _Internet Identity_ as a social login provider
+- Refreshed the cryptocurrencies list
+- Upgraded `countries-list` from version `3.1.1` to `3.2.0`
+- Upgraded `ng-extract-i18n-merge` from version `3.0.0` to `3.1.0`
+- Upgraded `twitter-api-v2` from version `1.23.0` to `1.27.0`
+
+## 2.213.0 - 2025-10-30
+
+### Added
+
+- Extended the activities table menu with a _View Holding_ item
+- Added the error logging to the symbol lookup in the _Trackinsight_ data enhancer
+
+### Changed
+
+- Improved the icon of the holdings tab on the home page
+- Improved the icon of the holdings tab on the home page for the _Zen Mode_
+- Improved the icon of the holdings tab in the account detail dialog
+- Migrated the tags selector component in the holding detail dialog to form control
+- Improved the language localization for German (`de`)
+- Upgraded `nestjs` from version `11.1.3` to `11.1.8`
+
+## 2.212.0 - 2025-10-29
+
+### Added
+
+- Added a close holding button to the holding detail dialog
+- Added the _Sponsors_ section to the about page
+- Extended the user detail dialog in the users section of the admin control panel
+
+### Changed
+
+- Refactored the generation of the holdings table in the _Copy AI prompt to clipboard for analysis_ action on the analysis page (experimental)
+- Refactored the generation of the holdings table in the _Copy portfolio data to clipboard for AI prompt_ action on the analysis page (experimental)
+- Improved the usability of the user detail dialog in the users section of the admin control panel
+- Improved the language localization for German (`de`)
+
+### Fixed
+
+- Ensured the locale is available in the settings dialog to customize the rule thresholds of the _X-ray_ page
+
+## 2.211.0 - 2025-10-25
+
 ### Added
 
 - Extended the export functionality by the user account’s performance calculation type
+- Added the _SelfhostedHub_ logo to the logo carousel on the landing page
+- Added a user detail dialog to the users section of the admin control panel
 
 ### Changed
 
 - Localized the number formatting in the static portfolio analysis rule: _Liquidity_ (Buying Power)
 - Moved the _Prisma Configuration File_ from `prisma.config.ts` to `.config/prisma.ts`
+- Improved the language localization for German (`de`)
 - Upgraded `prisma` from version `6.17.1` to `6.18.0`
+- Upgraded `tablemark` from version `3.1.0` to `4.1.0`
+
+### Fixed
+
+- Fixed the style in the footer row of the accounts table
+- Fixed the rendering of names and symbols for custom assets in the import activities dialog
+- Fixed an issue with the market price in base currency during the portfolio snapshot calculation
 
 ## 2.210.1 - 2025-10-22
 
