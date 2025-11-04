@@ -214,7 +214,7 @@ export class GfAssetProfileDialogComponent implements OnDestroy, OnInit {
     },
     {
       label: $localize`Max`,
-      value: 'max'
+      value: ''
     }
   ];
   public historicalDataItems: LineChartItem[];
