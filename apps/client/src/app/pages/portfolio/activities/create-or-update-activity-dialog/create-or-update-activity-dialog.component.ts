@@ -1,8 +1,7 @@
-import { CreateOrderDto } from '@ghostfolio/api/app/order/create-order.dto';
-import { UpdateOrderDto } from '@ghostfolio/api/app/order/update-order.dto';
 import { GfPredefinedFeeComponent } from '@ghostfolio/client/components/predefined-fee/predefined-fee.component';
 import { UserService } from '@ghostfolio/client/services/user/user.service';
 import { ASSET_CLASS_MAPPING } from '@ghostfolio/common/config';
+import { CreateOrderDto, UpdateOrderDto } from '@ghostfolio/common/dtos';
 import { getDateFormatString } from '@ghostfolio/common/helper';
 import {
   AssetClassSelectorOption,
