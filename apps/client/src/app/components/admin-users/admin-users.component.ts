@@ -1,13 +1,12 @@
 import { UserDetailDialogParams } from '@ghostfolio/client/components/user-detail-dialog/interfaces/interfaces';
 import { GfUserDetailDialogComponent } from '@ghostfolio/client/components/user-detail-dialog/user-detail-dialog.component';
-import { ConfirmationDialogType } from '@ghostfolio/client/core/notification/confirmation-dialog/confirmation-dialog.type';
-import { NotificationService } from '@ghostfolio/client/core/notification/notification.service';
 import { AdminService } from '@ghostfolio/client/services/admin.service';
 import { DataService } from '@ghostfolio/client/services/data.service';
 import { ImpersonationStorageService } from '@ghostfolio/client/services/impersonation-storage.service';
 import { TokenStorageService } from '@ghostfolio/client/services/token-storage.service';
 import { UserService } from '@ghostfolio/client/services/user/user.service';
 import { DEFAULT_PAGE_SIZE } from '@ghostfolio/common/config';
+import { ConfirmationDialogType } from '@ghostfolio/common/enums';
 import {
   getDateFnsLocale,
   getDateFormatString,
@@ -19,6 +18,7 @@ import {
   User
 } from '@ghostfolio/common/interfaces';
 import { hasPermission, permissions } from '@ghostfolio/common/permissions';
+import { NotificationService } from '@ghostfolio/ui/notifications';
 import { GfPremiumIndicatorComponent } from '@ghostfolio/ui/premium-indicator';
 import { GfValueComponent } from '@ghostfolio/ui/value';
 
