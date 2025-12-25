@@ -1,12 +1,12 @@
-import { ConfirmationDialogType } from '@ghostfolio/client/core/notification/confirmation-dialog/confirmation-dialog.type';
-import { NotificationService } from '@ghostfolio/client/core/notification/notification.service';
 import { DataService } from '@ghostfolio/client/services/data.service';
 import { UserService } from '@ghostfolio/client/services/user/user.service';
+import { ConfirmationDialogType } from '@ghostfolio/common/enums';
 import { getDateFormatString } from '@ghostfolio/common/helper';
 import { User } from '@ghostfolio/common/interfaces';
 import { hasPermission, permissions } from '@ghostfolio/common/permissions';
 import { publicRoutes } from '@ghostfolio/common/routes/routes';
 import { GfMembershipCardComponent } from '@ghostfolio/ui/membership-card';
+import { NotificationService } from '@ghostfolio/ui/notifications';
 import { GfPremiumIndicatorComponent } from '@ghostfolio/ui/premium-indicator';
 
 import { CommonModule } from '@angular/common';
