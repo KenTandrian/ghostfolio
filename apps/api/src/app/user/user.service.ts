@@ -248,6 +248,11 @@ export class UserService {
       };
     }
 
+    // Set default value for annual interest rate
+    if (!(user.settings.settings as UserSettings)?.annualInterestRate) {
+      (user.settings.settings as UserSettings).annualInterestRate = 5;
+    }
+
     // Set default value for base currency
     if (!(user.settings.settings as UserSettings)?.baseCurrency) {
       (user.settings.settings as UserSettings).baseCurrency = DEFAULT_CURRENCY;
@@ -265,9 +270,19 @@ export class UserService {
         PerformanceCalculationType.ROAI;
     }
 
+    // Set default value for projected total amount
+    if (!(user.settings.settings as UserSettings)?.projectedTotalAmount) {
+      (user.settings.settings as UserSettings).projectedTotalAmount = 0;
+    }
+
     // Set default value for safe withdrawal rate
     if (!(user.settings.settings as UserSettings)?.safeWithdrawalRate) {
       (user.settings.settings as UserSettings).safeWithdrawalRate = 0.04;
+    }
+
+    // Set default value for savings rate
+    if (!(user.settings.settings as UserSettings)?.savingsRate) {
+      (user.settings.settings as UserSettings).savingsRate = 0;
     }
 
     // Set default value for view mode
@@ -526,13 +541,21 @@ export class UserService {
     });
   }
 
-  public async createUser({
-    data
-  }: {
-    data: Prisma.UserCreateInput;
-  }): Promise<User> {
-    if (!data?.provider) {
+  public async createUser(
+    {
+      data
+    }: {
+      data: Prisma.UserCreateInput;
+    } = { data: {} }
+  ): Promise<User> {
+    if (!data.provider) {
       data.provider = 'ANONYMOUS';
+    }
+
+    if (!data.role) {
+      const hasAdmin = await this.hasAdmin();
+
+      data.role = hasAdmin ? 'USER' : 'ADMIN';
     }
 
     const user = await this.prismaService.user.create({

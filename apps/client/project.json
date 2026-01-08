@@ -75,7 +75,6 @@
         "namedChunks": true,
         "optimization": false,
         "polyfills": ["apps/client/src/polyfills.ts"],
-        "scripts": ["node_modules/marked/marked.min.js"],
         "serviceWorker": "apps/client/ngsw-config.json",
         "sourceMap": true,
         "styles": [

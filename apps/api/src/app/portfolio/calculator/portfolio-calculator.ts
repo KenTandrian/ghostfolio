@@ -1,4 +1,3 @@
-import { Activity } from '@ghostfolio/api/app/order/interfaces/activities.interface';
 import { CurrentRateService } from '@ghostfolio/api/app/portfolio/current-rate.service';
 import { PortfolioOrder } from '@ghostfolio/api/app/portfolio/interfaces/portfolio-order.interface';
 import { PortfolioSnapshotValue } from '@ghostfolio/api/app/portfolio/interfaces/snapshot-value.interface';
@@ -26,6 +25,7 @@ import {
   resetHours
 } from '@ghostfolio/common/helper';
 import {
+  Activity,
   AssetProfileIdentifier,
   DataProviderInfo,
   Filter,
@@ -44,11 +44,15 @@ import { plainToClass } from 'class-transformer';
 import {
   differenceInDays,
   eachDayOfInterval,
+  eachYearOfInterval,
   endOfDay,
+  endOfYear,
   format,
   isAfter,
   isBefore,
+  isWithinInterval,
   min,
+  startOfYear,
   subDays
 } from 'date-fns';
 import { isNumber, sortBy, sum, uniqBy } from 'lodash';
@@ -199,13 +203,19 @@ export abstract class PortfolioCalculator {
     let totalInterestWithCurrencyEffect = new Big(0);
     let totalLiabilitiesWithCurrencyEffect = new Big(0);
 
-    for (const { currency, dataSource, symbol } of transactionPoints[
-      firstIndex - 1
-    ].items) {
-      dataGatheringItems.push({
-        dataSource,
-        symbol
-      });
+    for (const {
+      assetSubClass,
+      currency,
+      dataSource,
+      symbol
+    } of transactionPoints[firstIndex - 1].items) {
+      // Gather data for all assets except CASH
+      if (assetSubClass !== 'CASH') {
+        dataGatheringItems.push({
+          dataSource,
+          symbol
+        });
+      }
 
       currencies[symbol] = currency;
     }
@@ -889,6 +899,24 @@ export abstract class PortfolioCalculator {
       }
     }
 
+    // Make sure the first and last date of each calendar year is present
+    const interval = { start: startDate, end: endDate };
+
+    for (const date of eachYearOfInterval(interval)) {
+      const yearStart = startOfYear(date);
+      const yearEnd = endOfYear(date);
+
+      if (isWithinInterval(yearStart, interval)) {
+        // Add start of year (YYYY-01-01)
+        chartDateMap[format(yearStart, DATE_FORMAT)] = true;
+      }
+
+      if (isWithinInterval(yearEnd, interval)) {
+        // Add end of year (YYYY-12-31)
+        chartDateMap[format(yearEnd, DATE_FORMAT)] = true;
+      }
+    }
+
     return chartDateMap;
   }
 
@@ -911,6 +939,7 @@ export abstract class PortfolioCalculator {
     } of this.activities) {
       let currentTransactionPointItem: TransactionPointSymbol;
 
+      const assetSubClass = SymbolProfile.assetSubClass;
       const currency = SymbolProfile.currency;
       const dataSource = SymbolProfile.dataSource;
       const factor = getFactor(type);
@@ -955,6 +984,7 @@ export abstract class PortfolioCalculator {
         }
 
         currentTransactionPointItem = {
+          assetSubClass,
           currency,
           dataSource,
           investment,
@@ -973,6 +1003,7 @@ export abstract class PortfolioCalculator {
         };
       } else {
         currentTransactionPointItem = {
+          assetSubClass,
           currency,
           dataSource,
           fee,

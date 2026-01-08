@@ -1,11 +1,11 @@
-import { ConfirmationDialogType } from '@ghostfolio/client/core/notification/confirmation-dialog/confirmation-dialog.type';
-import { NotificationService } from '@ghostfolio/client/core/notification/notification.service';
+import { ConfirmationDialogType } from '@ghostfolio/common/enums';
 import { getLocale, resolveMarketCondition } from '@ghostfolio/common/helper';
 import {
   AssetProfileIdentifier,
   Benchmark,
   User
 } from '@ghostfolio/common/interfaces';
+import { NotificationService } from '@ghostfolio/ui/notifications';
 
 import { CommonModule } from '@angular/common';
 import {
