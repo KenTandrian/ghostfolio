@@ -142,7 +142,7 @@ export class BibitService implements DataProviderInterface {
         const result = {
           [symbol]: data.prices.reduce((acc, item) => {
             acc[item.formated_date] = {
-              marketPrice: item.buy_price.price_rate * 10000
+              marketPrice: item.sell_price.price_rate * 10000
             };
             return acc;
           }, {})
@@ -200,7 +200,7 @@ export class BibitService implements DataProviderInterface {
             currency: 'IDR',
             dataProviderInfo: this.getDataProviderInfo(),
             dataSource: DataSource.BIBIT,
-            marketPrice: data.buy_price.price_rate * 10000,
+            marketPrice: data.sell_price.price_rate * 10000,
             marketState: 'open'
           };
         } else {
