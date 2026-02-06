@@ -8,10 +8,8 @@ import {
 } from '@ghostfolio/api/services/data-provider/interfaces/data-provider.interface';
 import {
   DataProviderHistoricalResponse,
-  DataProviderResponse
-} from '@ghostfolio/api/services/interfaces/interfaces';
-import {
   DataProviderInfo,
+  DataProviderResponse,
   LookupResponse
 } from '@ghostfolio/common/interfaces';
 

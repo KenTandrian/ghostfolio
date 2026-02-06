@@ -1,8 +1,7 @@
-import { AdminUsersResponse } from '@ghostfolio/common/interfaces';
-
 export interface UserDetailDialogParams {
+  currentUserId: string;
   deviceType: string;
   hasPermissionForSubscription: boolean;
   locale: string;
-  userData: AdminUsersResponse['users'][0];
+  userId: string;
 }

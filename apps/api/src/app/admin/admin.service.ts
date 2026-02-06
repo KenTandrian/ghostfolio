@@ -23,6 +23,7 @@ import {
   AdminMarketData,
   AdminMarketDataDetails,
   AdminMarketDataItem,
+  AdminUserResponse,
   AdminUsersResponse,
   AssetProfileIdentifier,
   EnhancedSymbolProfile,
@@ -35,7 +36,8 @@ import {
   BadRequestException,
   HttpException,
   Injectable,
-  Logger
+  Logger,
+  NotFoundException
 } from '@nestjs/common';
 import {
   AssetClass,
@@ -136,11 +138,11 @@ export class AdminService {
   public async get(): Promise<AdminData> {
     const dataSources = Object.values(DataSource);
 
-    const [enabledDataSources, settings, transactionCount, userCount] =
+    const [activitiesCount, enabledDataSources, settings, userCount] =
       await Promise.all([
+        this.prismaService.order.count(),
         this.dataProviderService.getDataSources(),
         this.propertyService.get(),
-        this.prismaService.order.count(),
         this.countUsersWithAnalytics()
       ]);
 
@@ -180,9 +182,9 @@ export class AdminService {
     ).filter(Boolean);
 
     return {
+      activitiesCount,
       dataProviders,
       settings,
-      transactionCount,
       userCount,
       version: environment.version
     };
@@ -507,6 +509,18 @@ export class AdminService {
     };
   }
 
+  public async getUser(id: string): Promise<AdminUserResponse> {
+    const [user] = await this.getUsersWithAnalytics({
+      where: { id }
+    });
+
+    if (!user) {
+      throw new NotFoundException(`User with ID ${id} not found`);
+    }
+
+    return user;
+  }
+
   public async getUsers({
     skip,
     take = Number.MAX_SAFE_INTEGER
@@ -516,7 +530,10 @@ export class AdminService {
   }): Promise<AdminUsersResponse> {
     const [count, users] = await Promise.all([
       this.countUsersWithAnalytics(),
-      this.getUsersWithAnalytics({ skip, take })
+      this.getUsersWithAnalytics({
+        skip,
+        take
+      })
     ]);
 
     return { count, users };
@@ -814,16 +831,16 @@ export class AdminService {
 
   private async getUsersWithAnalytics({
     skip,
-    take
+    take,
+    where
   }: {
     skip?: number;
     take?: number;
+    where?: Prisma.UserWhereInput;
   }): Promise<AdminUsersResponse['users']> {
     let orderBy: Prisma.Enumerable<Prisma.UserOrderByWithRelationInput> = [
       { createdAt: 'desc' }
     ];
-
-    let where: Prisma.UserWhereInput;
 
     if (this.configurationService.get('ENABLE_FEATURE_SUBSCRIPTION')) {
       orderBy = [
@@ -834,11 +851,19 @@ export class AdminService {
         }
       ];
 
-      where = {
-        NOT: {
-          analytics: null
-        }
+      const noAnalyticsCondition: Prisma.UserWhereInput['NOT'] = {
+        analytics: null
       };
+
+      if (where) {
+        if (where.NOT) {
+          where.NOT = { ...where.NOT, ...noAnalyticsCondition };
+        } else {
+          where.NOT = noAnalyticsCondition;
+        }
+      } else {
+        where = { NOT: noAnalyticsCondition };
+      }
     }
 
     const usersWithAnalytics = await this.prismaService.user.findMany({
@@ -860,6 +885,7 @@ export class AdminService {
         },
         createdAt: true,
         id: true,
+        provider: true,
         role: true,
         subscriptions: {
           orderBy: {
@@ -876,7 +902,7 @@ export class AdminService {
     });
 
     return usersWithAnalytics.map(
-      ({ _count, analytics, createdAt, id, role, subscriptions }) => {
+      ({ _count, analytics, createdAt, id, provider, role, subscriptions }) => {
         const daysSinceRegistration =
           differenceInDays(new Date(), createdAt) + 1;
         const engagement = analytics
@@ -893,6 +919,7 @@ export class AdminService {
           createdAt,
           engagement,
           id,
+          provider,
           role,
           subscription,
           accountCount: _count.accounts || 0,

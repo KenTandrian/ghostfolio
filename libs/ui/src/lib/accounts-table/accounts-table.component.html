@@ -7,13 +7,20 @@
       (click)="onTransferBalance()"
     >
       <ion-icon class="mr-2" name="arrow-redo-outline" />
-      <ng-container i18n>Transfer Cash Balance</ng-container>...
+      <span><ng-container i18n>Transfer Cash Balance</ng-container>...</span>
     </button>
   </div>
 }
 
 <div class="overflow-x-auto">
-  <table class="gf-table w-100" mat-table matSort [dataSource]="dataSource">
+  <table
+    class="gf-table w-100"
+    mat-table
+    matSort
+    matSortActive="name"
+    matSortDirection="asc"
+    [dataSource]="dataSource"
+  >
     <ng-container matColumnDef="status">
       <th
         *matHeaderCellDef
@@ -108,7 +115,7 @@
       ></td>
     </ng-container>
 
-    <ng-container matColumnDef="transactions">
+    <ng-container matColumnDef="activitiesCount">
       <th
         *matHeaderCellDef
         class="justify-content-end px-1"
@@ -122,7 +129,7 @@
         {{ element.transactionCount }}
       </td>
       <td *matFooterCellDef class="px-1 text-right" mat-footer-cell>
-        {{ transactionCount }}
+        {{ activitiesCount }}
       </td>
     </ng-container>
 
@@ -199,7 +206,7 @@
     <ng-container matColumnDef="valueInBaseCurrency">
       <th
         *matHeaderCellDef
-        class="d-lg-none d-xl-none px-1 text-right"
+        class="d-lg-none d-xl-none justify-content-end px-1"
         mat-header-cell
         mat-sort-header
       >
@@ -290,7 +297,7 @@
     </ng-container>
 
     <ng-container matColumnDef="actions" stickyEnd>
-      <th *matHeaderCellDef class="px-1 text-center" i18n mat-header-cell></th>
+      <th *matHeaderCellDef class="px-1 text-center" mat-header-cell></th>
       <td *matCellDef="let element" class="px-1 text-center" mat-cell>
         <button
           class="mx-1 no-min-width px-2"
@@ -301,10 +308,16 @@
           <ion-icon name="ellipsis-horizontal" />
         </button>
         <mat-menu #accountMenu="matMenu" xPosition="before">
+          <button mat-menu-item (click)="onOpenAccountDetailDialog(element.id)">
+            <span class="align-items-center d-flex">
+              <ion-icon class="mr-2" name="wallet-outline" />
+              <span><ng-container i18n>View Details</ng-container>...</span>
+            </span>
+          </button>
           <button mat-menu-item (click)="onUpdateAccount(element)">
             <span class="align-items-center d-flex">
               <ion-icon class="mr-2" name="create-outline" />
-              <span i18n>Edit</span>
+              <span><ng-container i18n>Edit</ng-container>...</span>
             </span>
           </button>
           <hr class="m-0" />

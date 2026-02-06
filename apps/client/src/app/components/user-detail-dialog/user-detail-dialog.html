@@ -1,44 +1,79 @@
-<gf-dialog-header
-  position="center"
-  [deviceType]="data.deviceType"
-  (closeButtonClicked)="onClose()"
-/>
-
+<div class="d-flex justify-content-end">
+  <button
+    class="mx-1 no-min-width px-2"
+    mat-button
+    type="button"
+    [matMenuTriggerFor]="userDetailActionsMenu"
+    (click)="$event.stopPropagation()"
+  >
+    <ion-icon name="ellipsis-vertical" />
+  </button>
+  <mat-menu
+    #userDetailActionsMenu="matMenu"
+    class="no-max-width"
+    xPosition="before"
+  >
+    <button
+      mat-menu-item
+      type="button"
+      [disabled]="this.data.currentUserId === this.data.userId"
+      (click)="deleteUser()"
+    >
+      <ng-container i18n>Delete</ng-container>
+    </button>
+  </mat-menu>
+</div>
 <div class="flex-grow-1" mat-dialog-content>
   <div class="container p-0">
     <div class="mb-3 row">
       <div class="col-6 mb-3">
-        <gf-value i18n size="medium" [value]="data.userData.id">
-          User ID
-        </gf-value>
+        <gf-value i18n size="medium" [value]="user?.id">User ID</gf-value>
       </div>
+      <div class="col-6 mb-3">
+        <gf-value i18n size="medium" [value]="user?.role">Role</gf-value>
+      </div>
+    </div>
+
+    <div class="mb-3 row">
       <div class="col-6 mb-3">
         <gf-value
           i18n
           size="medium"
           [isDate]="true"
           [locale]="data.locale"
-          [value]="data.userData.createdAt"
+          [value]="user?.createdAt"
+          >Registration Date</gf-value
         >
-          Registration Date
-        </gf-value>
+      </div>
+      <div class="col-6 mb-3">
+        <gf-value
+          i18n
+          size="medium"
+          [locale]="data.locale"
+          [value]="user?.provider"
+          >Authentication</gf-value
+        >
       </div>
     </div>
 
-    <div class="mb-3 row">
-      <div class="col-6 mb-3">
-        <gf-value i18n size="medium" [value]="data.userData.role">
-          Role
-        </gf-value>
-      </div>
-      @if (data.hasPermissionForSubscription) {
+    @if (data.hasPermissionForSubscription) {
+      <div class="mb-3 row">
         <div class="col-6 mb-3">
-          <gf-value i18n size="medium" [value]="data.userData.country">
-            Country
-          </gf-value>
+          <gf-value
+            i18n
+            size="medium"
+            [locale]="data.locale"
+            [value]="user?.subscription ? 'Premium' : 'Basic'"
+            >Membership</gf-value
+          >
         </div>
-      }
-    </div>
+        <div class="col-6 mb-3">
+          <gf-value i18n size="medium" [value]="user?.country"
+            >Country</gf-value
+          >
+        </div>
+      </div>
+    }
 
     <div class="mb-3 row">
       <div class="col-6 mb-3">
@@ -46,20 +81,18 @@
           i18n
           size="medium"
           [locale]="data.locale"
-          [value]="data.userData.accountCount"
+          [value]="user?.accountCount"
+          >Accounts</gf-value
         >
-          Accounts
-        </gf-value>
       </div>
       <div class="col-6 mb-3">
         <gf-value
           i18n
           size="medium"
           [locale]="data.locale"
-          [value]="data.userData.activityCount"
+          [value]="user?.activityCount"
+          >Activities</gf-value
         >
-          Activities
-        </gf-value>
       </div>
     </div>
 
@@ -71,27 +104,26 @@
             size="medium"
             [locale]="data.locale"
             [precision]="0"
-            [value]="data.userData.engagement"
+            [value]="user?.engagement"
+            >Engagement per Day</gf-value
           >
-            Engagement per Day
-          </gf-value>
         </div>
         <div class="col-6 mb-3">
           <gf-value
             i18n
             size="medium"
             [locale]="data.locale"
-            [value]="data.userData.dailyApiRequests"
+            [value]="user?.dailyApiRequests"
+            >API Requests Today</gf-value
           >
-            API Requests Today
-          </gf-value>
         </div>
       </div>
     }
   </div>
 </div>
 
-<gf-dialog-footer
-  [deviceType]="data.deviceType"
-  (closeButtonClicked)="onClose()"
-/>
+<div class="justify-content-end" mat-dialog-actions>
+  <button mat-button type="button" (click)="onClose()">
+    <ng-container i18n>Close</ng-container>
+  </button>
+</div>

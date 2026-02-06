@@ -1,4 +1,3 @@
-import { Activity } from '@ghostfolio/api/app/order/interfaces/activities.interface';
 import {
   activityDummyData,
   loadExportFile,
@@ -15,7 +14,7 @@ import { ExchangeRateDataService } from '@ghostfolio/api/services/exchange-rate-
 import { PortfolioSnapshotService } from '@ghostfolio/api/services/queues/portfolio-snapshot/portfolio-snapshot.service';
 import { PortfolioSnapshotServiceMock } from '@ghostfolio/api/services/queues/portfolio-snapshot/portfolio-snapshot.service.mock';
 import { parseDate } from '@ghostfolio/common/helper';
-import { ExportResponse } from '@ghostfolio/common/interfaces';
+import { Activity, ExportResponse } from '@ghostfolio/common/interfaces';
 import { PerformanceCalculationType } from '@ghostfolio/common/types/performance-calculation-type.type';
 
 import { Big } from 'big.js';
@@ -99,6 +98,7 @@ describe('PortfolioCalculator', () => {
           ...activity,
           date: parseDate(activity.date),
           feeInAssetProfileCurrency: activity.fee,
+          feeInBaseCurrency: activity.fee,
           SymbolProfile: {
             ...symbolProfileDummyData,
             currency: 'USD',

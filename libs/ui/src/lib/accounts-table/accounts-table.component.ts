@@ -1,7 +1,7 @@
-import { ConfirmationDialogType } from '@ghostfolio/client/core/notification/confirmation-dialog/confirmation-dialog.type';
-import { NotificationService } from '@ghostfolio/client/core/notification/notification.service';
-import { getLocale } from '@ghostfolio/common/helper';
+import { ConfirmationDialogType } from '@ghostfolio/common/enums';
+import { getLocale, getLowercase } from '@ghostfolio/common/helper';
 import { GfEntityLogoComponent } from '@ghostfolio/ui/entity-logo';
+import { NotificationService } from '@ghostfolio/ui/notifications';
 import { GfValueComponent } from '@ghostfolio/ui/value';
 
 import { CommonModule } from '@angular/common';
@@ -29,9 +29,9 @@ import {
   documentTextOutline,
   ellipsisHorizontal,
   eyeOffOutline,
-  trashOutline
+  trashOutline,
+  walletOutline
 } from 'ionicons/icons';
-import { get } from 'lodash';
 import { NgxSkeletonLoaderModule } from 'ngx-skeleton-loader';
 import { Subject, Subscription } from 'rxjs';
 
@@ -55,20 +55,20 @@ import { Subject, Subscription } from 'rxjs';
 })
 export class GfAccountsTableComponent implements OnChanges, OnDestroy {
   @Input() accounts: Account[];
+  @Input() activitiesCount: number;
   @Input() baseCurrency: string;
   @Input() deviceType: string;
   @Input() hasPermissionToOpenDetails = true;
   @Input() locale = getLocale();
   @Input() showActions: boolean;
+  @Input() showActivitiesCount = true;
   @Input() showAllocationInPercentage: boolean;
   @Input() showBalance = true;
   @Input() showFooter = true;
-  @Input() showTransactions = true;
   @Input() showValue = true;
   @Input() showValueInBaseCurrency = true;
   @Input() totalBalanceInBaseCurrency: number;
   @Input() totalValueInBaseCurrency: number;
-  @Input() transactionCount: number;
 
   @Output() accountDeleted = new EventEmitter<string>();
   @Output() accountToUpdate = new EventEmitter<Account>();
@@ -93,15 +93,16 @@ export class GfAccountsTableComponent implements OnChanges, OnDestroy {
       documentTextOutline,
       ellipsisHorizontal,
       eyeOffOutline,
-      trashOutline
+      trashOutline,
+      walletOutline
     });
   }
 
   public ngOnChanges() {
     this.displayedColumns = ['status', 'account', 'platform'];
 
-    if (this.showTransactions) {
-      this.displayedColumns.push('transactions');
+    if (this.showActivitiesCount) {
+      this.displayedColumns.push('activitiesCount');
     }
 
     if (this.showBalance) {
@@ -131,8 +132,9 @@ export class GfAccountsTableComponent implements OnChanges, OnDestroy {
     this.isLoading = true;
 
     this.dataSource = new MatTableDataSource(this.accounts);
+    this.dataSource.sortingDataAccessor = getLowercase;
+
     this.dataSource.sort = this.sort;
-    this.dataSource.sortingDataAccessor = get;
 
     if (this.accounts) {
       this.isLoading = false;

@@ -4,6 +4,7 @@ import {
 } from '@ghostfolio/common/chart-helper';
 import { primaryColorRgb } from '@ghostfolio/common/config';
 import { getLocale } from '@ghostfolio/common/helper';
+import { FireCalculationCompleteEvent } from '@ghostfolio/common/interfaces';
 import { ColorScheme } from '@ghostfolio/common/types';
 
 import { CommonModule } from '@angular/common';
@@ -37,6 +38,8 @@ import {
   BarElement,
   CategoryScale,
   Chart,
+  type ChartData,
+  type ChartDataset,
   LinearScale,
   Tooltip
 } from 'chart.js';
@@ -76,18 +79,20 @@ import { FireCalculatorService } from './fire-calculator.service';
   templateUrl: './fire-calculator.component.html'
 })
 export class GfFireCalculatorComponent implements OnChanges, OnDestroy {
-  @Input() annualInterestRate: number;
+  @Input() annualInterestRate = 0;
   @Input() colorScheme: ColorScheme;
   @Input() currency: string;
   @Input() deviceType: string;
-  @Input() fireWealth: number;
+  @Input() fireWealth = 0;
   @Input() hasPermissionToUpdateUserSettings: boolean;
   @Input() locale = getLocale();
-  @Input() projectedTotalAmount: number;
+  @Input() projectedTotalAmount = 0;
   @Input() retirementDate: Date;
-  @Input() savingsRate: number;
+  @Input() savingsRate = 0;
 
   @Output() annualInterestRateChanged = new EventEmitter<number>();
+  @Output() calculationCompleted =
+    new EventEmitter<FireCalculationCompleteEvent>();
   @Output() projectedTotalAmountChanged = new EventEmitter<number>();
   @Output() retirementDateChanged = new EventEmitter<Date>();
   @Output() savingsRateChanged = new EventEmitter<number>();
@@ -131,6 +136,18 @@ export class GfFireCalculatorComponent implements OnChanges, OnDestroy {
         this.initialize();
       });
 
+    this.calculatorForm.valueChanges
+      .pipe(debounceTime(500), takeUntil(this.unsubscribeSubject))
+      .subscribe(() => {
+        const { projectedTotalAmount, retirementDate } =
+          this.calculatorForm.getRawValue();
+
+        this.calculationCompleted.emit({
+          projectedTotalAmount,
+          retirementDate
+        });
+      });
+
     this.calculatorForm
       .get('annualInterestRate')
       .valueChanges.pipe(debounceTime(500), takeUntil(this.unsubscribeSubject))
@@ -161,10 +178,10 @@ export class GfFireCalculatorComponent implements OnChanges, OnDestroy {
     if (isNumber(this.fireWealth) && this.fireWealth >= 0) {
       this.calculatorForm.setValue(
         {
-          annualInterestRate: this.annualInterestRate ?? 5,
-          paymentPerPeriod: this.savingsRate ?? 0,
+          annualInterestRate: this.annualInterestRate,
+          paymentPerPeriod: this.savingsRate,
           principalInvestmentAmount: this.fireWealth,
-          projectedTotalAmount: this.projectedTotalAmount ?? 0,
+          projectedTotalAmount: this.projectedTotalAmount,
           retirementDate: this.retirementDate ?? this.DEFAULT_RETIREMENT_DATE
         },
         {
@@ -255,7 +272,7 @@ export class GfFireCalculatorComponent implements OnChanges, OnDestroy {
 
         this.chart.update();
       } else {
-        this.chart = new Chart(this.chartCanvas.nativeElement, {
+        this.chart = new Chart<'bar'>(this.chartCanvas.nativeElement, {
           data: chartData,
           options: {
             plugins: {
@@ -265,7 +282,7 @@ export class GfFireCalculatorComponent implements OnChanges, OnDestroy {
                 callbacks: {
                   footer: (items) => {
                     const totalAmount = items.reduce(
-                      (a, b) => a + b.parsed.y,
+                      (a, b) => a + (b.parsed.y ?? 0),
                       0
                     );
 
@@ -287,8 +304,6 @@ export class GfFireCalculatorComponent implements OnChanges, OnDestroy {
                     if (context.parsed.y !== null) {
                       label += new Intl.NumberFormat(this.locale, {
                         currency: this.currency,
-                        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-                        // @ts-ignore: Only supported from ES2020 or later
                         currencyDisplay: 'code',
                         style: 'currency'
                       }).format(context.parsed.y);
@@ -330,9 +345,9 @@ export class GfFireCalculatorComponent implements OnChanges, OnDestroy {
     this.isLoading = false;
   }
 
-  private getChartData() {
+  private getChartData(): ChartData<'bar'> {
     const currentYear = new Date().getFullYear();
-    const labels = [];
+    const labels: number[] = [];
 
     // Principal investment amount
     const P: number = this.getP();
@@ -356,13 +371,13 @@ export class GfFireCalculatorComponent implements OnChanges, OnDestroy {
       labels.push(year);
     }
 
-    const datasetDeposit = {
+    const datasetDeposit: ChartDataset<'bar'> = {
       backgroundColor: `rgb(${primaryColorRgb.r}, ${primaryColorRgb.g}, ${primaryColorRgb.b})`,
       data: [],
       label: $localize`Deposit`
     };
 
-    const datasetInterest = {
+    const datasetInterest: ChartDataset<'bar'> = {
       backgroundColor: Color.rgb(
         `rgb(${primaryColorRgb.r}, ${primaryColorRgb.g}, ${primaryColorRgb.b})`
       )
@@ -372,7 +387,7 @@ export class GfFireCalculatorComponent implements OnChanges, OnDestroy {
       label: $localize`Interest`
     };
 
-    const datasetSavings = {
+    const datasetSavings: ChartDataset<'bar'> = {
       backgroundColor: Color.rgb(
         `rgb(${primaryColorRgb.r}, ${primaryColorRgb.g}, ${primaryColorRgb.b})`
       )

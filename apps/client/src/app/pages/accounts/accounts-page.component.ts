@@ -1,15 +1,17 @@
-import { CreateAccountDto } from '@ghostfolio/api/app/account/create-account.dto';
-import { TransferBalanceDto } from '@ghostfolio/api/app/account/transfer-balance.dto';
-import { UpdateAccountDto } from '@ghostfolio/api/app/account/update-account.dto';
 import { GfAccountDetailDialogComponent } from '@ghostfolio/client/components/account-detail-dialog/account-detail-dialog.component';
 import { AccountDetailDialogParams } from '@ghostfolio/client/components/account-detail-dialog/interfaces/interfaces';
-import { NotificationService } from '@ghostfolio/client/core/notification/notification.service';
-import { DataService } from '@ghostfolio/client/services/data.service';
 import { ImpersonationStorageService } from '@ghostfolio/client/services/impersonation-storage.service';
 import { UserService } from '@ghostfolio/client/services/user/user.service';
+import {
+  CreateAccountDto,
+  TransferBalanceDto,
+  UpdateAccountDto
+} from '@ghostfolio/common/dtos';
 import { User } from '@ghostfolio/common/interfaces';
 import { hasPermission, permissions } from '@ghostfolio/common/permissions';
 import { GfAccountsTableComponent } from '@ghostfolio/ui/accounts-table';
+import { NotificationService } from '@ghostfolio/ui/notifications';
+import { DataService } from '@ghostfolio/ui/services';
 
 import { ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
@@ -36,6 +38,7 @@ import { GfTransferBalanceDialogComponent } from './transfer-balance/transfer-ba
 })
 export class GfAccountsPageComponent implements OnDestroy, OnInit {
   public accounts: AccountModel[];
+  public activitiesCount = 0;
   public deviceType: string;
   public hasImpersonationId: boolean;
   public hasPermissionToCreateAccount: boolean;
@@ -43,7 +46,6 @@ export class GfAccountsPageComponent implements OnDestroy, OnInit {
   public routeQueryParams: Subscription;
   public totalBalanceInBaseCurrency = 0;
   public totalValueInBaseCurrency = 0;
-  public transactionCount = 0;
   public user: User;
 
   private unsubscribeSubject = new Subject<void>();
@@ -126,14 +128,14 @@ export class GfAccountsPageComponent implements OnDestroy, OnInit {
       .subscribe(
         ({
           accounts,
+          activitiesCount,
           totalBalanceInBaseCurrency,
-          totalValueInBaseCurrency,
-          transactionCount
+          totalValueInBaseCurrency
         }) => {
           this.accounts = accounts;
+          this.activitiesCount = activitiesCount;
           this.totalBalanceInBaseCurrency = totalBalanceInBaseCurrency;
           this.totalValueInBaseCurrency = totalValueInBaseCurrency;
-          this.transactionCount = transactionCount;
 
           if (this.accounts?.length <= 0) {
             this.router.navigate([], { queryParams: { createDialog: true } });
@@ -356,8 +358,8 @@ export class GfAccountsPageComponent implements OnDestroy, OnInit {
 
   private reset() {
     this.accounts = undefined;
+    this.activitiesCount = 0;
     this.totalBalanceInBaseCurrency = 0;
     this.totalValueInBaseCurrency = 0;
-    this.transactionCount = 0;
   }
 }

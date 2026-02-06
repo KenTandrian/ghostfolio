@@ -1,4 +1,3 @@
-import { Activity } from '@ghostfolio/api/app/order/interfaces/activities.interface';
 import {
   activityDummyData,
   symbolProfileDummyData,
@@ -14,6 +13,7 @@ import { ExchangeRateDataService } from '@ghostfolio/api/services/exchange-rate-
 import { PortfolioSnapshotService } from '@ghostfolio/api/services/queues/portfolio-snapshot/portfolio-snapshot.service';
 import { PortfolioSnapshotServiceMock } from '@ghostfolio/api/services/queues/portfolio-snapshot/portfolio-snapshot.service.mock';
 import { parseDate } from '@ghostfolio/common/helper';
+import { Activity } from '@ghostfolio/common/interfaces';
 import { PerformanceCalculationType } from '@ghostfolio/common/types/performance-calculation-type.type';
 
 jest.mock('@ghostfolio/api/app/portfolio/current-rate.service', () => {
@@ -80,6 +80,7 @@ describe('PortfolioCalculator', () => {
           ...activityDummyData,
           date: new Date('2024-03-08'),
           feeInAssetProfileCurrency: 0,
+          feeInBaseCurrency: 0,
           quantity: 0.3333333333333333,
           SymbolProfile: {
             ...symbolProfileDummyData,
@@ -94,8 +95,9 @@ describe('PortfolioCalculator', () => {
         {
           ...activityDummyData,
           date: new Date('2024-03-13'),
-          quantity: 0.6666666666666666,
           feeInAssetProfileCurrency: 0,
+          feeInBaseCurrency: 0,
+          quantity: 0.6666666666666666,
           SymbolProfile: {
             ...symbolProfileDummyData,
             currency: 'USD',
@@ -109,8 +111,9 @@ describe('PortfolioCalculator', () => {
         {
           ...activityDummyData,
           date: new Date('2024-03-14'),
-          quantity: 1,
           feeInAssetProfileCurrency: 0,
+          feeInBaseCurrency: 0,
+          quantity: 1,
           SymbolProfile: {
             ...symbolProfileDummyData,
             currency: 'USD',
