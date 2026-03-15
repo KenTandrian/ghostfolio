@@ -10,12 +10,13 @@ import {
   ChangeDetectionStrategy,
   ChangeDetectorRef,
   Component,
+  DestroyRef,
   DOCUMENT,
   HostBinding,
   Inject,
-  OnDestroy,
   OnInit
 } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MatDialog } from '@angular/material/dialog';
 import { Title } from '@angular/platform-browser';
 import {
@@ -31,15 +32,13 @@ import { Chart } from 'chart.js';
 import { addIcons } from 'ionicons';
 import { openOutline } from 'ionicons/icons';
 import { DeviceDetectorService } from 'ngx-device-detector';
-import { Subject } from 'rxjs';
-import { filter, takeUntil } from 'rxjs/operators';
+import { filter } from 'rxjs/operators';
 
 import { GfFooterComponent } from './components/footer/footer.component';
 import { GfHeaderComponent } from './components/header/header.component';
 import { GfHoldingDetailDialogComponent } from './components/holding-detail-dialog/holding-detail-dialog.component';
 import { HoldingDetailDialogParams } from './components/holding-detail-dialog/interfaces/interfaces';
 import { ImpersonationStorageService } from './services/impersonation-storage.service';
-import { TokenStorageService } from './services/token-storage.service';
 import { UserService } from './services/user/user.service';
 
 @Component({
@@ -49,7 +48,7 @@ import { UserService } from './services/user/user.service';
   styleUrls: ['./app.component.scss'],
   templateUrl: './app.component.html'
 })
-export class GfAppComponent implements OnDestroy, OnInit {
+export class GfAppComponent implements OnInit {
   @HostBinding('class.has-info-message') get getHasMessage() {
     return this.hasInfoMessage;
   }
@@ -70,11 +69,10 @@ export class GfAppComponent implements OnDestroy, OnInit {
   public showFooter = false;
   public user: User;
 
-  private unsubscribeSubject = new Subject<void>();
-
   public constructor(
     private changeDetectorRef: ChangeDetectorRef,
     private dataService: DataService,
+    private destroyRef: DestroyRef,
     private deviceService: DeviceDetectorService,
     private dialog: MatDialog,
     @Inject(DOCUMENT) private document: Document,
@@ -83,14 +81,13 @@ export class GfAppComponent implements OnDestroy, OnInit {
     private route: ActivatedRoute,
     private router: Router,
     private title: Title,
-    private tokenStorageService: TokenStorageService,
     private userService: UserService
   ) {
     this.initializeTheme();
     this.user = undefined;
 
     this.route.queryParams
-      .pipe(takeUntil(this.unsubscribeSubject))
+      .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((params) => {
         if (
           params['dataSource'] &&
@@ -113,7 +110,7 @@ export class GfAppComponent implements OnDestroy, OnInit {
 
     this.impersonationStorageService
       .onChangeHasImpersonation()
-      .pipe(takeUntil(this.unsubscribeSubject))
+      .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((impersonationId) => {
         this.hasImpersonationId = !!impersonationId;
       });
@@ -202,7 +199,7 @@ export class GfAppComponent implements OnDestroy, OnInit {
       });
 
     this.userService.stateChanged
-      .pipe(takeUntil(this.unsubscribeSubject))
+      .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((state) => {
         this.user = state.user;
 
@@ -237,19 +234,13 @@ export class GfAppComponent implements OnDestroy, OnInit {
   }
 
   public onCreateAccount() {
-    this.tokenStorageService.signOut();
+    this.userService.signOut();
   }
 
   public onSignOut() {
-    this.tokenStorageService.signOut();
-    this.userService.remove();
+    this.userService.signOut();
 
     document.location.href = `/${document.documentElement.lang}`;
-  }
-
-  public ngOnDestroy() {
-    this.unsubscribeSubject.next();
-    this.unsubscribeSubject.complete();
   }
 
   private initializeTheme(userPreferredColorScheme?: ColorScheme) {
@@ -278,7 +269,7 @@ export class GfAppComponent implements OnDestroy, OnInit {
   }) {
     this.userService
       .get()
-      .pipe(takeUntil(this.unsubscribeSubject))
+      .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((user) => {
         this.user = user;
 
@@ -300,15 +291,21 @@ export class GfAppComponent implements OnDestroy, OnInit {
             ),
             hasPermissionToCreateActivity:
               !this.hasImpersonationId &&
-              hasPermission(this.user?.permissions, permissions.createOrder) &&
+              hasPermission(
+                this.user?.permissions,
+                permissions.createActivity
+              ) &&
               !this.user?.settings?.isRestrictedView,
             hasPermissionToReportDataGlitch: hasPermission(
               this.user?.permissions,
               permissions.reportDataGlitch
             ),
-            hasPermissionToUpdateOrder:
+            hasPermissionToUpdateActivity:
               !this.hasImpersonationId &&
-              hasPermission(this.user?.permissions, permissions.updateOrder) &&
+              hasPermission(
+                this.user?.permissions,
+                permissions.updateActivity
+              ) &&
               !this.user?.settings?.isRestrictedView,
             locale: this.user?.settings?.locale
           },
@@ -318,7 +315,7 @@ export class GfAppComponent implements OnDestroy, OnInit {
 
         dialogRef
           .afterClosed()
-          .pipe(takeUntil(this.unsubscribeSubject))
+          .pipe(takeUntilDestroyed(this.destroyRef))
           .subscribe(() => {
             this.router.navigate([], {
               queryParams: {
