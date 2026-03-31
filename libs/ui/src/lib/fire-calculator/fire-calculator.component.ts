@@ -405,7 +405,7 @@ export class GfFireCalculatorComponent implements OnChanges, OnDestroy {
     };
 
     const datasetInterest: ChartDataset<'bar'> = {
-      backgroundColor: Color.rgb(
+      backgroundColor: Color(
         `rgb(${primaryColorRgb.r}, ${primaryColorRgb.g}, ${primaryColorRgb.b})`
       )
         .lighten(0.5)
@@ -415,7 +415,7 @@ export class GfFireCalculatorComponent implements OnChanges, OnDestroy {
     };
 
     const datasetSavings: ChartDataset<'bar'> = {
-      backgroundColor: Color.rgb(
+      backgroundColor: Color(
         `rgb(${primaryColorRgb.r}, ${primaryColorRgb.g}, ${primaryColorRgb.b})`
       )
         .lighten(0.25)

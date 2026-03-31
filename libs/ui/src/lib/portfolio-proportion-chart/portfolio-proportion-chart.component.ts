@@ -281,7 +281,7 @@ export class GfPortfolioProportionChartComponent
           backgroundColorSubCategory.push(item.color ?? '');
         } else {
           backgroundColorSubCategory.push(
-            Color.rgb(item.color).lighten(lightnessRatio).hex()
+            Color(item.color).lighten(lightnessRatio).hex()
           );
         }
         dataSubCategory.push(
