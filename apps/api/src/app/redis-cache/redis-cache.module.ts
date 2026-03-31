@@ -21,7 +21,7 @@ import { RedisCacheService } from './redis-cache.service';
         return {
           stores: [
             createKeyv(
-              `rediss://${redisPassword ? `:${redisPassword}` : ''}@${configurationService.get('REDIS_HOST')}:${configurationService.get('REDIS_PORT')}/${configurationService.get('REDIS_DB')}`
+              `${configurationService.get('REDIS_SSL') ? 'rediss' : 'redis'}://${redisPassword ? `:${redisPassword}` : ''}@${configurationService.get('REDIS_HOST')}:${configurationService.get('REDIS_PORT')}/${configurationService.get('REDIS_DB')}`
             )
           ],
           ttl: configurationService.get('CACHE_TTL')

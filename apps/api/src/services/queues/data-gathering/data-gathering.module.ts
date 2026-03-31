@@ -40,7 +40,7 @@ import { DataGatheringProcessor } from './data-gathering.processor';
         host: process.env.REDIS_HOST,
         port: parseInt(process.env.REDIS_PORT, 10),
         password: process.env.REDIS_PASSWORD,
-        tls: {}
+        ...(process.env.REDIS_SSL !== 'false' ? { tls: {} } : {})
       },
       name: DATA_GATHERING_QUEUE
     }),
