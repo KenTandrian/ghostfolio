@@ -68,7 +68,7 @@ export class GfAppComponent implements OnInit {
   private readonly changeDetectorRef = inject(ChangeDetectorRef);
   private readonly dataService = inject(DataService);
   private readonly destroyRef = inject(DestroyRef);
-  private readonly deviceService = inject(DeviceDetectorService);
+  private readonly deviceDetectorService = inject(DeviceDetectorService);
   private readonly dialog = inject(MatDialog);
   private readonly document = inject(DOCUMENT);
   private readonly impersonationStorageService = inject(
@@ -105,7 +105,7 @@ export class GfAppComponent implements OnInit {
   }
 
   public ngOnInit() {
-    this.deviceType = this.deviceService.getDeviceInfo().deviceType;
+    this.deviceType = this.deviceDetectorService.getDeviceInfo().deviceType;
     this.info = this.dataService.fetchInfo();
 
     this.impersonationStorageService
@@ -257,7 +257,7 @@ export class GfAppComponent implements OnInit {
     this.toggleTheme(isDarkTheme);
 
     // Default chart styles
-    Chart.defaults.font.family = 'Plus Jakarta Sans';
+    Chart.defaults.font.family = getCssVariable('--font-family-sans-serif');
 
     window.matchMedia('(prefers-color-scheme: dark)').addListener((event) => {
       if (!this.user?.settings.colorScheme) {
@@ -340,8 +340,10 @@ export class GfAppComponent implements OnInit {
 
     if (isDarkTheme) {
       this.document.body.classList.add('theme-dark');
+      this.document.body.classList.remove('theme-light');
       this.document.documentElement.style.colorScheme = 'dark';
     } else {
+      this.document.body.classList.add('theme-light');
       this.document.body.classList.remove('theme-dark');
     }
 

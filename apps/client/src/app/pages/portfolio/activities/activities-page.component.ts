@@ -54,6 +54,7 @@ import { ImportActivitiesDialogParams } from './import-activities-dialog/interfa
   templateUrl: './activities-page.html'
 })
 export class GfActivitiesPageComponent implements OnInit {
+  public activityTypesFilter: string[] = [];
   public dataSource: MatTableDataSource<Activity>;
   public deviceType: string;
   public hasImpersonationId: boolean;
@@ -64,14 +65,14 @@ export class GfActivitiesPageComponent implements OnInit {
   public routeQueryParams: Subscription;
   public sortColumn = 'date';
   public sortDirection: SortDirection = 'desc';
-  public totalItems: number;
+  public totalItems: number | undefined;
   public user: User;
 
   public constructor(
     private changeDetectorRef: ChangeDetectorRef,
     private dataService: DataService,
     private destroyRef: DestroyRef,
-    private deviceService: DeviceDetectorService,
+    private deviceDetectorService: DeviceDetectorService,
     private dialog: MatDialog,
     private icsService: IcsService,
     private impersonationStorageService: ImpersonationStorageService,
@@ -111,7 +112,7 @@ export class GfActivitiesPageComponent implements OnInit {
   }
 
   public ngOnInit() {
-    this.deviceType = this.deviceService.getDeviceInfo().deviceType;
+    this.deviceType = this.deviceDetectorService.getDeviceInfo().deviceType;
 
     this.impersonationStorageService
       .onChangeHasImpersonation()
@@ -134,13 +135,19 @@ export class GfActivitiesPageComponent implements OnInit {
   }
 
   public fetchActivities() {
-    const dateRange = this.user?.settings?.dateRange;
+    // Reset dataSource and totalItems to show loading state
+    this.dataSource = undefined;
+    this.totalItems = undefined;
 
+    const dateRange = this.user?.settings?.dateRange;
     const range = this.isCalendarYear(dateRange) ? dateRange : undefined;
 
     this.dataService
       .fetchActivities({
         range,
+        activityTypes: this.activityTypesFilter.length
+          ? this.activityTypesFilter
+          : undefined,
         filters: this.userService.getFilters(),
         skip: this.pageIndex * this.pageSize,
         sortColumn: this.sortColumn,
@@ -196,6 +203,8 @@ export class GfActivitiesPageComponent implements OnInit {
           .subscribe();
 
         this.fetchActivities();
+
+        this.changeDetectorRef.markForCheck();
       });
   }
 
@@ -210,6 +219,8 @@ export class GfActivitiesPageComponent implements OnInit {
           .subscribe();
 
         this.fetchActivities();
+
+        this.changeDetectorRef.markForCheck();
       });
   }
 
@@ -217,7 +228,12 @@ export class GfActivitiesPageComponent implements OnInit {
     let fetchExportParams: any = { activityIds };
 
     if (!activityIds) {
-      fetchExportParams = { filters: this.userService.getFilters() };
+      fetchExportParams = {
+        activityTypes: this.activityTypesFilter.length
+          ? this.activityTypesFilter
+          : undefined,
+        filters: this.userService.getFilters()
+      };
     }
 
     this.dataService
@@ -280,6 +296,8 @@ export class GfActivitiesPageComponent implements OnInit {
           .subscribe();
 
         this.fetchActivities();
+
+        this.changeDetectorRef.markForCheck();
       });
   }
 
@@ -307,6 +325,8 @@ export class GfActivitiesPageComponent implements OnInit {
           .subscribe();
 
         this.fetchActivities();
+
+        this.changeDetectorRef.markForCheck();
       });
   }
 
@@ -314,6 +334,13 @@ export class GfActivitiesPageComponent implements OnInit {
     this.pageIndex = 0;
     this.sortColumn = active;
     this.sortDirection = direction;
+
+    this.fetchActivities();
+  }
+
+  public onTypesFilterChanged(aTypes: string[]) {
+    this.activityTypesFilter = aTypes;
+    this.pageIndex = 0;
 
     this.fetchActivities();
   }
@@ -349,6 +376,8 @@ export class GfActivitiesPageComponent implements OnInit {
             .subscribe({
               next: () => {
                 this.fetchActivities();
+
+                this.changeDetectorRef.markForCheck();
               }
             });
         }
@@ -406,6 +435,8 @@ export class GfActivitiesPageComponent implements OnInit {
                     .subscribe();
 
                   this.fetchActivities();
+
+                  this.changeDetectorRef.markForCheck();
                 }
               });
             }

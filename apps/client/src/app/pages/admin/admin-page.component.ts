@@ -26,7 +26,7 @@ export class AdminPageComponent implements OnInit {
   public deviceType: string;
   public tabs: TabConfiguration[] = [];
 
-  public constructor(private deviceService: DeviceDetectorService) {
+  public constructor(private deviceDetectorService: DeviceDetectorService) {
     addIcons({
       flashOutline,
       peopleOutline,
@@ -37,7 +37,7 @@ export class AdminPageComponent implements OnInit {
   }
 
   public ngOnInit() {
-    this.deviceType = this.deviceService.getDeviceInfo().deviceType;
+    this.deviceType = this.deviceDetectorService.getDeviceInfo().deviceType;
 
     this.tabs = [
       {
@@ -47,11 +47,7 @@ export class AdminPageComponent implements OnInit {
       },
       {
         iconName: 'settings-outline',
-        label:
-          internalRoutes.adminControl.subRoutes.settings.title +
-          '<span class="badge badge-pill badge-secondary ml-2 text-uppercase">' +
-          $localize`new` +
-          '</span>',
+        label: internalRoutes.adminControl.subRoutes.settings.title,
         routerLink: internalRoutes.adminControl.subRoutes.settings.routerLink
       },
       {
