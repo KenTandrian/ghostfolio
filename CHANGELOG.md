@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Changed
+
+- Migrated various components from `NgClass` to class bindings
+
 ### Fixed
 
 - Fixed a visual regression in the bottom navigation bar on mobile
