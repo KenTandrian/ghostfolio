@@ -21,7 +21,6 @@ import { GfTopHoldingsComponent } from '@ghostfolio/ui/top-holdings';
 import { GfValueComponent } from '@ghostfolio/ui/value';
 import { GfWorldMapChartComponent } from '@ghostfolio/ui/world-map-chart';
 
-import { NgClass } from '@angular/common';
 import {
   ChangeDetectorRef,
   Component,
@@ -51,8 +50,7 @@ import { DeviceDetectorService } from 'ngx-device-detector';
     GfValueComponent,
     GfWorldMapChartComponent,
     MatCardModule,
-    MatProgressBarModule,
-    NgClass
+    MatProgressBarModule
   ],
   selector: 'gf-allocations-page',
   styleUrls: ['./allocations-page.scss'],
@@ -127,7 +125,7 @@ export class GfAllocationsPageComponent implements OnInit {
     private changeDetectorRef: ChangeDetectorRef,
     private dataService: DataService,
     private destroyRef: DestroyRef,
-    private deviceService: DeviceDetectorService,
+    private deviceDetectorService: DeviceDetectorService,
     private dialog: MatDialog,
     private impersonationStorageService: ImpersonationStorageService,
     private route: ActivatedRoute,
@@ -144,7 +142,7 @@ export class GfAllocationsPageComponent implements OnInit {
   }
 
   public ngOnInit() {
-    this.deviceType = this.deviceService.getDeviceInfo().deviceType;
+    this.deviceType = this.deviceDetectorService.getDeviceInfo().deviceType;
 
     this.impersonationStorageService
       .onChangeHasImpersonation()
@@ -159,10 +157,9 @@ export class GfAllocationsPageComponent implements OnInit {
         if (state?.user) {
           this.user = state.user;
 
-          this.worldMapChartFormat =
-            this.hasImpersonationId || this.user.settings.isRestrictedView
-              ? `{0}%`
-              : `{0} ${this.user?.settings?.baseCurrency}`;
+          this.worldMapChartFormat = this.showValuesInPercentage()
+            ? `{0}%`
+            : `{0} ${this.user?.settings?.baseCurrency}`;
 
           this.isLoading = true;
 
@@ -310,7 +307,7 @@ export class GfAllocationsPageComponent implements OnInit {
     ] of Object.entries(this.portfolioDetails.accounts)) {
       let value = 0;
 
-      if (this.hasImpersonationId) {
+      if (this.showValuesInPercentage()) {
         value = valueInPercentage;
       } else {
         value = valueInBaseCurrency;
@@ -328,7 +325,7 @@ export class GfAllocationsPageComponent implements OnInit {
     )) {
       let value = 0;
 
-      if (this.hasImpersonationId) {
+      if (this.showValuesInPercentage()) {
         value = position.allocationInPercentage;
       } else {
         value = position.valueInBaseCurrency;
@@ -491,7 +488,7 @@ export class GfAllocationsPageComponent implements OnInit {
     ] of Object.entries(this.portfolioDetails.platforms)) {
       let value = 0;
 
-      if (this.hasImpersonationId) {
+      if (this.showValuesInPercentage()) {
         value = valueInPercentage;
       } else {
         value = valueInBaseCurrency;
@@ -506,7 +503,7 @@ export class GfAllocationsPageComponent implements OnInit {
 
     this.topHoldings = Object.values(this.topHoldingsMap)
       .map(({ name, value }) => {
-        if (this.hasImpersonationId || this.user.settings.isRestrictedView) {
+        if (this.showValuesInPercentage()) {
           return {
             name,
             allocationInPercentage: value,
@@ -596,5 +593,9 @@ export class GfAllocationsPageComponent implements OnInit {
       .subscribe(() => {
         this.router.navigate(['.'], { relativeTo: this.route });
       });
+  }
+
+  public showValuesInPercentage() {
+    return this.hasImpersonationId || this.user?.settings?.isRestrictedView;
   }
 }

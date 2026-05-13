@@ -24,9 +24,7 @@
         class="h-100"
         [currency]="user?.settings?.baseCurrency"
         [historicalDataItems]="historicalDataItems"
-        [isInPercent]="
-          data.hasImpersonationId || user.settings.isRestrictedView
-        "
+        [isInPercentage]="showValuesInPercentage()"
         [isLoading]="isLoadingChart"
         [locale]="user?.settings?.locale"
       />
@@ -93,8 +91,8 @@
 
     <mat-tab-group
       animationDuration="0ms"
+      [class.d-none]="isLoadingActivities"
       [mat-stretch-tabs]="false"
-      [ngClass]="{ 'd-none': isLoadingActivities }"
     >
       <mat-tab>
         <ng-template mat-tab-label>
@@ -118,9 +116,7 @@
           [deviceType]="data.deviceType"
           [hasPermissionToCreateActivity]="false"
           [hasPermissionToDeleteActivity]="false"
-          [hasPermissionToExportActivities]="
-            !data.hasImpersonationId && !user.settings.isRestrictedView
-          "
+          [hasPermissionToExportActivities]="!showValuesInPercentage()"
           [hasPermissionToFilter]="false"
           [hasPermissionToOpenDetails]="false"
           [locale]="user?.settings?.locale"
