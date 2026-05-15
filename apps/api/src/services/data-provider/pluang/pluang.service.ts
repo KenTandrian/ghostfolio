@@ -221,8 +221,13 @@ export class PluangService implements DataProviderInterface {
 
   public async search({ query }: GetSearchParams): Promise<LookupResponse> {
     try {
+      const dashId = process.env.PLUANG_DASH_ID;
+      if (!dashId) {
+        throw new Error('PLUANG_DASH_ID is not defined');
+      }
+
       const { pageProps } = await fetch(
-        `https://pluang.com/_next/data/${process.env.PLUANG_DASH_ID}/id/explore/search.json?query=${query}`,
+        `https://pluang.com/_next/data/${dashId}/id/explore/search.json?query=${query}`,
         {
           signal: AbortSignal.timeout(
             this.configurationService.get('REQUEST_TIMEOUT')
@@ -231,26 +236,20 @@ export class PluangService implements DataProviderInterface {
       ).then((res) => res.json() as Promise<IPluangSearchResponse>);
 
       return {
-        items: pageProps.pageData?.assetCategories
-          .map((cat) =>
-            cat.assetCategoryData
-              .map((d) => d.tileInfo)
-              .map((item) => ({
-                name: item.name,
-                symbol: item.symbol,
-                assetClass: this.assetClassMap[item.group],
-                assetSubClass:
-                  this.assetSubClassMap[
-                    item.securityType ?? item.recurringAssetType ?? item.group
-                  ],
-                currency: item.watchlistAssetCode.startsWith('USSTOCK:')
-                  ? 'USD'
-                  : 'IDR',
-                dataProviderInfo: this.getDataProviderInfo(),
-                dataSource: this.getName()
-              }))
-          )
-          .flat()
+        items: pageProps.pageData?.assets.map(({ tileInfo: item }) => ({
+          name: item.name,
+          symbol: item.symbol,
+          assetClass: this.assetClassMap[item.group],
+          assetSubClass:
+            this.assetSubClassMap[
+              item.securityType ?? item.recurringAssetType ?? item.group
+            ],
+          currency: item.watchlistAssetCode.startsWith('USSTOCK:')
+            ? 'USD'
+            : 'IDR',
+          dataProviderInfo: this.getDataProviderInfo(),
+          dataSource: this.getName()
+        }))
       };
     } catch (error) {
       Logger.error(

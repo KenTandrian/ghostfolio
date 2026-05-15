@@ -31,33 +31,40 @@ export interface IPluangHistoricalResponse {
 }
 
 export interface IPluangSearchResponse {
+  locale: string;
   pageProps: {
     pageData: {
-      assetCategories: {
-        assetCategory: string;
-        assetCategoryData: {
-          tileInfo: {
-            assetId: number;
-            category: string;
-            displaySymbol: string;
-            group: string;
-            icon: string;
-            id: string;
-            isTradable: boolean;
-            name: string;
-            pricePrecision: number;
-            recurringAssetType?: string;
-            securityType?: string;
-            sparkLine: string;
-            subscriptionId: string;
-            symbol: string;
-            watchlistAssetCode: string;
-            watchlistCode: string;
-          };
-        }[];
-        priceAlertCategory: string;
-        title: string;
+      assets: {
+        clickAction: {
+          target: string;
+          type: string;
+        };
+        tileInfo: {
+          assetId: number;
+          category: string;
+          chartTicker: string;
+          displaySymbol: string;
+          group: string;
+          icon: string;
+          id: string;
+          isMetal: boolean;
+          isTradable: boolean;
+          name: string;
+          pricePrecision: number;
+          recurringAssetType?: string;
+          securityType?: string;
+          sparkLine: string;
+          subscriptionId: string;
+          symbol: string;
+          watchlistAssetCode: string;
+          watchlistCode: string;
+        };
       }[];
+      page: number;
+      pageSize: number;
+      searchText: string;
+      total: number;
+      totalPageCount: number;
     } | null;
     query: string;
   };
