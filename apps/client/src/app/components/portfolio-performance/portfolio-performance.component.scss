@@ -17,6 +17,7 @@
 
   .value-container {
     #value {
+      font-size: clamp(2.5rem, 8vw, 3.5rem);
       font-variant-numeric: tabular-nums;
     }
   }

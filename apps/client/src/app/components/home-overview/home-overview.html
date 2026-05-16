@@ -67,7 +67,6 @@
           <gf-line-chart
             class="position-absolute"
             unit="%"
-            [class.pr-3]="deviceType === 'mobile'"
             [colorScheme]="user?.settings?.colorScheme"
             [hidden]="historicalDataItems?.length === 0"
             [historicalDataItems]="historicalDataItems"
