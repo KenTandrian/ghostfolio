@@ -1,32 +1,48 @@
+substitutions:
+  _IMAGE: 'asia-southeast1-docker.pkg.dev/${PROJECT_ID}/ghostfolio/ghostfolio:latest'
+
 steps:
+  # Pull the previous image to use as cache
+  - name: 'gcr.io/cloud-builders/docker'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - 'docker pull ${_IMAGE} || exit 0'
+
   # Build the container image
   - name: 'gcr.io/cloud-builders/docker'
     args:
       [
         'build',
         '-t',
-        'asia-southeast1-docker.pkg.dev/crwn-db-65f8d/stockfolio/stockfolio',
+        '${_IMAGE}',
+        '--cache-from',
+        '${_IMAGE}',
+        '--build-arg',
+        'BUILDKIT_INLINE_CACHE=1',
         '.'
       ]
+    env:
+      - 'DOCKER_BUILDKIT=1'
+
   # Push the container image to Container Registry
   - name: 'gcr.io/cloud-builders/docker'
-    args:
-      [
-        'push',
-        'asia-southeast1-docker.pkg.dev/crwn-db-65f8d/stockfolio/stockfolio'
-      ]
-  # Deploy container image to Cloud Run
+    args: ['push', '${_IMAGE}']
+
+  # Trigger GKE Rollout
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
-    entrypoint: gcloud
+    entrypoint: 'bash'
     args:
-      [
-        'run',
-        'deploy',
-        'stockfolio',
-        '--image',
-        'asia-southeast1-docker.pkg.dev/crwn-db-65f8d/stockfolio/stockfolio',
-        '--region',
-        'asia-southeast1'
-      ]
+      - '-c'
+      - |
+        gcloud container clusters get-credentials ${_GKE_CLUSTER_NAME} \
+          --region=${_GKE_REGION} \
+          --project=${_GKE_PROJECT_ID}
+
+        kubectl rollout restart deployment ghostfolio -n ghostfolio
+
 images:
-  - asia-southeast1-docker.pkg.dev/crwn-db-65f8d/stockfolio/stockfolio
+  - '${_IMAGE}'
+
+options:
+  logging: CLOUD_LOGGING_ONLY
