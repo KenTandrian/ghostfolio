@@ -593,6 +593,7 @@ export class AdminService {
         assetClass: assetClass as AssetClass,
         assetSubClass: assetSubClass as AssetSubClass,
         countries: countries as Prisma.JsonArray,
+        holdings: holdings as Prisma.JsonArray,
         name: name as string,
         sectors: sectors as Prisma.JsonArray,
         url: url as string
@@ -602,21 +603,14 @@ export class AdminService {
         comment,
         currency,
         dataSource,
-        holdings,
         isActive,
         scraperConfiguration,
         symbol,
         symbolMapping,
-        ...(dataSource === 'MANUAL'
-          ? { assetClass, assetSubClass, countries, name, sectors, url }
-          : {
-              SymbolProfileOverrides: {
-                upsert: {
-                  create: symbolProfileOverrides,
-                  update: symbolProfileOverrides
-                }
-              }
-            })
+        ...this.symbolProfileService.getAssetProfileUpdateInput(
+          { dataSource, symbol },
+          symbolProfileOverrides
+        )
       };
 
       await this.symbolProfileService.updateSymbolProfile(
@@ -856,7 +850,7 @@ export class AdminService {
             activityCount: true,
             country: true,
             dataProviderGhostfolioDailyRequests: true,
-            updatedAt: true
+            lastRequestAt: true
           }
         },
         createdAt: true,
@@ -902,7 +896,7 @@ export class AdminService {
           activityCount: _count.activities || 0,
           country: analytics?.country,
           dailyApiRequests: analytics?.dataProviderGhostfolioDailyRequests || 0,
-          lastActivity: analytics?.updatedAt
+          lastActivity: analytics?.lastRequestAt
         };
       }
     );
