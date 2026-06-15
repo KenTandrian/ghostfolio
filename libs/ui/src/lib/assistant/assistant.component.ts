@@ -397,19 +397,17 @@ export class GfAssistantComponent implements OnChanges, OnDestroy, OnInit {
       });
     }
 
-    if (this.user?.settings?.isExperimentalFeatures) {
-      this.dateRangeOptions = this.dateRangeOptions.concat(
-        eachYearOfInterval({
-          end: new Date(),
-          start: this.user?.dateOfFirstActivity ?? new Date()
+    this.dateRangeOptions = this.dateRangeOptions.concat(
+      eachYearOfInterval({
+        end: new Date(),
+        start: this.user?.dateOfFirstActivity ?? new Date()
+      })
+        .map((date) => {
+          return { label: format(date, 'yyyy'), value: format(date, 'yyyy') };
         })
-          .map((date) => {
-            return { label: format(date, 'yyyy'), value: format(date, 'yyyy') };
-          })
-          .slice(0, -1)
-          .reverse()
-      );
-    }
+        .slice(0, -1)
+        .reverse()
+    );
 
     if (
       this.user?.dateOfFirstActivity &&
@@ -504,11 +502,16 @@ export class GfAssistantComponent implements OnChanges, OnDestroy, OnInit {
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(({ holdings }) => {
         this.holdings = holdings
-          .filter(({ assetSubClass }) => {
-            return assetSubClass && !['CASH'].includes(assetSubClass);
+          .filter(({ assetProfile }) => {
+            return (
+              assetProfile.assetSubClass &&
+              !['CASH'].includes(assetProfile.assetSubClass)
+            );
           })
           .sort((a, b) => {
-            return a.name?.localeCompare(b.name);
+            return (a.assetProfile.name ?? '').localeCompare(
+              b.assetProfile.name ?? ''
+            );
           });
 
         this.setPortfolioFilterFormValues();
@@ -530,11 +533,11 @@ export class GfAssistantComponent implements OnChanges, OnDestroy, OnInit {
         type: 'ASSET_CLASS'
       },
       {
-        id: filterValue?.holding?.dataSource ?? '',
+        id: filterValue?.holding?.assetProfile?.dataSource ?? '',
         type: 'DATA_SOURCE'
       },
       {
-        id: filterValue?.holding?.symbol ?? '',
+        id: filterValue?.holding?.assetProfile?.symbol ?? '',
         type: 'SYMBOL'
       },
       {
@@ -718,18 +721,16 @@ export class GfAssistantComponent implements OnChanges, OnDestroy, OnInit {
           return EMPTY;
         }),
         map(({ holdings }) => {
-          return holdings.map(
-            ({ assetSubClass, currency, dataSource, name, symbol }) => {
-              return {
-                currency,
-                dataSource,
-                name,
-                symbol,
-                assetSubClassString: translate(assetSubClass ?? ''),
-                mode: SearchMode.HOLDING as const
-              };
-            }
-          );
+          return holdings.map(({ assetProfile }) => {
+            return {
+              assetSubClassString: translate(assetProfile.assetSubClass ?? ''),
+              currency: assetProfile.currency ?? '',
+              dataSource: assetProfile.dataSource,
+              mode: SearchMode.HOLDING as const,
+              name: assetProfile.name ?? '',
+              symbol: assetProfile.symbol
+            };
+          });
         }),
         takeUntilDestroyed(this.destroyRef)
       );
@@ -777,8 +778,8 @@ export class GfAssistantComponent implements OnChanges, OnDestroy, OnInit {
       return (
         !!(dataSource && symbol) &&
         getAssetProfileIdentifier({
-          dataSource: holding.dataSource,
-          symbol: holding.symbol
+          dataSource: holding.assetProfile.dataSource,
+          symbol: holding.assetProfile.symbol
         }) === getAssetProfileIdentifier({ dataSource, symbol })
       );
     });
