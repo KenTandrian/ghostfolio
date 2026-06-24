@@ -5,11 +5,86 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## Unreleased
+## 3.15.1 - 2026-06-23
+
+### Changed
+
+- Improved the dynamic numerical precision for various values in the account detail dialog on mobile
+- Improved the dynamic numerical precision for various values in the holding detail dialog on mobile
+- Upgraded `@internationalized/number` from version `3.6.6` to `3.6.7`
+
+### Fixed
+
+- Fixed an issue where symbols with special characters caused API request failures by URL encoding the symbol
+- Fixed the disabled state of the delete action in the asset profiles actions menu of the historical market data table in the admin control panel
+- Fixed the persistence of an empty `locale` string in the scraper configuration
+- Fixed a transaction timeout that prevented gathering historical market data for symbols with a long history
+- Fixed an exception in various portfolio endpoints when historical exchange rate data is missing
+
+## 3.14.0 - 2026-06-22
+
+### Added
+
+- Exposed the `ENABLE_FEATURE_CRON` environment variable to control scheduled cron job execution
+- Exposed the `PROCESSOR_GATHER_STATISTICS_CONCURRENCY` environment variable to control the concurrency of the statistics gathering queue processor
+
+### Changed
+
+- Consolidated the exchange rates to be gathered with hourly market data
+- Improved the language localization for German (`de`)
+- Upgraded `@openrouter/ai-sdk-provider` from version `2.9.0` to `2.9.1`
+- Upgraded `undici` from version `7.24.4` to `8.5.0`
+
+### Fixed
+
+- Fixed an issue in the data provider service where asset profiles and historical data could be missing for symbols that exist in multiple data sources by keying the responses by the asset profile identifier
+- Resolved an exception in the benchmarks service when the current market price is unavailable
+
+## 3.13.0 - 2026-06-20
+
+### Added
+
+- Added an icon to indicate external links in the page tabs component
+- Added the Korean (`ko`) language to the footer
+- Added a data gathering frequency (`DAILY` or `HOURLY`) to the asset profile to control the market data gathering interval
+
+### Changed
+
+- Changed the _Fear & Greed Index_ (market mood) in the markets overview to use the stored market data instead of a live quote
+- Moved the endpoint to get the asset profiles from `GET api/v1/admin/market-data` to `GET api/v1/asset-profiles`
+- Moved the endpoint to get the asset profile details from `GET api/v1/market-data/:dataSource/:symbol` to `GET api/v1/asset-profiles/:dataSource/:symbol`
+- Added the selected asset profile count to the delete menu item of the historical market data table in the admin control panel
+- Added the selected asset profile count to the deletion confirmation dialog of the historical market data table in the admin control panel
+- Improved the sorting to be case-insensitive in the platform management of the admin control panel
+- Improved the sorting to be case-insensitive in the tag management of the admin control panel
+- Improved the language localization for German (`de`)
+- Upgraded `yahoo-finance2` from version `3.14.2` to `3.15.3`
+
+### Fixed
+
+- Fixed an issue with the localization of the country names
+- Fixed an issue in the data provider service where quotes could be missing for symbols that exist in multiple data sources by keying the quotes response by the asset profile identifier
+
+## 3.12.0 - 2026-06-17
 
 ### Changed
 
 - Improved the styling of the checkboxes to consistently use the primary color in their states
+- Improved the account name display in the accounts table
+- Improved the name display in the activities table
+- Improved the last activity display in the users table of the admin control panel
+- Improved the registration display in the users table of the admin control panel
+- Improved the user id display in the users table of the admin control panel
+- Deprecated `SymbolProfile` in favor of `assetProfile` in the endpoint `GET api/v1/portfolio/holding/:dataSource/:symbol`
+- Improved the language localization for German (`de`)
+- Upgraded `svgmap` from version `2.19.3` to `2.21.0`
+
+### Fixed
+
+- Fixed a chart error on interaction by registering the annotation plugin early
+- Fixed an issue on the allocations page where clicking an account in the _By Account_ chart did not open the detail dialog
+- Restricted the maximum height of the import activities dialog
+- Fixed the dark mode styling of the safe withdrawal rate selector in the _FIRE_ section (experimental)
 
 ## 3.11.0 - 2026-06-14
 
