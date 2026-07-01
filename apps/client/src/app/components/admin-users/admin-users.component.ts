@@ -5,9 +5,10 @@ import {
 import { GfUserDetailDialogComponent } from '@ghostfolio/client/components/user-detail-dialog/user-detail-dialog.component';
 import { ImpersonationStorageService } from '@ghostfolio/client/services/impersonation-storage.service';
 import { UserService } from '@ghostfolio/client/services/user/user.service';
-import { DEFAULT_PAGE_SIZE, locale } from '@ghostfolio/common/config';
+import { DEFAULT_LOCALE, DEFAULT_PAGE_SIZE } from '@ghostfolio/common/config';
 import { ConfirmationDialogType } from '@ghostfolio/common/enums';
 import {
+  getCountryName,
   getDateFnsLocale,
   getDateFormatString,
   getEmojiFlag
@@ -88,6 +89,7 @@ export class GfAdminUsersComponent implements OnInit {
   >();
   protected defaultDateFormat: string;
   protected displayedColumns: string[] = [];
+  protected readonly getCountryName = getCountryName;
   protected readonly getEmojiFlag = getEmojiFlag;
   protected hasPermissionForSubscription: boolean;
   protected hasPermissionToImpersonateAllUsers: boolean;
@@ -317,7 +319,7 @@ export class GfAdminUsersComponent implements OnInit {
         currentUserId: this.user?.id,
         deviceType: this.deviceType(),
         hasPermissionForSubscription: this.hasPermissionForSubscription,
-        locale: this.user?.settings?.locale ?? locale,
+        locale: this.user?.settings?.locale ?? DEFAULT_LOCALE,
         userId: aUserId
       } satisfies UserDetailDialogParams,
       height: this.deviceType() === 'mobile' ? '98vh' : '60vh',

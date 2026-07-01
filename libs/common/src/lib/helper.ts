@@ -1,7 +1,6 @@
 import { NumberParser } from '@internationalized/number';
 import {
   Type as ActivityType,
-  DataSource,
   MarketData,
   Prisma,
   SymbolProfile,
@@ -24,6 +23,7 @@ import {
   es,
   fr,
   it,
+  ja,
   ko,
   nl,
   pl,
@@ -36,16 +36,15 @@ import { get, isNil, isString } from 'lodash';
 
 import {
   DEFAULT_CURRENCY,
+  DEFAULT_LOCALE,
   DERIVED_CURRENCIES,
-  ghostfolioFearAndGreedIndexSymbol,
   ghostfolioFearAndGreedIndexSymbolCryptocurrencies,
   ghostfolioFearAndGreedIndexSymbolStocks,
-  ghostfolioScraperApiSymbolPrefix,
-  locale
+  ghostfolioScraperApiSymbolPrefix
 } from './config';
 import {
-  AdminMarketDataItem,
   AssetProfileIdentifier,
+  AssetProfileItem,
   Benchmark
 } from './interfaces';
 import { BenchmarkTrend, ColorScheme } from './types';
@@ -149,7 +148,7 @@ export function canDeleteAssetProfile({
   symbol,
   watchedByCount
 }: Pick<
-  AdminMarketDataItem,
+  AssetProfileItem,
   'activitiesCount' | 'isBenchmark' | 'symbol' | 'watchedByCount'
 >): boolean {
   return (
@@ -157,7 +156,6 @@ export function canDeleteAssetProfile({
     !isBenchmark &&
     !isDerivedCurrency(getCurrencyFromSymbol(symbol)) &&
     !isRootCurrency(getCurrencyFromSymbol(symbol)) &&
-    symbol !== ghostfolioFearAndGreedIndexSymbol &&
     symbol !== ghostfolioFearAndGreedIndexSymbolCryptocurrencies &&
     symbol !== ghostfolioFearAndGreedIndexSymbolStocks &&
     watchedByCount === 0
@@ -166,14 +164,6 @@ export function canDeleteAssetProfile({
 
 export function capitalize(aString: string) {
   return aString.charAt(0).toUpperCase() + aString.slice(1).toLowerCase();
-}
-
-export function decodeDataSource(encodedDataSource: string) {
-  if (encodedDataSource) {
-    return Buffer.from(encodedDataSource, 'hex').toString();
-  }
-
-  return undefined;
 }
 
 export function downloadAsFile({
@@ -199,14 +189,6 @@ export function downloadAsFile({
   a.href = URL.createObjectURL(file);
   a.download = fileName;
   a.click();
-}
-
-export function encodeDataSource(aDataSource: DataSource) {
-  if (aDataSource) {
-    return Buffer.from(aDataSource, 'utf-8').toString('hex');
-  }
-
-  return undefined;
 }
 
 export function extractNumberFromString({
@@ -258,15 +240,13 @@ export function getCurrencyFromSymbol(aSymbol = '') {
   return aSymbol.replace(DEFAULT_CURRENCY, '');
 }
 
-export function getCountryName({
-  code,
-  locale = getLocale()
-}: {
-  code: string;
-  locale?: string;
-}): string {
+export function getCountryName({ code }: { code: string }): string {
   try {
-    return new Intl.DisplayNames([locale], { type: 'region' }).of(code) ?? code;
+    return (
+      new Intl.DisplayNames([document.documentElement.lang || DEFAULT_LOCALE], {
+        type: 'region'
+      }).of(code) ?? code
+    );
   } catch {
     return code;
   }
@@ -283,6 +263,8 @@ export function getDateFnsLocale(aLanguageCode?: string) {
     return fr;
   } else if (aLanguageCode === 'it') {
     return it;
+  } else if (aLanguageCode === 'ja') {
+    return ja;
   } else if (aLanguageCode === 'ko') {
     return ko;
   } else if (aLanguageCode === 'nl') {
@@ -340,7 +322,7 @@ export function getEmojiFlag(aCountryCode: string) {
 }
 
 export function getLocale() {
-  return navigator.language ?? locale;
+  return navigator.language ?? DEFAULT_LOCALE;
 }
 
 export function getLowercase(object: object, path: string) {
