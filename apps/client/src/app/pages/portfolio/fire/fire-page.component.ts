@@ -12,8 +12,9 @@ import { GfPremiumIndicatorComponent } from '@ghostfolio/ui/premium-indicator';
 import { DataService } from '@ghostfolio/ui/services';
 import { GfValueComponent } from '@ghostfolio/ui/value';
 
-import { CommonModule, NgStyle } from '@angular/common';
+import { CommonModule } from '@angular/common';
 import {
+  ChangeDetectionStrategy,
   ChangeDetectorRef,
   Component,
   computed,
@@ -29,13 +30,13 @@ import { DeviceDetectorService } from 'ngx-device-detector';
 import { NgxSkeletonLoaderModule } from 'ngx-skeleton-loader';
 
 @Component({
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     CommonModule,
     FormsModule,
     GfFireCalculatorComponent,
     GfPremiumIndicatorComponent,
     GfValueComponent,
-    NgStyle,
     NgxSkeletonLoaderModule,
     ReactiveFormsModule
   ],
@@ -90,6 +91,7 @@ export class GfFirePageComponent implements OnInit {
               : 0
           }
         };
+
         if (this.user.subscription?.type === SubscriptionType.Basic) {
           this.fireWealth = {
             today: {
@@ -108,6 +110,8 @@ export class GfFirePageComponent implements OnInit {
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((impersonationId) => {
         this.hasImpersonationId = !!impersonationId;
+
+        this.changeDetectorRef.markForCheck();
       });
 
     this.safeWithdrawalRateControl.valueChanges
@@ -136,9 +140,9 @@ export class GfFirePageComponent implements OnInit {
           );
 
           this.calculateWithdrawalRates();
-
-          this.changeDetectorRef.markForCheck();
         }
+
+        this.changeDetectorRef.markForCheck();
       });
   }
 

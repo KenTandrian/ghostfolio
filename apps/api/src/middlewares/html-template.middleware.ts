@@ -92,6 +92,8 @@ const locales = {
 
 @Injectable()
 export class HtmlTemplateMiddleware implements NestMiddleware {
+  private readonly logger = new Logger(HtmlTemplateMiddleware.name);
+
   private indexHtmlMap: { [languageCode: string]: string } = {};
 
   public constructor(private readonly i18nService: I18nService) {
@@ -107,11 +109,7 @@ export class HtmlTemplateMiddleware implements NestMiddleware {
         {}
       );
     } catch (error) {
-      Logger.error(
-        'Failed to initialize index HTML map',
-        error,
-        'HTMLTemplateMiddleware'
-      );
+      this.logger.error('Failed to initialize index HTML map', error);
     }
   }
 
@@ -119,7 +117,9 @@ export class HtmlTemplateMiddleware implements NestMiddleware {
     const path = request.originalUrl.replace(/\/$/, '');
     let languageCode = path.substr(1, 2);
 
-    if (!SUPPORTED_LANGUAGE_CODES.includes(languageCode)) {
+    if (
+      !(SUPPORTED_LANGUAGE_CODES as readonly string[]).includes(languageCode)
+    ) {
       languageCode = DEFAULT_LANGUAGE_CODE;
     }
 

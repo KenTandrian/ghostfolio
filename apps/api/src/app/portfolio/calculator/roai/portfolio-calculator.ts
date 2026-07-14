@@ -11,7 +11,6 @@ import { PortfolioSnapshot, TimelinePosition } from '@ghostfolio/common/models';
 import { DateRange } from '@ghostfolio/common/types';
 import { PerformanceCalculationType } from '@ghostfolio/common/types/performance-calculation-type.type';
 
-import { Logger } from '@nestjs/common';
 import { Big } from 'big.js';
 import {
   addMilliseconds,
@@ -96,9 +95,8 @@ export class RoaiPortfolioCalculator extends PortfolioCalculator {
             currentPosition.timeWeightedInvestmentWithCurrencyEffect
           );
       } else if (!currentPosition.quantity.eq(0)) {
-        Logger.warn(
-          `Missing historical market data for ${currentPosition.symbol} (${currentPosition.dataSource})`,
-          'PortfolioCalculator'
+        this.logger.warn(
+          `Missing historical market data for ${currentPosition.symbol} (${currentPosition.dataSource})`
         );
 
         hasErrors = true;
@@ -196,12 +194,12 @@ export class RoaiPortfolioCalculator extends PortfolioCalculator {
 
     // Clone orders to keep the original values in this.orders
     let orders: PortfolioOrderItem[] = cloneDeep(
-      this.activities.filter(({ SymbolProfile }) => {
-        return SymbolProfile.symbol === symbol;
+      this.activities.filter(({ assetProfile }) => {
+        return assetProfile.symbol === symbol;
       })
     );
 
-    const isCash = orders[0]?.SymbolProfile?.assetSubClass === 'CASH';
+    const isCash = orders[0]?.assetProfile?.assetSubClass === 'CASH';
 
     if (orders.length <= 0) {
       return {
@@ -303,32 +301,30 @@ export class RoaiPortfolioCalculator extends PortfolioCalculator {
       };
     }
 
+    const assetProfile: PortfolioOrderItem['assetProfile'] = {
+      dataSource,
+      symbol,
+      assetSubClass: isCash ? 'CASH' : undefined
+    };
+
     // Add a synthetic order at the start and the end date
     orders.push({
+      assetProfile,
       date: startDateString,
       fee: new Big(0),
       feeInBaseCurrency: new Big(0),
       itemType: 'start',
       quantity: new Big(0),
-      SymbolProfile: {
-        dataSource,
-        symbol,
-        assetSubClass: isCash ? 'CASH' : undefined
-      },
       type: 'BUY',
       unitPrice: unitPriceAtStartDate
     });
 
     orders.push({
+      assetProfile,
       date: endDateString,
       fee: new Big(0),
       feeInBaseCurrency: new Big(0),
       itemType: 'end',
-      SymbolProfile: {
-        dataSource,
-        symbol,
-        assetSubClass: isCash ? 'CASH' : undefined
-      },
       quantity: new Big(0),
       type: 'BUY',
       unitPrice: unitPriceAtEndDate
@@ -361,15 +357,11 @@ export class RoaiPortfolioCalculator extends PortfolioCalculator {
         }
       } else {
         orders.push({
+          assetProfile,
           date: dateString,
           fee: new Big(0),
           feeInBaseCurrency: new Big(0),
           quantity: new Big(0),
-          SymbolProfile: {
-            dataSource,
-            symbol,
-            assetSubClass: isCash ? 'CASH' : undefined
-          },
           type: 'BUY',
           unitPrice: marketSymbolMap[dateString]?.[symbol] ?? lastUnitPrice,
           unitPriceFromMarketData:

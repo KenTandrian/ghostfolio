@@ -8,7 +8,10 @@ import {
   CACHE_TTL_INFINITE,
   PROPERTY_BENCHMARKS
 } from '@ghostfolio/common/config';
-import { calculateBenchmarkTrend } from '@ghostfolio/common/helper';
+import {
+  calculateBenchmarkTrend,
+  getAssetProfileIdentifier
+} from '@ghostfolio/common/helper';
 import {
   AssetProfileIdentifier,
   Benchmark,
@@ -21,13 +24,15 @@ import { Injectable, Logger } from '@nestjs/common';
 import { SymbolProfile } from '@prisma/client';
 import { Big } from 'big.js';
 import { addHours, isAfter, subDays } from 'date-fns';
-import { uniqBy } from 'lodash';
+import { round, uniqBy } from 'lodash';
 import ms from 'ms';
 
 import { BenchmarkValue } from './interfaces/benchmark-value.interface';
 
 @Injectable()
 export class BenchmarkService {
+  private readonly logger = new Logger(BenchmarkService.name);
+
   private readonly CACHE_KEY_BENCHMARKS = 'BENCHMARKS';
 
   public constructor(
@@ -87,7 +92,7 @@ export class BenchmarkService {
         const { benchmarks, expiration }: BenchmarkValue =
           JSON.parse(cachedBenchmarkValue);
 
-        Logger.debug('Fetched benchmarks from cache', 'BenchmarkService');
+        this.logger.debug('Fetched benchmarks from cache');
 
         if (isAfter(new Date(), new Date(expiration))) {
           this.calculateAndCacheBenchmarks({
@@ -215,9 +220,11 @@ export class BenchmarkService {
   public getMarketCondition(
     aPerformanceInPercent: number
   ): Benchmark['marketCondition'] {
-    if (aPerformanceInPercent >= 0) {
+    const performanceInPercent = round(aPerformanceInPercent, 4);
+
+    if (performanceInPercent >= 0) {
       return 'ALL_TIME_HIGH';
-    } else if (aPerformanceInPercent <= -0.2) {
+    } else if (performanceInPercent <= -0.2) {
       return 'BEAR_MARKET';
     } else {
       return 'NEUTRAL_MARKET';
@@ -227,7 +234,7 @@ export class BenchmarkService {
   private async calculateAndCacheBenchmarks({
     enableSharing = false
   }): Promise<BenchmarkResponse['benchmarks']> {
-    Logger.debug('Calculate benchmarks', 'BenchmarkService');
+    this.logger.debug('Calculate benchmarks');
 
     const benchmarkAssetProfiles = await this.getBenchmarkAssetProfiles({
       enableSharing
@@ -264,8 +271,9 @@ export class BenchmarkService {
     let storeInCache = true;
 
     const benchmarks = allTimeHighs.map((allTimeHigh, index) => {
+      const { dataSource, symbol } = benchmarkAssetProfiles[index];
       const { marketPrice } =
-        quotes[benchmarkAssetProfiles[index].symbol] ?? {};
+        quotes[getAssetProfileIdentifier({ dataSource, symbol })] ?? {};
 
       let performancePercentFromAllTimeHigh = 0;
 

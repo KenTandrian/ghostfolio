@@ -3,7 +3,7 @@ import {
   TAG_ID_EXCLUDE_FROM_ANALYSIS
 } from '@ghostfolio/common/config';
 import { ConfirmationDialogType } from '@ghostfolio/common/enums';
-import { getLocale } from '@ghostfolio/common/helper';
+import { getLocale, isAccountExcluded } from '@ghostfolio/common/helper';
 import {
   Activity,
   AssetProfileIdentifier
@@ -267,10 +267,10 @@ export class GfActivitiesTableComponent implements AfterViewInit, OnInit {
 
   public isExcludedFromAnalysis(activity: Activity) {
     return (
-      activity.account?.isExcluded ??
+      (activity.account && isAccountExcluded(activity.account)) ||
       activity.tags?.some(({ id }) => {
         return id === TAG_ID_EXCLUDE_FROM_ANALYSIS;
-      })
+      }) === true
     );
   }
 
@@ -285,8 +285,8 @@ export class GfActivitiesTableComponent implements AfterViewInit, OnInit {
       }
     } else if (this.canClickActivity(activity)) {
       this.activityClicked.emit({
-        dataSource: activity.SymbolProfile.dataSource,
-        symbol: activity.SymbolProfile.symbol
+        dataSource: activity.assetProfile.dataSource,
+        symbol: activity.assetProfile.symbol
       });
     }
   }

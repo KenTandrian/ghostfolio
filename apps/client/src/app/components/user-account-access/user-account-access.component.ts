@@ -4,6 +4,7 @@ import { CreateAccessDto } from '@ghostfolio/common/dtos';
 import { ConfirmationDialogType } from '@ghostfolio/common/enums';
 import { Access, User } from '@ghostfolio/common/interfaces';
 import { hasPermission, permissions } from '@ghostfolio/common/permissions';
+import { GfFabComponent } from '@ghostfolio/ui/fab';
 import { NotificationService } from '@ghostfolio/ui/notifications';
 import { GfPremiumIndicatorComponent } from '@ghostfolio/ui/premium-indicator';
 import { DataService } from '@ghostfolio/ui/services';
@@ -42,9 +43,9 @@ import { CreateOrUpdateAccessDialogParams } from './create-or-update-access-dial
 
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
-  host: { class: 'has-fab' },
   imports: [
     GfAccessTableComponent,
+    GfFabComponent,
     GfPremiumIndicatorComponent,
     IonIcon,
     MatButtonModule,
@@ -228,6 +229,7 @@ export class GfUserAccountAccessComponent implements OnInit {
           grantee: access.grantee === 'Public' ? undefined : access.grantee,
           id: access.id,
           permissions: access.permissions,
+          settings: access.settings,
           type: access.type
         }
       } satisfies CreateOrUpdateAccessDialogParams,

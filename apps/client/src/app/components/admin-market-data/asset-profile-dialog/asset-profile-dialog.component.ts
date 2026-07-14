@@ -6,7 +6,9 @@ import {
 } from '@ghostfolio/common/config';
 import { UpdateAssetProfileDto } from '@ghostfolio/common/dtos';
 import {
+  canDeleteAssetProfile,
   DATE_FORMAT,
+  getCountryName,
   getCurrencyFromSymbol,
   isCurrency
 } from '@ghostfolio/common/helper';
@@ -72,6 +74,7 @@ import { IonIcon } from '@ionic/angular/standalone';
 import {
   AssetClass,
   AssetSubClass,
+  DataGatheringFrequency,
   MarketData,
   Prisma,
   SymbolProfile
@@ -153,6 +156,7 @@ export class GfAssetProfileDialogComponent implements OnInit {
     comment: '',
     countries: ['', jsonValidator()],
     currency: '',
+    dataGatheringFrequency: new FormControl<DataGatheringFrequency>('DAILY'),
     historicalData: this.formBuilder.group({
       csvString: ''
     }),
@@ -188,6 +192,7 @@ export class GfAssetProfileDialogComponent implements OnInit {
     }
   );
 
+  protected readonly canDeleteAssetProfile = canDeleteAssetProfile;
   protected canEditAssetProfile = true;
 
   protected countries: {
@@ -195,6 +200,20 @@ export class GfAssetProfileDialogComponent implements OnInit {
   };
 
   protected currencies: string[] = [];
+
+  protected readonly dataGatheringFrequencyValues: {
+    value: DataGatheringFrequency;
+    viewValue: string;
+  }[] = [
+    {
+      value: 'DAILY',
+      viewValue: $localize`Daily`
+    },
+    {
+      value: 'HOURLY',
+      viewValue: $localize`Hourly`
+    }
+  ];
 
   protected readonly dateRangeOptions = [
     {
@@ -222,6 +241,7 @@ export class GfAssetProfileDialogComponent implements OnInit {
       value: ''
     }
   ];
+  protected readonly getCountryName = getCountryName;
   protected historicalDataItems: LineChartItem[];
   protected isBenchmark = false;
   protected isDataGatheringEnabled: boolean;
@@ -243,6 +263,8 @@ export class GfAssetProfileDialogComponent implements OnInit {
   protected sectors: {
     [name: string]: { name: string; value: number };
   };
+
+  protected readonly translate = translate;
 
   protected user: User;
 
@@ -365,9 +387,9 @@ export class GfAssetProfileDialogComponent implements OnInit {
           this.assetProfile?.countries &&
           this.assetProfile.countries.length > 0
         ) {
-          for (const { code, name, weight } of this.assetProfile.countries) {
+          for (const { code, weight } of this.assetProfile.countries) {
             this.countries[code] = {
-              name,
+              name: getCountryName({ code }),
               value: weight
             };
           }
@@ -379,7 +401,7 @@ export class GfAssetProfileDialogComponent implements OnInit {
         ) {
           for (const { name, weight } of this.assetProfile.sectors) {
             this.sectors[name] = {
-              name,
+              name: translate(name),
               value: weight
             };
           }
@@ -395,6 +417,8 @@ export class GfAssetProfileDialogComponent implements OnInit {
             }) ?? []
           ),
           currency: this.assetProfile?.currency ?? null,
+          dataGatheringFrequency:
+            this.assetProfile?.dataGatheringFrequency ?? 'DAILY',
           historicalData: {
             csvString: GfAssetProfileDialogComponent.HISTORICAL_DATA_TEMPLATE
           },
@@ -526,7 +550,7 @@ export class GfAssetProfileDialogComponent implements OnInit {
         ) as Record<string, string>,
         locale:
           this.assetProfileForm.controls.scraperConfiguration.controls.locale
-            ?.value ?? undefined,
+            ?.value || undefined,
         mode:
           this.assetProfileForm.controls.scraperConfiguration.controls.mode
             ?.value ?? undefined,
@@ -577,6 +601,9 @@ export class GfAssetProfileDialogComponent implements OnInit {
         this.assetProfileForm.controls.assetSubClass.value ?? undefined,
       comment: this.assetProfileForm.controls.comment.value || undefined,
       currency: this.assetProfileForm.controls.currency.value ?? undefined,
+      dataGatheringFrequency:
+        this.assetProfileForm.controls.dataGatheringFrequency.value ??
+        undefined,
       isActive: isBoolean(this.assetProfileForm.controls.isActive.value)
         ? this.assetProfileForm.controls.isActive.value
         : undefined,

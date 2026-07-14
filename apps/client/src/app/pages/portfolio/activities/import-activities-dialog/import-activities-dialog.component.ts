@@ -151,7 +151,7 @@ export class GfImportActivitiesDialogComponent {
         .pipe(takeUntilDestroyed(this.destroyRef))
         .subscribe(({ holdings }) => {
           this.holdings = sortBy(holdings, ({ assetProfile }) => {
-            return assetProfile.name.toLowerCase();
+            return assetProfile.name?.toLowerCase();
           });
 
           this.assetProfileForm.controls.assetProfileIdentifier.enable();
@@ -226,7 +226,8 @@ export class GfImportActivitiesDialogComponent {
     this.assetProfileForm.controls.assetProfileIdentifier.disable();
 
     const { dataSource, symbol } =
-      this.assetProfileForm.controls.assetProfileIdentifier.value ?? {};
+      this.assetProfileForm.controls.assetProfileIdentifier.value
+        ?.assetProfile ?? {};
 
     if (!dataSource || !symbol) {
       return;

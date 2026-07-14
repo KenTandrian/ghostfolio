@@ -10,11 +10,7 @@ import { DataGatheringService } from '@ghostfolio/api/services/queues/data-gathe
 import { SymbolProfileService } from '@ghostfolio/api/services/symbol-profile/symbol-profile.service';
 import { TagService } from '@ghostfolio/api/services/tag/tag.service';
 import { DATA_GATHERING_QUEUE_PRIORITY_HIGH } from '@ghostfolio/common/config';
-import {
-  CreateAssetProfileDto,
-  CreateAccountDto,
-  CreateOrderDto
-} from '@ghostfolio/common/dtos';
+import { CreateAssetProfileDto, CreateOrderDto } from '@ghostfolio/common/dtos';
 import {
   getAssetProfileIdentifier,
   parseDate
@@ -69,8 +65,7 @@ export class ImportService {
       const holding = await this.portfolioService.getHolding({
         dataSource,
         symbol,
-        userId,
-        impersonationId: undefined
+        userId
       });
 
       if (!holding) {
@@ -127,11 +122,11 @@ export class ImportService {
           const isDuplicate = activities.some((activity) => {
             return (
               activity.accountId === account?.id &&
-              activity.SymbolProfile.currency === assetProfile.currency &&
-              activity.SymbolProfile.dataSource === assetProfile.dataSource &&
+              activity.assetProfile.currency === assetProfile.currency &&
+              activity.assetProfile.dataSource === assetProfile.dataSource &&
               isSameSecond(activity.date, date) &&
               activity.quantity === quantity &&
-              activity.SymbolProfile.symbol === assetProfile.symbol &&
+              activity.assetProfile.symbol === assetProfile.symbol &&
               activity.type === 'DIVIDEND' &&
               activity.unitPrice === marketPrice
             );
@@ -143,6 +138,7 @@ export class ImportService {
 
           return {
             account,
+            assetProfile,
             date,
             error,
             quantity,
@@ -195,6 +191,60 @@ export class ImportService {
     const tagIdMapping: { [oldTagId: string]: string } = {};
     const userCurrency = user.settings.settings.baseCurrency;
 
+    const existingTagsOfUser =
+      tagsDto?.length || (!isDryRun && accountsWithBalancesDto?.length)
+        ? await this.tagService.getTagsForUser(user.id)
+        : [];
+
+    if (tagsDto?.length) {
+      const canCreateOwnTag = hasPermission(
+        user.permissions,
+        permissions.createOwnTag
+      );
+
+      for (const tag of tagsDto) {
+        const existingTagOfUser = existingTagsOfUser.find(({ id }) => {
+          return id === tag.id;
+        });
+
+        if (!existingTagOfUser) {
+          if (!canCreateOwnTag) {
+            throw new Error(
+              `Insufficient permissions to create custom tag ("${tag.name}")`
+            );
+          }
+
+          if (!isDryRun) {
+            const existingTag = await this.tagService.getTag({ id: tag.id });
+            let oldTagId: string;
+
+            if (existingTag) {
+              oldTagId = tag.id;
+              delete tag.id;
+            }
+
+            const tagObject: Prisma.TagCreateInput = {
+              ...tag,
+              user: { connect: { id: user.id } }
+            };
+
+            const newTag = await this.tagService.createTag(tagObject);
+
+            if (existingTag && oldTagId) {
+              tagIdMapping[oldTagId] = newTag.id;
+            }
+
+            existingTagsOfUser.push({
+              id: newTag.id,
+              isUsed: false,
+              name: newTag.name,
+              userId: newTag.userId
+            });
+          }
+        }
+      }
+    }
+
     if (!isDryRun && accountsWithBalancesDto?.length) {
       const [existingAccounts, existingPlatforms] = await Promise.all([
         this.accountService.accounts({
@@ -209,6 +259,12 @@ export class ImportService {
         this.platformService.getPlatforms()
       ]);
 
+      const existingTagIds = new Set(
+        existingTagsOfUser.map(({ id }) => {
+          return id;
+        })
+      );
+
       for (const accountWithBalances of accountsWithBalancesDto) {
         // Check if there is any existing account with the same ID
         const accountWithSameId = existingAccounts.find((existingAccount) => {
@@ -217,10 +273,7 @@ export class ImportService {
 
         // If there is no account or if the account belongs to a different user then create a new account
         if (!accountWithSameId || accountWithSameId.userId !== user.id) {
-          const account: CreateAccountDto = omit(
-            accountWithBalances,
-            'balances'
-          );
+          const account = omit(accountWithBalances, ['balances', 'tags']);
 
           let oldAccountId: string;
           const platformId = account.platformId;
@@ -231,6 +284,14 @@ export class ImportService {
             oldAccountId = account.id;
             delete account.id;
           }
+
+          const tagIds = (accountWithBalances.tags ?? [])
+            .map((tagId) => {
+              return tagIdMapping[tagId] ?? tagId;
+            })
+            .filter((tagId) => {
+              return existingTagIds.has(tagId);
+            });
 
           let accountObject: Prisma.AccountCreateInput = {
             ...account,
@@ -253,7 +314,8 @@ export class ImportService {
 
           const newAccount = await this.accountService.createAccount(
             accountObject,
-            user.id
+            user.id,
+            tagIds
           );
 
           // Store the new to old account ID mappings for updating activities
@@ -318,50 +380,6 @@ export class ImportService {
         );
 
         await this.marketDataService.updateMany({ data: marketDataObjects });
-      }
-    }
-
-    if (tagsDto?.length) {
-      const existingTagsOfUser = await this.tagService.getTagsForUser(user.id);
-
-      const canCreateOwnTag = hasPermission(
-        user.permissions,
-        permissions.createOwnTag
-      );
-
-      for (const tag of tagsDto) {
-        const existingTagOfUser = existingTagsOfUser.find(({ id }) => {
-          return id === tag.id;
-        });
-
-        if (!existingTagOfUser || existingTagOfUser.userId !== null) {
-          if (!canCreateOwnTag) {
-            throw new Error(
-              `Insufficient permissions to create custom tag ("${tag.name}")`
-            );
-          }
-
-          if (!isDryRun) {
-            const existingTag = await this.tagService.getTag({ id: tag.id });
-            let oldTagId: string;
-
-            if (existingTag) {
-              oldTagId = tag.id;
-              delete tag.id;
-            }
-
-            const tagObject: Prisma.TagCreateInput = {
-              ...tag,
-              user: { connect: { id: user.id } }
-            };
-
-            const newTag = await this.tagService.createTag(tagObject);
-
-            if (existingTag && oldTagId) {
-              tagIdMapping[oldTagId] = newTag.id;
-            }
-          }
-        }
       }
     }
 
@@ -446,19 +464,18 @@ export class ImportService {
       const error = activity.error;
       const fee = activity.fee;
       const quantity = activity.quantity;
-      const SymbolProfile = activity.SymbolProfile;
       const tagIds = activity.tagIds ?? [];
       const type = activity.type;
       const unitPrice = activity.unitPrice;
 
       const assetProfile = assetProfiles[
         getAssetProfileIdentifier({
-          dataSource: SymbolProfile.dataSource,
-          symbol: SymbolProfile.symbol
+          dataSource: activity.assetProfile.dataSource,
+          symbol: activity.assetProfile.symbol
         })
       ] ?? {
-        dataSource: SymbolProfile.dataSource,
-        symbol: SymbolProfile.symbol
+        dataSource: activity.assetProfile.dataSource,
+        symbol: activity.assetProfile.symbol
       };
       const {
         assetClass,
@@ -536,6 +553,8 @@ export class ImportService {
             url,
             comment: assetProfile.comment,
             currency: assetProfile.currency,
+            dataGatheringFrequency:
+              assetProfile.dataGatheringFrequency ?? 'DAILY',
             userId: dataSource === 'MANUAL' ? user.id : undefined
           },
           symbolProfileId: undefined,
@@ -590,18 +609,21 @@ export class ImportService {
 
       const value = new Big(quantity).mul(unitPrice).toNumber();
 
-      const valueInBaseCurrency = this.exchangeRateDataService.toCurrencyAtDate(
-        value,
-        currency ?? assetProfile.currency,
-        userCurrency,
-        date
-      );
+      const valueInBaseCurrency =
+        (await this.exchangeRateDataService.toCurrencyAtDate(
+          value,
+          currency ?? assetProfile.currency,
+          userCurrency,
+          date
+        )) ?? 0;
 
       activities.push({
         ...order,
+        // @ts-ignore
+        assetProfile,
         error,
         value,
-        valueInBaseCurrency: await valueInBaseCurrency,
+        valueInBaseCurrency,
         // @ts-ignore
         SymbolProfile: assetProfile
       });
@@ -613,19 +635,19 @@ export class ImportService {
 
     if (!isDryRun) {
       // Gather symbol data in the background, if not dry run
-      const uniqueActivities = uniqBy(activities, ({ SymbolProfile }) => {
+      const uniqueActivities = uniqBy(activities, ({ assetProfile }) => {
         return getAssetProfileIdentifier({
-          dataSource: SymbolProfile.dataSource,
-          symbol: SymbolProfile.symbol
+          dataSource: assetProfile.dataSource,
+          symbol: assetProfile.symbol
         });
       });
 
       this.dataGatheringService.gatherSymbols({
-        dataGatheringItems: uniqueActivities.map(({ date, SymbolProfile }) => {
+        dataGatheringItems: uniqueActivities.map(({ assetProfile, date }) => {
           return {
             date,
-            dataSource: SymbolProfile.dataSource,
-            symbol: SymbolProfile.symbol
+            dataSource: assetProfile.dataSource,
+            symbol: assetProfile.symbol
           };
         }),
         priority: DATA_GATHERING_QUEUE_PRIORITY_HIGH
@@ -672,12 +694,12 @@ export class ImportService {
             activity.accountId === accountId &&
             activity.comment === comment &&
             (activity.currency === currency ||
-              activity.SymbolProfile.currency === currency) &&
-            activity.SymbolProfile.dataSource === dataSource &&
+              activity.assetProfile.currency === currency) &&
+            activity.assetProfile.dataSource === dataSource &&
             isSameSecond(activity.date, date) &&
             activity.fee === fee &&
             activity.quantity === quantity &&
-            activity.SymbolProfile.symbol === symbol &&
+            activity.assetProfile.symbol === symbol &&
             activity.type === type &&
             activity.unitPrice === unitPrice
           );
@@ -697,7 +719,7 @@ export class ImportService {
           quantity,
           type,
           unitPrice,
-          SymbolProfile: {
+          assetProfile: {
             dataSource,
             symbol,
             activitiesCount: undefined,

@@ -1,5 +1,8 @@
+import { ProductCategory, ProductPlatform } from '@ghostfolio/common/types';
+
 export interface Product {
   alias?: string;
+  categories?: ProductCategory[];
   founded?: number;
   hasFreePlan?: boolean;
   hasSelfHostingAbility?: boolean;
@@ -10,8 +13,10 @@ export interface Product {
   name: string;
   note?: string;
   origin?: string;
+  platforms?: ProductPlatform[];
   pricingPerYear?: string;
   regions?: string[];
   slogan?: string;
+  url?: string;
   useAnonymously?: boolean;
 }

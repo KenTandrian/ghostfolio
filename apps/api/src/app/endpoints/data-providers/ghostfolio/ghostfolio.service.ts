@@ -1,3 +1,4 @@
+import { SymbolService } from '@ghostfolio/api/app/symbol/symbol.service';
 import { ConfigurationService } from '@ghostfolio/api/services/configuration/configuration.service';
 import { DataProviderService } from '@ghostfolio/api/services/data-provider/data-provider.service';
 import { GhostfolioService as GhostfolioDataProviderService } from '@ghostfolio/api/services/data-provider/ghostfolio/ghostfolio.service';
@@ -8,6 +9,7 @@ import {
   GetQuotesParams,
   GetSearchParams
 } from '@ghostfolio/api/services/data-provider/interfaces/data-provider.interface';
+import { FetchService } from '@ghostfolio/api/services/fetch/fetch.service';
 import { PrismaService } from '@ghostfolio/api/services/prisma/prisma.service';
 import { PropertyService } from '@ghostfolio/api/services/property/property.service';
 import {
@@ -15,6 +17,7 @@ import {
   DERIVED_CURRENCIES
 } from '@ghostfolio/common/config';
 import { PROPERTY_DATA_SOURCES_GHOSTFOLIO_DATA_PROVIDER_MAX_REQUESTS } from '@ghostfolio/common/config';
+import { getAssetProfileIdentifier } from '@ghostfolio/common/helper';
 import {
   DataProviderGhostfolioAssetProfileResponse,
   DataProviderHistoricalResponse,
@@ -23,6 +26,7 @@ import {
   HistoricalResponse,
   LookupItem,
   LookupResponse,
+  MarketDataOfMarketsResponse,
   QuotesResponse
 } from '@ghostfolio/common/interfaces';
 import { UserWithSettings } from '@ghostfolio/common/types';
@@ -30,14 +34,19 @@ import { UserWithSettings } from '@ghostfolio/common/types';
 import { Injectable, Logger } from '@nestjs/common';
 import { DataSource, SymbolProfile } from '@prisma/client';
 import { Big } from 'big.js';
+import { isEmpty } from 'lodash';
 
 @Injectable()
 export class GhostfolioService {
+  private readonly logger = new Logger(GhostfolioService.name);
+
   public constructor(
     private readonly configurationService: ConfigurationService,
     private readonly dataProviderService: DataProviderService,
+    private readonly fetchService: FetchService,
     private readonly prismaService: PrismaService,
-    private readonly propertyService: PropertyService
+    private readonly propertyService: PropertyService,
+    private readonly symbolService: SymbolService
   ) {}
 
   public async getAssetProfile({ symbol }: GetAssetProfileParams) {
@@ -56,7 +65,13 @@ export class GhostfolioService {
               }
             ])
             .then(async (assetProfiles) => {
-              const assetProfile = assetProfiles[symbol];
+              const assetProfile =
+                assetProfiles[
+                  getAssetProfileIdentifier({
+                    symbol,
+                    dataSource: dataProviderService.getName()
+                  })
+                ];
               const dataSourceOrigin = DataSource.GHOSTFOLIO;
 
               if (assetProfile) {
@@ -97,7 +112,7 @@ export class GhostfolioService {
 
       return result;
     } catch (error) {
-      Logger.error(error, 'GhostfolioService');
+      this.logger.error(error);
 
       throw error;
     }
@@ -139,7 +154,7 @@ export class GhostfolioService {
 
       return result;
     } catch (error) {
-      Logger.error(error, 'GhostfolioService');
+      this.logger.error(error);
 
       throw error;
     }
@@ -181,7 +196,34 @@ export class GhostfolioService {
 
       return result;
     } catch (error) {
-      Logger.error(error, 'GhostfolioService');
+      this.logger.error(error);
+
+      throw error;
+    }
+  }
+
+  public async getMarketDataOfMarkets({
+    includeHistoricalData
+  }: {
+    includeHistoricalData: number;
+  }): Promise<MarketDataOfMarketsResponse> {
+    try {
+      const marketDataOfMarkets =
+        await this.symbolService.getMarketDataOfMarkets({
+          includeHistoricalData
+        });
+
+      for (const symbolItem of Object.values(
+        marketDataOfMarkets.fearAndGreedIndex
+      )) {
+        if (!isEmpty(symbolItem)) {
+          symbolItem.dataSource = DataSource.GHOSTFOLIO;
+        }
+      }
+
+      return marketDataOfMarkets;
+    } catch (error) {
+      this.logger.error(error);
 
       throw error;
     }
@@ -269,7 +311,7 @@ export class GhostfolioService {
 
       return results;
     } catch (error) {
-      Logger.error(error, 'GhostfolioService');
+      this.logger.error(error);
 
       throw error;
     }
@@ -346,7 +388,7 @@ export class GhostfolioService {
 
       return results;
     } catch (error) {
-      Logger.error(error, 'GhostfolioService');
+      this.logger.error(error);
 
       throw error;
     }
@@ -355,6 +397,7 @@ export class GhostfolioService {
   private getDataProviderInfo(): DataProviderInfo {
     const ghostfolioDataProviderService = new GhostfolioDataProviderService(
       this.configurationService,
+      this.fetchService,
       this.propertyService
     );
 

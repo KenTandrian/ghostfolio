@@ -1,10 +1,10 @@
 <div class="d-flex flex-column h-100">
-  <div class="d-flex mb-3">
-    <h1 class="flex-grow-1 m-0" mat-dialog-title>
-      <span>{{ assetProfile?.name ?? data.symbol }}</span>
-    </h1>
+  <div class="align-items-center d-flex mb-3" mat-dialog-title>
+    <span class="flex-grow-1 text-truncate">{{
+      assetProfile?.name ?? data.symbol
+    }}</span>
     <button
-      class="mx-1 no-min-width px-2"
+      class="ml-1 no-min-width px-2"
       mat-button
       type="button"
       [matMenuTriggerFor]="assetProfileActionsMenu"
@@ -70,7 +70,7 @@
         mat-menu-item
         type="button"
         [disabled]="
-          !adminMarketDataService.hasPermissionToDeleteAssetProfile({
+          !canDeleteAssetProfile({
             activitiesCount: assetProfile?.activitiesCount,
             isBenchmark: isBenchmark,
             symbol: data.symbol,
@@ -113,7 +113,7 @@
           <ion-icon name="reader-outline" />
           <div class="d-none d-sm-block ml-2" i18n>Overview</div>
         </ng-template>
-        <div class="container mt-3 p-0">
+        <div class="container px-0 py-3">
           <div class="row w-100">
             @if (isEditAssetProfileIdentifierMode) {
               <div class="col-12 mb-4">
@@ -165,7 +165,11 @@
               </div>
             } @else {
               <div class="col-6 mb-3">
-                <gf-value i18n size="medium" [value]="assetProfile?.symbol"
+                <gf-value
+                  i18n
+                  size="medium"
+                  [enableCopyToClipboardButton]="true"
+                  [value]="assetProfile?.symbol"
                   >Symbol</gf-value
                 >
               </div>
@@ -202,6 +206,7 @@
             <div class="col-6 mb-3">
               <gf-value
                 size="medium"
+                [enableCopyToClipboardButton]="true"
                 [hidden]="!assetProfile?.isin"
                 [value]="assetProfile?.isin"
                 >ISIN</gf-value
@@ -258,7 +263,7 @@
                       i18n
                       size="medium"
                       [locale]="data.locale"
-                      [value]="assetProfile?.sectors[0].name"
+                      [value]="translate(assetProfile?.sectors[0].name)"
                       >Sector</gf-value
                     >
                   </div>
@@ -269,7 +274,11 @@
                       i18n
                       size="medium"
                       [locale]="data.locale"
-                      [value]="assetProfile?.countries[0].name"
+                      [value]="
+                        getCountryName({
+                          code: assetProfile?.countries[0].code
+                        })
+                      "
                       >Country</gf-value
                     >
                   </div>
@@ -438,6 +447,21 @@
                   matInput
                   (keyup.enter)="$event.stopPropagation()"
                 ></textarea>
+              </mat-form-field>
+            </div>
+            <div>
+              <mat-form-field appearance="outline" class="w-100 without-hint">
+                <mat-label i18n>Data Gathering Frequency</mat-label>
+                <mat-select formControlName="dataGatheringFrequency">
+                  @for (
+                    dataGatheringFrequencyValue of dataGatheringFrequencyValues;
+                    track dataGatheringFrequencyValue.value
+                  ) {
+                    <mat-option [value]="dataGatheringFrequencyValue.value">{{
+                      dataGatheringFrequencyValue.viewValue
+                    }}</mat-option>
+                  }
+                </mat-select>
               </mat-form-field>
             </div>
           </form>

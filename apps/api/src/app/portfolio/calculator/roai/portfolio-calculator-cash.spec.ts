@@ -116,14 +116,16 @@ describe('PortfolioCalculator', () => {
       accountBalanceService,
       accountService,
       null,
+      null,
       dataProviderService,
       null,
       exchangeRateDataService,
       null,
+      null,
       null
     );
 
-    portfolioSnapshotService = new PortfolioSnapshotService(null);
+    portfolioSnapshotService = new PortfolioSnapshotService(null, null);
 
     portfolioCalculatorFactory = new PortfolioCalculatorFactory(
       configurationService,
@@ -146,15 +148,15 @@ describe('PortfolioCalculator', () => {
           balances: [
             {
               accountId,
-              id: randomUUID(),
               date: parseDate('2023-12-31'),
+              id: randomUUID(),
               value: 1000,
               valueInBaseCurrency: 850
             },
             {
               accountId,
-              id: randomUUID(),
               date: parseDate('2024-12-31'),
+              id: randomUUID(),
               value: 2000,
               valueInBaseCurrency: 1800
             }

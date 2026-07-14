@@ -1,4 +1,5 @@
 import { AuthDeviceDto } from './auth-device.dto';
+import { CountryDto } from './country.dto';
 import { CreateAccessDto } from './create-access.dto';
 import { CreateAccountBalanceDto } from './create-account-balance.dto';
 import { CreateAccountWithBalancesDto } from './create-account-with-balances.dto';
@@ -10,9 +11,13 @@ import { CreatePlatformDto } from './create-platform.dto';
 import { CreateTagDto } from './create-tag.dto';
 import { CreateWatchlistItemDto } from './create-watchlist-item.dto';
 import { DeleteOwnUserDto } from './delete-own-user.dto';
+import { HoldingDto } from './holding.dto';
+import { ScraperConfigurationDto } from './scraper-configuration.dto';
+import { SectorDto } from './sector.dto';
 import { TransferBalanceDto } from './transfer-balance.dto';
 import { UpdateAccessDto } from './update-access.dto';
 import { UpdateAccountDto } from './update-account.dto';
+import { UpdateAssetProfileDataDto } from './update-asset-profile-data.dto';
 import { UpdateAssetProfileDto } from './update-asset-profile.dto';
 import { UpdateBulkMarketDataDto } from './update-bulk-market-data.dto';
 import { UpdateMarketDataDto } from './update-market-data.dto';
@@ -25,6 +30,7 @@ import { UpdateUserSettingDto } from './update-user-setting.dto';
 
 export {
   AuthDeviceDto,
+  CountryDto,
   CreateAccessDto,
   CreateAccountBalanceDto,
   CreateAccountDto,
@@ -36,9 +42,13 @@ export {
   CreateTagDto,
   CreateWatchlistItemDto,
   DeleteOwnUserDto,
+  HoldingDto,
+  ScraperConfigurationDto,
+  SectorDto,
   TransferBalanceDto,
   UpdateAccessDto,
   UpdateAccountDto,
+  UpdateAssetProfileDataDto,
   UpdateAssetProfileDto,
   UpdateBulkMarketDataDto,
   UpdateMarketDataDto,
