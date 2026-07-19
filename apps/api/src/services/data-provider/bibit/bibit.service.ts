@@ -126,7 +126,7 @@ export class BibitService implements DataProviderInterface {
     from,
     symbol
   }: GetHistoricalParams): Promise<{
-    [symbol: string]: { [date: string]: DataProviderHistoricalResponse };
+    [date: string]: DataProviderHistoricalResponse;
   }> {
     try {
       const period = this.getPeriod(from);
@@ -137,14 +137,12 @@ export class BibitService implements DataProviderInterface {
             signal: AbortSignal.timeout(requestTimeout)
           }
         ).then((res) => res.json() as Promise<IBibitFRChartResponse>);
-        const result = {
-          [symbol]: data.prices.reduce((acc, item) => {
-            acc[item.formated_date] = {
-              marketPrice: item.sell_price.price_rate * 10000
-            };
-            return acc;
-          }, {})
-        };
+        const result = data.prices.reduce((acc, item) => {
+          acc[item.formated_date] = {
+            marketPrice: item.sell_price.price_rate * 10000
+          };
+          return acc;
+        }, {});
         return result;
       } else {
         const { data } = await fetch(
@@ -154,14 +152,12 @@ export class BibitService implements DataProviderInterface {
           }
         ).then((res) => res.json() as Promise<IBibitGenericResponse>);
         const decryptedData = this.decrypt<IBibitRDChart>(data);
-        return {
-          [symbol]: decryptedData.chart.reduce((acc, item) => {
-            acc[item.formated_date] = {
-              marketPrice: item.value
-            };
-            return acc;
-          }, {})
-        };
+        return decryptedData.chart.reduce((acc, item) => {
+          acc[item.formated_date] = {
+            marketPrice: item.value
+          };
+          return acc;
+        }, {});
       }
     } catch (error) {
       throw new Error(

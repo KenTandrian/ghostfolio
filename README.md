@@ -77,6 +77,8 @@ The frontend is built with [Angular](https://angular.dev) and uses [Angular Mate
 
 We provide official container images hosted on [Docker Hub](https://hub.docker.com/r/ghostfolio/ghostfolio) for `linux/amd64`, `linux/arm/v7` and `linux/arm64`.
 
+Find answers to commonly asked questions about self-hosting Ghostfolio in our [Frequently Asked Questions (FAQ)](https://ghostfol.io/en/faq/self-hosting) section.
+
 <div align="center">
 
 [<img src="./apps/client/src/assets/images/button-buy-me-a-coffee.png" width="150" alt="Buy me a coffee button"/>](https://www.buymeacoffee.com/ghostfolio)
@@ -187,8 +189,6 @@ Set the header for each request as follows:
 ```
 
 You can get the _Bearer Token_ via `POST http://localhost:3333/api/v1/auth/anonymous` (Body: `{ "accessToken": "<INSERT_SECURITY_TOKEN_OF_ACCOUNT>" }`)
-
-Deprecated: `GET http://localhost:3333/api/v1/auth/anonymous/<INSERT_SECURITY_TOKEN_OF_ACCOUNT>` or `curl -s http://localhost:3333/api/v1/auth/anonymous/<INSERT_SECURITY_TOKEN_OF_ACCOUNT>`.
 
 ### Health Check (experimental)
 

@@ -6,9 +6,6 @@ import { ColorScheme, DateRange } from './types';
 
 export const ghostfolioPrefix = 'GF';
 
-/* @deprecated */
-export const ghostfolioScraperApiSymbolPrefix = `_${ghostfolioPrefix}_`;
-
 export const ghostfolioFearAndGreedIndexDataSourceCryptocurrencies =
   DataSource.MANUAL;
 export const ghostfolioFearAndGreedIndexSymbolCryptocurrencies = `${ghostfolioPrefix}_FEAR_AND_GREED_INDEX_CRYPTOCURRENCIES`;
@@ -183,6 +180,8 @@ export const DERIVED_CURRENCIES = [
     rootCurrency: 'ZAR'
   }
 ];
+
+export const E_MAIL_LINE_BREAK = '%0D%0A';
 
 export const GATHER_ASSET_PROFILE_PROCESS_JOB_NAME = 'GATHER_ASSET_PROFILE';
 export const GATHER_ASSET_PROFILE_PROCESS_JOB_OPTIONS: JobOptions = {

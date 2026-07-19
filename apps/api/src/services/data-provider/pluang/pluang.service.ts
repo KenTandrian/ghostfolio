@@ -114,7 +114,7 @@ export class PluangService implements DataProviderInterface {
     requestTimeout = this.configurationService.get('REQUEST_TIMEOUT'),
     symbol
   }: GetHistoricalParams): Promise<{
-    [symbol: string]: { [date: string]: DataProviderHistoricalResponse };
+    [date: string]: DataProviderHistoricalResponse;
   }> {
     try {
       if (symbol === 'GOLD') {
@@ -126,14 +126,12 @@ export class PluangService implements DataProviderInterface {
           }
         ).then((res) => res.json() as Promise<IPluangGoldPricingResponse>);
 
-        return {
-          [symbol]: data.history.reduce((acc, item) => {
-            acc[item.updated_at.split('T')[0]] = {
-              marketPrice: item.midPrice ?? (item.sell + item.buy) / 2
-            };
-            return acc;
-          }, {})
-        };
+        return data.history.reduce((acc, item) => {
+          acc[item.updated_at.split('T')[0]] = {
+            marketPrice: item.midPrice ?? (item.sell + item.buy) / 2
+          };
+          return acc;
+        }, {});
       } else {
         const { data } = await fetch(
           `${this.apiUrl}/v4/asset/cryptocurrency/price/price-stats-history?cryptocurrency=${symbol}&timeframe=3M`,
@@ -143,14 +141,12 @@ export class PluangService implements DataProviderInterface {
           }
         ).then((res) => res.json() as Promise<IPluangHistoricalResponse>);
 
-        return {
-          [symbol]: data.priceHistory.reduce((acc, item) => {
-            acc[item.priceStatDate.split('T')[0]] = {
-              marketPrice: item.closeMidPrice
-            };
-            return acc;
-          }, {})
-        };
+        return data.priceHistory.reduce((acc, item) => {
+          acc[item.priceStatDate.split('T')[0]] = {
+            marketPrice: item.closeMidPrice
+          };
+          return acc;
+        }, {});
       }
     } catch (error) {
       throw new Error(
