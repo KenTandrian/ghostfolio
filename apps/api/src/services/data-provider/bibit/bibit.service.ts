@@ -20,7 +20,7 @@ import {
   DataSource,
   SymbolProfile
 } from '@prisma/client';
-import * as CryptoJS from 'crypto-js';
+import crypto from 'node:crypto';
 
 import {
   IBibitFRChartResponse,
@@ -256,17 +256,17 @@ export class BibitService implements DataProviderInterface {
   private decrypt<T>(data?: string) {
     if (!data) return {} as T;
 
-    const iv = CryptoJS.enc.Hex.parse(data.slice(0, 32));
-    const encryptedData = data.slice(32, -32);
-    const secret = CryptoJS.enc.Utf8.parse(data.slice(-32));
+    const iv = Buffer.from(data.slice(0, 32), 'hex');
+    const encryptedData = Buffer.from(data.slice(32, -32), 'hex');
+    const secret = Buffer.from(data.slice(-32), 'utf-8');
 
-    const bytes = CryptoJS.AES.decrypt(encryptedData, secret, {
-      iv,
-      mode: CryptoJS.mode.CBC,
-      format: CryptoJS.format.Hex
-    });
+    const decipher = crypto.createDecipheriv('aes-256-cbc', secret, iv);
+    const decrypted = Buffer.concat([
+      decipher.update(encryptedData),
+      decipher.final()
+    ]);
 
-    return JSON.parse(bytes.toString(CryptoJS.enc.Utf8)) as T;
+    return JSON.parse(decrypted.toString('utf-8')) as T;
   }
 
   private isFRBond(symbol: string) {
