@@ -14,7 +14,7 @@ import {
 import {
   Activity,
   DataProviderInfo,
-  EnhancedSymbolProfile,
+  EnhancedAssetProfile,
   Filter,
   LineChartItem,
   NullableLineChartItem,
@@ -22,6 +22,7 @@ import {
 } from '@ghostfolio/common/interfaces';
 import { hasPermission, permissions } from '@ghostfolio/common/permissions';
 import { internalRoutes } from '@ghostfolio/common/routes/routes';
+import { AccountWithValue } from '@ghostfolio/common/types';
 import { GfAccountsTableComponent } from '@ghostfolio/ui/accounts-table';
 import { GfActivitiesTableComponent } from '@ghostfolio/ui/activities-table';
 import { GfDataProviderCreditsComponent } from '@ghostfolio/ui/data-provider-credits';
@@ -65,7 +66,7 @@ import { MatTableDataSource } from '@angular/material/table';
 import { MatTabsModule } from '@angular/material/tabs';
 import { NavigationStart, Router, RouterModule } from '@angular/router';
 import { IonIcon } from '@ionic/angular/standalone';
-import { Account, MarketData, Tag } from '@prisma/client';
+import { MarketData, Tag } from '@prisma/client';
 import { isUUID } from 'class-validator';
 import { format, isSameMonth, isToday, parseISO } from 'date-fns';
 import { addIcons } from 'ionicons';
@@ -117,11 +118,11 @@ import {
   templateUrl: 'holding-detail-dialog.html'
 })
 export class GfHoldingDetailDialogComponent implements OnInit {
-  protected accounts: Account[];
+  protected accounts: AccountWithValue[];
   protected activitiesCount: number;
   protected assetClass: string;
   protected assetProfile: Pick<
-    EnhancedSymbolProfile,
+    EnhancedAssetProfile,
     | 'assetClass'
     | 'assetSubClass'
     | 'countries'
@@ -157,6 +158,7 @@ export class GfHoldingDetailDialogComponent implements OnInit {
   }>;
   protected investmentInBaseCurrencyWithCurrencyEffect: number;
   protected investmentInBaseCurrencyWithCurrencyEffectPrecision = 2;
+  protected isLoading = true;
   protected readonly isUUID = isUUID;
   protected marketDataItems: MarketData[] = [];
   protected marketPrice: number;
@@ -571,6 +573,8 @@ export class GfHoldingDetailDialogComponent implements OnInit {
             this.fetchMarketData();
           }
 
+          this.isLoading = false;
+
           this.changeDetectorRef.markForCheck();
         }
       );
@@ -581,9 +585,10 @@ export class GfHoldingDetailDialogComponent implements OnInit {
         if (state?.user) {
           this.user = state.user;
 
-          this.hasPermissionToCreateOwnTag =
-            hasPermission(this.user.permissions, permissions.createOwnTag) &&
-            (this.user?.settings?.isExperimentalFeatures ?? false);
+          this.hasPermissionToCreateOwnTag = hasPermission(
+            this.user?.permissions,
+            permissions.createOwnTag
+          );
 
           this.tagsAvailable =
             this.user?.tags?.map((tag) => {

@@ -6,6 +6,7 @@ import {
   DEFAULT_DATE_RANGE,
   NUMERICAL_PRECISION_THRESHOLD_6_FIGURES
 } from '@ghostfolio/common/config';
+import { canOpenHoldingDetail } from '@ghostfolio/common/helper';
 import {
   HistoricalDataItem,
   InvestmentItem,
@@ -15,7 +16,11 @@ import {
   ToggleOption,
   User
 } from '@ghostfolio/common/interfaces';
-import { hasPermission, permissions } from '@ghostfolio/common/permissions';
+import {
+  hasPermission,
+  hasReadRestrictedAccessPermission,
+  permissions
+} from '@ghostfolio/common/permissions';
 import type { AiPromptMode, GroupBy } from '@ghostfolio/common/types';
 import { translate } from '@ghostfolio/ui/i18n';
 import { GfPremiumIndicatorComponent } from '@ghostfolio/ui/premium-indicator';
@@ -78,10 +83,10 @@ export class GfAnalysisPageComponent implements OnInit {
   protected bottom3: PortfolioPosition[];
   protected dividendsByGroup: InvestmentItem[];
   protected readonly dividendTimelineDataLabel = $localize`Dividend`;
-  protected hasImpersonationId: boolean;
   protected hasPermissionToReadAiPrompt: boolean;
+  protected impersonationId: string | null;
   protected investments: InvestmentItem[];
-  protected readonly investmentTimelineDataLabel = $localize`Investment`;
+  protected readonly investmentTimelineDataLabel = $localize`Invested Capital`;
   protected investmentsByGroup: InvestmentItem[];
   protected isLoadingAnalysisPrompt: boolean;
   protected isLoadingBenchmarkComparator: boolean;
@@ -99,6 +104,7 @@ export class GfAnalysisPageComponent implements OnInit {
   protected performanceDataItemsInPercentage: HistoricalDataItem[];
   protected readonly portfolioEvolutionDataLabel = $localize`Investment`;
   protected precision = 2;
+  protected savingsRatePerMonth: number | undefined;
   protected streaks: PortfolioInvestmentsResponse['streaks'];
   protected top3: PortfolioPosition[];
   protected unitCurrentStreak: string;
@@ -109,7 +115,7 @@ export class GfAnalysisPageComponent implements OnInit {
   private readonly deviceType = computed(
     () => this.deviceDetectorService.deviceInfo().deviceType
   );
-  private firstOrderDate: Date;
+  private dateOfFirstActivity: Date;
 
   private readonly changeDetectorRef = inject(ChangeDetectorRef);
   private readonly clipboard = inject(Clipboard);
@@ -130,18 +136,13 @@ export class GfAnalysisPageComponent implements OnInit {
   }
 
   get savingsRate() {
-    const savingsRatePerMonth =
-      this.hasImpersonationId || this.user.settings.isRestrictedView
-        ? undefined
-        : this.user?.settings?.savingsRate;
-
-    if (savingsRatePerMonth === undefined) {
+    if (!this.savingsRatePerMonth) {
       return undefined;
     }
 
     return this.mode() === 'year'
-      ? savingsRatePerMonth * 12
-      : savingsRatePerMonth;
+      ? this.savingsRatePerMonth * 12
+      : this.savingsRatePerMonth;
   }
 
   public ngOnInit() {
@@ -149,7 +150,7 @@ export class GfAnalysisPageComponent implements OnInit {
       .onChangeHasImpersonation()
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((impersonationId) => {
-        this.hasImpersonationId = !!impersonationId;
+        this.impersonationId = impersonationId;
 
         this.changeDetectorRef.markForCheck();
       });
@@ -240,6 +241,15 @@ export class GfAnalysisPageComponent implements OnInit {
       });
   }
 
+  protected showValuesInPercentage() {
+    return (
+      hasReadRestrictedAccessPermission({
+        accesses: this.user?.access,
+        impersonationId: this.impersonationId
+      }) || this.user?.settings?.isRestrictedView
+    );
+  }
+
   private fetchDividendsAndInvestments() {
     this.isLoadingDividendTimelineChart = true;
     this.isLoadingInvestmentTimelineChart = true;
@@ -266,8 +276,9 @@ export class GfAnalysisPageComponent implements OnInit {
         range: this.user?.settings?.dateRange ?? DEFAULT_DATE_RANGE
       })
       .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe(({ investments, streaks }) => {
+      .subscribe(({ investments, savingsRate, streaks }) => {
         this.investmentsByGroup = investments;
+        this.savingsRatePerMonth = savingsRate;
         this.streaks = streaks;
         this.unitCurrentStreak =
           this.mode() === 'year'
@@ -301,8 +312,8 @@ export class GfAnalysisPageComponent implements OnInit {
         range: this.user?.settings?.dateRange ?? DEFAULT_DATE_RANGE
       })
       .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe(({ chart, firstOrderDate, performance }) => {
-        this.firstOrderDate = firstOrderDate ?? new Date();
+      .subscribe(({ chart, dateOfFirstActivity, performance }) => {
+        this.dateOfFirstActivity = dateOfFirstActivity ?? new Date();
 
         this.investments = [];
         this.performance = performance;
@@ -365,8 +376,11 @@ export class GfAnalysisPageComponent implements OnInit {
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(({ holdings }) => {
         const holdingsSorted = sortBy(
-          holdings.filter(({ netPerformancePercentWithCurrencyEffect }) => {
-            return isNumber(netPerformancePercentWithCurrencyEffect);
+          holdings.filter((holding) => {
+            return (
+              canOpenHoldingDetail(holding) &&
+              isNumber(holding.netPerformancePercentWithCurrencyEffect)
+            );
           }),
           'netPerformancePercentWithCurrencyEffect'
         ).reverse();
@@ -412,7 +426,7 @@ export class GfAnalysisPageComponent implements OnInit {
             symbol,
             filters: this.userService.getFilters(),
             range: this.user?.settings?.dateRange ?? DEFAULT_DATE_RANGE,
-            startDate: this.firstOrderDate
+            startDate: this.dateOfFirstActivity
           })
           .pipe(takeUntilDestroyed(this.destroyRef))
           .subscribe(({ marketData }) => {

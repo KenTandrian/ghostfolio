@@ -49,6 +49,9 @@ describe('PortfolioCalculator', () => {
   let redisCacheService: RedisCacheService;
 
   beforeEach(() => {
+    PortfolioSnapshotServiceMock.reset();
+    RedisCacheServiceMock.reset();
+
     configurationService = new ConfigurationService();
 
     currentRateService = new CurrentRateService(null, null, null, null);
@@ -74,7 +77,7 @@ describe('PortfolioCalculator', () => {
   });
 
   describe('get current positions', () => {
-    it('with no orders', async () => {
+    it('with no activities', async () => {
       jest.useFakeTimers().setSystemTime(parseDate('2021-12-18').getTime());
 
       const portfolioCalculator = portfolioCalculatorFactory.createCalculator({

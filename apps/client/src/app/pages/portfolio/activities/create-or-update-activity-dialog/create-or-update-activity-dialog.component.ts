@@ -2,7 +2,10 @@ import { GfPredefinedFeeComponent } from '@ghostfolio/client/components/predefin
 import { UserService } from '@ghostfolio/client/services/user/user.service';
 import { ASSET_CLASS_MAPPING, DEFAULT_LOCALE } from '@ghostfolio/common/config';
 import { CreateOrderDto, UpdateOrderDto } from '@ghostfolio/common/dtos';
-import { getDateFormatString } from '@ghostfolio/common/helper';
+import {
+  getDateFormatString,
+  getStringOrNull
+} from '@ghostfolio/common/helper';
 import {
   AssetClassSelectorOption,
   LookupItem
@@ -94,7 +97,7 @@ export class GfCreateOrUpdateActivityDialogComponent {
   protected currentMarketPrice: number | null = null;
   protected defaultDateFormat: string;
   protected defaultLookupItems: LookupItem[] = [];
-  protected hasPermissionToCreateOwnTag: boolean | undefined;
+  protected hasPermissionToCreateOwnTag: boolean;
   protected isLoading = false;
   protected readonly isToday = isToday;
   protected mode: 'create' | 'update';
@@ -120,11 +123,18 @@ export class GfCreateOrUpdateActivityDialogComponent {
     addIcons({ calendarClearOutline, refreshOutline });
   }
 
+  protected get selectedAccount() {
+    return this.data.accounts.find(({ id }) => {
+      return id === this.activityForm.get('accountId')?.value;
+    });
+  }
+
   public ngOnInit() {
     this.currencyOfAssetProfile = this.data.activity?.assetProfile?.currency;
-    this.hasPermissionToCreateOwnTag =
-      this.data.user?.settings?.isExperimentalFeatures &&
-      hasPermission(this.data.user?.permissions, permissions.createOwnTag);
+    this.hasPermissionToCreateOwnTag = hasPermission(
+      this.data.user?.permissions,
+      permissions.createOwnTag
+    );
     this.locale = this.data.user.settings.locale ?? DEFAULT_LOCALE;
     this.mode = this.data.activity?.id ? 'update' : 'create';
 
@@ -267,16 +277,9 @@ export class GfCreateOrUpdateActivityDialogComponent {
 
         this.activityForm.get('currency')?.setValue(currency);
         this.activityForm.get('currencyOfUnitPrice')?.setValue(currency);
-
-        if (['FEE', 'INTEREST'].includes(type)) {
-          if (this.activityForm.get('accountId')?.value) {
-            this.activityForm.get('updateAccountBalance')?.enable();
-          } else {
-            this.activityForm.get('updateAccountBalance')?.disable();
-            this.activityForm.get('updateAccountBalance')?.setValue(false);
-          }
-        }
       }
+
+      this.syncUpdateAccountBalanceControl();
     });
 
     this.activityForm
@@ -300,12 +303,7 @@ export class GfCreateOrUpdateActivityDialogComponent {
       });
 
     this.activityForm.get('date')?.valueChanges.subscribe(() => {
-      if (isToday(this.activityForm.get('date')?.value)) {
-        this.activityForm.get('updateAccountBalance')?.enable();
-      } else {
-        this.activityForm.get('updateAccountBalance')?.disable();
-        this.activityForm.get('updateAccountBalance')?.setValue(false);
-      }
+      this.syncUpdateAccountBalanceControl();
 
       this.changeDetectorRef.markForCheck();
     });
@@ -385,8 +383,6 @@ export class GfCreateOrUpdateActivityDialogComponent {
             .get('searchSymbol')
             ?.removeValidators(Validators.required);
           this.activityForm.get('searchSymbol')?.updateValueAndValidity();
-          this.activityForm.get('updateAccountBalance')?.disable();
-          this.activityForm.get('updateAccountBalance')?.setValue(false);
         } else if (['FEE', 'INTEREST', 'LIABILITY'].includes(type)) {
           const currency =
             this.data.accounts.find(({ id }) => {
@@ -422,16 +418,6 @@ export class GfCreateOrUpdateActivityDialogComponent {
           if (type === 'FEE') {
             this.activityForm.get('unitPrice')?.setValue(0);
           }
-
-          if (
-            ['FEE', 'INTEREST'].includes(type) &&
-            this.activityForm.get('accountId')?.value
-          ) {
-            this.activityForm.get('updateAccountBalance')?.enable();
-          } else {
-            this.activityForm.get('updateAccountBalance')?.disable();
-            this.activityForm.get('updateAccountBalance')?.setValue(false);
-          }
         } else {
           this.activityForm
             .get('dataSource')
@@ -443,8 +429,9 @@ export class GfCreateOrUpdateActivityDialogComponent {
             .get('searchSymbol')
             ?.setValidators(Validators.required);
           this.activityForm.get('searchSymbol')?.updateValueAndValidity();
-          this.activityForm.get('updateAccountBalance')?.enable();
         }
+
+        this.syncUpdateAccountBalanceControl();
 
         this.changeDetectorRef.markForCheck();
       });
@@ -495,7 +482,7 @@ export class GfCreateOrUpdateActivityDialogComponent {
       accountId: this.activityForm.get('accountId')?.value,
       assetClass: this.activityForm.get('assetClass')?.value,
       assetSubClass: this.activityForm.get('assetSubClass')?.value,
-      comment: this.activityForm.get('comment')?.value ?? null,
+      comment: getStringOrNull(this.activityForm.get('comment')?.value),
       currency: this.activityForm.get('currency')?.value,
       customCurrency: this.activityForm.get('currencyOfUnitPrice')?.value,
       dataSource: ['FEE', 'INTEREST', 'LIABILITY', 'VALUABLE'].includes(
@@ -561,6 +548,27 @@ export class GfCreateOrUpdateActivityDialogComponent {
       }
     } catch (error) {
       console.error(error);
+    }
+  }
+
+  private syncUpdateAccountBalanceControl() {
+    const accountBalanceControl = this.activityForm.get('updateAccountBalance');
+    const accountId = this.activityForm.get('accountId')?.value;
+    const dataSource = this.activityForm.get('dataSource')?.value;
+    const date = this.activityForm.get('date')?.value;
+    const type = this.activityForm.get('type')?.value;
+
+    const isEligible =
+      !!accountId &&
+      isToday(date) &&
+      !['LIABILITY', 'VALUABLE'].includes(type) &&
+      !(dataSource === 'MANUAL' && type === 'BUY');
+
+    if (isEligible) {
+      accountBalanceControl?.enable();
+    } else {
+      accountBalanceControl?.disable();
+      accountBalanceControl?.setValue(false);
     }
   }
 

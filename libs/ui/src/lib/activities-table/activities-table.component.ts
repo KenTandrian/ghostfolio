@@ -72,7 +72,7 @@ import { NgxSkeletonLoaderModule } from 'ngx-skeleton-loader';
 
 import { GfActivityTypeComponent } from '../activity-type/activity-type.component';
 import { GfEntityLogoComponent } from '../entity-logo/entity-logo.component';
-import { GfNoTransactionsInfoComponent } from '../no-transactions-info/no-transactions-info.component';
+import { GfNoActivitiesInfoComponent } from '../no-activities-info/no-activities-info.component';
 import { GfValueComponent } from '../value/value.component';
 
 @Component({
@@ -81,7 +81,7 @@ import { GfValueComponent } from '../value/value.component';
     CommonModule,
     GfActivityTypeComponent,
     GfEntityLogoComponent,
-    GfNoTransactionsInfoComponent,
+    GfNoActivitiesInfoComponent,
     GfValueComponent,
     IonIcon,
     MatButtonModule,
@@ -282,9 +282,23 @@ export class GfActivitiesTableComponent implements AfterViewInit, OnInit {
     );
   }
 
+  public canDeleteActivities() {
+    return (
+      (this.dataSource()?.data.length ?? 0) > 0 &&
+      this.hasPermissionToDeleteActivity
+    );
+  }
+
+  public canExportActivities() {
+    return (
+      (this.dataSource()?.data.length ?? 0) > 0 &&
+      this.hasPermissionToExportActivities
+    );
+  }
+
   public isExcludedFromAnalysis(activity: Activity) {
     return (
-      (activity.account && isAccountExcluded(activity.account)) ??
+      isAccountExcluded(activity.account) ||
       activity.tags?.some(({ id }) => {
         return id === TAG_ID_EXCLUDE_FROM_ANALYSIS;
       }) === true
@@ -314,7 +328,10 @@ export class GfActivitiesTableComponent implements AfterViewInit, OnInit {
         this.activitiesDeleted.emit();
       },
       confirmType: ConfirmationDialogType.Warn,
-      title: $localize`Do you really want to delete these activities?`
+      title:
+        this.totalItems === 1
+          ? $localize`Do you really want to delete this activity?`
+          : $localize`Do you really want to delete these ${this.totalItems}:count: activities?`
     });
   }
 

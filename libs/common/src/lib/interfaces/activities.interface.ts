@@ -1,20 +1,14 @@
-import { EnhancedSymbolProfile } from '@ghostfolio/common/interfaces';
+import { EnhancedAssetProfile } from '@ghostfolio/common/interfaces';
 import { AccountWithPlatform } from '@ghostfolio/common/types';
 
 import { Order, Tag } from '@prisma/client';
 
 export interface Activity extends Order {
   account?: AccountWithPlatform;
-  assetProfile: EnhancedSymbolProfile;
+  assetProfile: EnhancedAssetProfile;
   error?: ActivityError;
   feeInAssetProfileCurrency: number;
   feeInBaseCurrency: number;
-
-  /**
-   * @deprecated Use `assetProfile` instead
-   */
-  SymbolProfile?: EnhancedSymbolProfile;
-
   tagIds?: string[];
   tags?: Tag[];
   unitPriceInAssetProfileCurrency: number;
