@@ -9,6 +9,7 @@ import { PropertyService } from '@ghostfolio/api/services/property/property.serv
 import {
   DEFAULT_CURRENCY,
   DERIVED_CURRENCIES,
+  NON_INVESTMENT_ACTIVITY_TYPES,
   PROPERTY_API_KEY_GHOSTFOLIO,
   PROPERTY_DATA_SOURCE_MAPPING
 } from '@ghostfolio/common/config';
@@ -16,11 +17,13 @@ import { CreateOrderDto } from '@ghostfolio/common/dtos';
 import { SubscriptionType } from '@ghostfolio/common/enums';
 import {
   DATE_FORMAT,
+  formatAssetProfileName,
   getAssetProfileIdentifier,
   getCurrencyFromSymbol,
   getStartOfUtcDate,
   isCurrency,
-  isDerivedCurrency
+  isDerivedCurrency,
+  isValidSearchQuery
 } from '@ghostfolio/common/helper';
 import {
   AssetProfileIdentifier,
@@ -99,7 +102,7 @@ export class DataProviderService implements OnModuleInit {
       return dataSource;
     });
 
-    const promises = [];
+    const promises: Promise<void>[] = [];
 
     for (const [dataSource, assetProfileIdentifiers] of Object.entries(
       itemsGroupedByDataSource
@@ -123,7 +126,11 @@ export class DataProviderService implements OnModuleInit {
                   symbol,
                   dataSource: DataSource[dataSource]
                 })
-              ] = { ...assetProfile, symbol };
+              ] = {
+                ...assetProfile,
+                symbol,
+                name: formatAssetProfileName(assetProfile)
+              };
             }
           })
         );
@@ -139,7 +146,7 @@ export class DataProviderService implements OnModuleInit {
         );
       }
     } catch (error) {
-      this.logger.error(error);
+      this.logger.error(error.message);
 
       throw error;
     }
@@ -206,7 +213,7 @@ export class DataProviderService implements OnModuleInit {
     activitiesDto,
     assetProfilesWithMarketDataDto,
     maxActivitiesToImport,
-    user
+    subscription
   }: {
     activitiesDto: Pick<
       Partial<CreateOrderDto>,
@@ -214,7 +221,7 @@ export class DataProviderService implements OnModuleInit {
     >[];
     assetProfilesWithMarketDataDto?: ImportDataDto['assetProfiles'];
     maxActivitiesToImport: number;
-    user: UserWithSettings;
+    subscription: UserWithSettings['subscription'];
   }) {
     if (activitiesDto?.length > maxActivitiesToImport) {
       throw new Error(`Too many activities (${maxActivitiesToImport} at most)`);
@@ -248,7 +255,7 @@ export class DataProviderService implements OnModuleInit {
 
       if (
         this.configurationService.get('ENABLE_FEATURE_SUBSCRIPTION') &&
-        user.subscription.type === SubscriptionType.Basic
+        subscription?.type === SubscriptionType.Basic
       ) {
         const dataProvider = this.getDataProvider(DataSource[dataSource]);
 
@@ -267,7 +274,7 @@ export class DataProviderService implements OnModuleInit {
       if (!assetProfiles[assetProfileIdentifier]) {
         if (
           (dataSource === DataSource.MANUAL && type === 'BUY') ||
-          ['FEE', 'INTEREST', 'LIABILITY'].includes(type)
+          NON_INVESTMENT_ACTIVITY_TYPES.includes(type)
         ) {
           const assetProfileInImport = assetProfilesWithMarketDataDto?.find(
             (assetProfile) => {
@@ -317,7 +324,7 @@ export class DataProviderService implements OnModuleInit {
 
         if (!assetProfile?.name) {
           throw new Error(
-            `activities.${index}.symbol ("${symbol}") is not valid for the specified data source ("${maskedDataSource}")`
+            `${activityPath}.symbol ("${symbol}") is not valid for the specified data source ("${maskedDataSource}")`
           );
         }
 
@@ -338,7 +345,13 @@ export class DataProviderService implements OnModuleInit {
     from: Date;
     granularity: Granularity;
     to: Date;
-  } & AssetProfileIdentifier) {
+  } & AssetProfileIdentifier): Promise<{
+    [date: string]: DataProviderHistoricalResponse;
+  }> {
+    if (!isValid(from) || !isValid(to)) {
+      return {};
+    }
+
     return this.getDataProvider(DataSource[dataSource]).getDividends({
       from,
       granularity,
@@ -419,7 +432,7 @@ export class DataProviderService implements OnModuleInit {
         return r;
       }, {});
     } catch (error) {
-      this.logger.error(error);
+      this.logger.error(error.message);
     } finally {
       return response;
     }
@@ -540,7 +553,7 @@ export class DataProviderService implements OnModuleInit {
         result[getAssetProfileIdentifier({ dataSource, symbol })] = data;
       }
     } catch (error) {
-      this.logger.error(error);
+      this.logger.error(error.message);
 
       throw error;
     }
@@ -660,7 +673,7 @@ export class DataProviderService implements OnModuleInit {
           } else if (
             dataProvider.getDataProviderInfo().isPremium &&
             this.configurationService.get('ENABLE_FEATURE_SUBSCRIPTION') &&
-            user?.subscription.type === SubscriptionType.Basic
+            user?.subscription?.type === SubscriptionType.Basic
           ) {
             // Skip symbols of Premium data providers for users without subscription
             return false;
@@ -838,7 +851,9 @@ export class DataProviderService implements OnModuleInit {
     let lookupItems: LookupItem[] = [];
     const promises: Promise<LookupResponse>[] = [];
 
-    if (query?.length < 2) {
+    query = query?.trim();
+
+    if (!isValidSearchQuery(query)) {
       return { items: lookupItems };
     }
 
@@ -876,7 +891,7 @@ export class DataProviderService implements OnModuleInit {
       })
       .map((lookupItem) => {
         if (this.configurationService.get('ENABLE_FEATURE_SUBSCRIPTION')) {
-          if (user.subscription.type === SubscriptionType.Premium) {
+          if (user.subscription?.type === SubscriptionType.Premium) {
             lookupItem.dataProviderInfo.isPremium = false;
           }
 
@@ -887,16 +902,7 @@ export class DataProviderService implements OnModuleInit {
           lookupItem.dataProviderInfo.isPremium = false;
         }
 
-        if (
-          lookupItem.assetSubClass === 'CRYPTOCURRENCY' &&
-          user?.settings?.settings.isExperimentalFeatures
-        ) {
-          // Remove DEFAULT_CURRENCY at the end of cryptocurrency names
-          lookupItem.name = lookupItem.name.replace(
-            new RegExp(` ${DEFAULT_CURRENCY}$`),
-            ''
-          );
-        }
+        lookupItem.name = formatAssetProfileName(lookupItem);
 
         return lookupItem;
       })

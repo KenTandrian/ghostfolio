@@ -64,6 +64,7 @@ import {
 } from 'ionicons/icons';
 import ms, { StringValue } from 'ms';
 import { NgxSkeletonLoaderModule } from 'ngx-skeleton-loader';
+import { catchError, of, switchMap } from 'rxjs';
 
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -105,6 +106,8 @@ export class GfAdminOverviewComponent implements OnInit {
   protected readonly info: InfoItem;
   protected isDataGatheringEnabled: boolean;
   protected isLoading = false;
+  protected isReadOnlyMode: boolean;
+  protected isUserSignupEnabled: boolean;
   protected readonly permissions = permissions;
   protected systemMessage: SystemMessage;
   protected userCount: number;
@@ -179,6 +182,8 @@ export class GfAdminOverviewComponent implements OnInit {
   }
 
   public ngOnInit() {
+    this.isLoading = true;
+
     this.fetchAdminData();
   }
 
@@ -213,9 +218,16 @@ export class GfAdminOverviewComponent implements OnInit {
       duration: this.couponDuration
     };
 
+    const hasCopiedCouponCode = this.clipboard.copy(newCoupon.code);
+
     const coupons = [...this.couponsDataSource.data, newCoupon];
 
-    this.saveCoupons({ coupons, codeToCopy: newCoupon.code });
+    this.saveCoupons({
+      coupons,
+      snackBarMessage: hasCopiedCouponCode
+        ? '✅ ' + $localize`${newCoupon.code} has been copied to the clipboard`
+        : '✅ ' + $localize`Coupon ${newCoupon.code} has been created`
+    });
   }
 
   protected onChangeCouponDuration(aCouponDuration: StringValue) {
@@ -263,9 +275,15 @@ export class GfAdminOverviewComponent implements OnInit {
           .flush()
           .pipe(takeUntilDestroyed(this.destroyRef))
           .subscribe(() => {
-            setTimeout(() => {
-              window.location.reload();
-            }, 300);
+            this.dataService.updateInfo();
+
+            this.snackBar.open(
+              '✅ ' + $localize`Cache has been flushed.`,
+              undefined,
+              {
+                duration: ms('3 seconds')
+              }
+            );
           });
       },
       confirmType: ConfirmationDialogType.Warn,
@@ -323,8 +341,6 @@ export class GfAdminOverviewComponent implements OnInit {
   }
 
   private fetchAdminData() {
-    this.isLoading = true;
-
     this.adminService
       .fetchAdminData()
       .pipe(takeUntilDestroyed(this.destroyRef))
@@ -336,6 +352,11 @@ export class GfAdminOverviewComponent implements OnInit {
 
         this.isDataGatheringEnabled =
           settings[PROPERTY_IS_DATA_GATHERING_ENABLED] === false ? false : true;
+
+        this.isReadOnlyMode = settings[PROPERTY_IS_READ_ONLY_MODE] === true;
+
+        this.isUserSignupEnabled =
+          settings[PROPERTY_IS_USER_SIGNUP_ENABLED] === false ? false : true;
 
         this.systemMessage = settings[PROPERTY_SYSTEM_MESSAGE] as SystemMessage;
         this.userCount = userCount;
@@ -365,20 +386,29 @@ export class GfAdminOverviewComponent implements OnInit {
       .putAdminSetting(key, {
         value: value || value === false ? JSON.stringify(value) : undefined
       })
-      .pipe(takeUntilDestroyed(this.destroyRef))
+      .pipe(
+        switchMap(() => {
+          return this.userService.get(true);
+        }),
+        catchError(() => {
+          // Refresh anyway to reflect the actual state of the settings
+          return of(undefined);
+        }),
+        takeUntilDestroyed(this.destroyRef)
+      )
       .subscribe(() => {
-        setTimeout(() => {
-          window.location.reload();
-        }, 300);
+        this.dataService.updateInfo();
+
+        this.fetchAdminData();
       });
   }
 
   private saveCoupons({
-    codeToCopy,
-    coupons
+    coupons,
+    snackBarMessage
   }: {
-    codeToCopy?: string;
     coupons: Coupon[];
+    snackBarMessage?: string;
   }) {
     this.dataService
       .putAdminSetting(PROPERTY_COUPONS, {
@@ -388,14 +418,10 @@ export class GfAdminOverviewComponent implements OnInit {
       .subscribe(() => {
         this.couponsDataSource.data = coupons;
 
-        if (codeToCopy) {
-          this.clipboard.copy(codeToCopy);
-
-          this.snackBar.open(
-            '✅ ' + $localize`${codeToCopy} has been copied to the clipboard`,
-            undefined,
-            { duration: ms('3 seconds') }
-          );
+        if (snackBarMessage) {
+          this.snackBar.open(snackBarMessage, undefined, {
+            duration: ms('3 seconds')
+          });
         }
 
         this.changeDetectorRef.markForCheck();

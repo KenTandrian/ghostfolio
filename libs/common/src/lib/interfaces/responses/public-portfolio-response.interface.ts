@@ -1,5 +1,5 @@
 import {
-  EnhancedSymbolProfile,
+  EnhancedAssetProfile,
   PortfolioDetails,
   PortfolioPosition
 } from '@ghostfolio/common/interfaces';
@@ -26,13 +26,7 @@ export interface PublicPortfolioResponse extends PublicPortfolioResponseV1 {
     Order,
     'currency' | 'date' | 'fee' | 'quantity' | 'type' | 'unitPrice'
   > & {
-    assetProfile?: EnhancedSymbolProfile;
-
-    /**
-     * @deprecated Use `assetProfile` instead
-     */
-    SymbolProfile?: EnhancedSymbolProfile;
-
+    assetProfile?: EnhancedAssetProfile;
     value: number;
     valueInBaseCurrency: number;
   })[];

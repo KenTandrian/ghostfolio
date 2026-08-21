@@ -228,7 +228,7 @@ export class GfUserAccountAccessComponent implements OnInit {
           alias: access.alias,
           grantee: access.grantee === 'Public' ? undefined : access.grantee,
           id: access.id,
-          permissions: access.permissions,
+          scopes: access.scopes,
           settings: access.settings,
           type: access.type
         }
@@ -247,10 +247,10 @@ export class GfUserAccountAccessComponent implements OnInit {
   }
 
   private update() {
-    this.accessesGet = this.user.access.map(({ alias, id, permissions }) => {
+    this.accessesGet = this.user.access.map(({ alias, id, scopes }) => {
       return {
         id,
-        permissions,
+        scopes,
         alias: alias ?? '',
         grantee: $localize`Me`,
         type: 'PRIVATE'

@@ -1,3 +1,4 @@
+import { AllowDuringImpersonation } from '@ghostfolio/api/decorators/allow-during-impersonation.decorator';
 import { HasPermission } from '@ghostfolio/api/decorators/has-permission.decorator';
 import { HasPermissionGuard } from '@ghostfolio/api/guards/has-permission.guard';
 import { TransformDataSourceInRequestInterceptor } from '@ghostfolio/api/interceptors/transform-data-source-in-request/transform-data-source-in-request.interceptor';
@@ -14,6 +15,7 @@ import {
   GATHER_ASSET_PROFILE_PROCESS_JOB_OPTIONS
 } from '@ghostfolio/common/config';
 import {
+  MergeAssetProfileDto,
   UpdateAssetProfileDto,
   UpdatePropertyDto
 } from '@ghostfolio/common/dtos';
@@ -25,7 +27,7 @@ import {
   AdminData,
   AdminUserResponse,
   AdminUsersResponse,
-  EnhancedSymbolProfile,
+  EnhancedAssetProfile,
   ScraperConfiguration
 } from '@ghostfolio/common/interfaces';
 import { permissions } from '@ghostfolio/common/permissions';
@@ -61,6 +63,7 @@ import { StatusCodes, getReasonPhrase } from 'http-status-codes';
 import { AdminService } from './admin.service';
 import { PropertyKeyPipe } from './pipes/property-key.pipe';
 
+@AllowDuringImpersonation()
 @Controller('admin')
 export class AdminController {
   private readonly logger = new Logger(AdminController.name);
@@ -298,13 +301,28 @@ export class AdminController {
   }
 
   @HasPermission(permissions.accessAdminControl)
+  @Post('profile-data/:dataSource/:symbol/merge')
+  @UseGuards(AuthGuard('jwt'), HasPermissionGuard)
+  @UseInterceptors(TransformDataSourceInRequestInterceptor)
+  public async mergeAssetProfile(
+    @Body() targetAssetProfile: MergeAssetProfileDto,
+    @Param('dataSource') dataSource: DataSource,
+    @Param('symbol') symbol: string
+  ): Promise<EnhancedAssetProfile> {
+    return this.adminService.mergeAssetProfile(
+      { dataSource, symbol },
+      targetAssetProfile
+    );
+  }
+
+  @HasPermission(permissions.accessAdminControl)
   @Patch('profile-data/:dataSource/:symbol')
   @UseGuards(AuthGuard('jwt'), HasPermissionGuard)
   public async patchAssetProfileData(
     @Body() assetProfile: UpdateAssetProfileDto,
     @Param('dataSource') dataSource: DataSource,
     @Param('symbol') symbol: string
-  ): Promise<EnhancedSymbolProfile> {
+  ): Promise<EnhancedAssetProfile> {
     return this.adminService.patchAssetProfileData(
       { dataSource, symbol },
       assetProfile

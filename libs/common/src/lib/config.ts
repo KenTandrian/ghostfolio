@@ -67,6 +67,23 @@ export const DATA_GATHERING_QUEUE_PRIORITY_MEDIUM = Math.round(
   DATA_GATHERING_QUEUE_PRIORITY_LOW / 2
 );
 
+export const DATA_SOURCES_GHOSTFOLIO_DATA_PROVIDER_SETUP_PERIOD = ms('2 weeks');
+export const DATA_SOURCES_GHOSTFOLIO_DATA_PROVIDER_SETUP_PERIOD_MAX_REQUESTS_FACTOR = 2;
+
+/**
+ * The named date ranges, complemented by the calendar years like '2024',
+ * '2023', '2022', etc.
+ */
+export const DATE_RANGES = [
+  '1d',
+  '1y',
+  '5y',
+  'max',
+  'mtd',
+  'wtd',
+  'ytd'
+] as const;
+
 export const PORTFOLIO_SNAPSHOT_COMPUTATION_QUEUE =
   'PORTFOLIO_SNAPSHOT_COMPUTATION_QUEUE';
 export const PORTFOLIO_SNAPSHOT_COMPUTATION_QUEUE_PRIORITY_HIGH = 1;
@@ -94,14 +111,15 @@ export const DEFAULT_PROCESSOR_PORTFOLIO_SNAPSHOT_COMPUTATION_TIMEOUT =
   ms('30 seconds');
 
 export const DEFAULT_REDACTED_PATHS = [
+  'account.comment',
   'accounts[*].balance',
   'accounts[*].balanceInBaseCurrency',
   'accounts[*].comment',
   'accounts[*].dividendInBaseCurrency',
   'accounts[*].interestInBaseCurrency',
+  'accounts[*].quantity',
   'accounts[*].value',
   'accounts[*].valueInBaseCurrency',
-  'activities[*].account.balance',
   'activities[*].account.comment',
   'activities[*].assetProfile.symbolMapping',
   'activities[*].assetProfile.watchedByCount',
@@ -110,23 +128,19 @@ export const DEFAULT_REDACTED_PATHS = [
   'activities[*].feeInAssetProfileCurrency',
   'activities[*].feeInBaseCurrency',
   'activities[*].quantity',
-
-  /* @deprecated */
-  'activities[*].SymbolProfile.symbolMapping',
-
-  /* @deprecated */
-  'activities[*].SymbolProfile.watchedByCount',
-
   'activities[*].value',
   'activities[*].valueInBaseCurrency',
+  'assetProfile.symbolMapping',
+  'assetProfile.watchedByCount',
   'balance',
   'balanceInBaseCurrency',
-  'balances[*].account.balance',
   'balances[*].account.comment',
   'balances[*].value',
   'balances[*].valueInBaseCurrency',
   'comment',
   'dividendInBaseCurrency',
+  'fee',
+  'feeInAssetProfileCurrency',
   'feeInBaseCurrency',
   'grossPerformance',
   'grossPerformanceWithCurrencyEffect',
@@ -147,13 +161,9 @@ export const DEFAULT_REDACTED_PATHS = [
   'platforms[*].balance',
   'platforms[*].valueInBaseCurrency',
   'quantity',
-
-  /* @deprecated */
-  'SymbolProfile.symbolMapping',
-
-  /* @deprecated */
-  'SymbolProfile.watchedByCount',
-
+  'settings.emergencyFund',
+  'settings.projectedTotalAmount',
+  'settings.savingsRate',
   'totalBalanceInBaseCurrency',
   'totalDividendInBaseCurrency',
   'totalInterestInBaseCurrency',
@@ -231,6 +241,12 @@ export const INVESTMENT_ACTIVITY_TYPES = [
   Type.SELL
 ] as Type[];
 
+export const NON_INVESTMENT_ACTIVITY_TYPES = Object.values(Type).filter(
+  (type) => {
+    return !INVESTMENT_ACTIVITY_TYPES.includes(type);
+  }
+);
+
 export const PORTFOLIO_SNAPSHOT_PROCESS_JOB_NAME = 'PORTFOLIO';
 export const PORTFOLIO_SNAPSHOT_PROCESS_JOB_OPTIONS: JobOptions = {
   attempts: 3,
@@ -241,6 +257,9 @@ export const HEADER_KEY_IMPERSONATION = 'Impersonation-Id';
 export const HEADER_KEY_TIMEZONE = 'Timezone';
 export const HEADER_KEY_TOKEN = 'Authorization';
 export const HEADER_KEY_SKIP_INTERCEPTOR = 'X-Skip-Interceptor';
+
+export const HTTP_RESPONSE_MESSAGE_IMPERSONATION_UNRESOLVED =
+  'The impersonation identifier cannot be resolved';
 
 export const MAX_TOP_HOLDINGS = 50;
 
@@ -268,6 +287,7 @@ export const PROPERTY_DEMO_USER_ID = 'DEMO_USER_ID';
 export const PROPERTY_IS_DATA_GATHERING_ENABLED = 'IS_DATA_GATHERING_ENABLED';
 export const PROPERTY_IS_READ_ONLY_MODE = 'IS_READ_ONLY_MODE';
 export const PROPERTY_IS_USER_SIGNUP_ENABLED = 'IS_USER_SIGNUP_ENABLED';
+export const PROPERTY_MAX_DAILY_REQUESTS = 'MAX_DAILY_REQUESTS';
 export const PROPERTY_OPENROUTER_MODEL = 'OPENROUTER_MODEL';
 export const PROPERTY_OPENROUTER_MODEL_WEB_FETCH = 'OPENROUTER_MODEL_WEB_FETCH';
 export const PROPERTY_PROXY_ROUTES = 'PROXY_ROUTES';
@@ -301,6 +321,8 @@ export const REPLACE_NAME_PARTS = [
   'Vanguard Index Funds -',
   'Xtrackers (IE) Plc -'
 ];
+
+export const SEARCH_QUERY_MINIMUM_LENGTH = 2;
 
 export const SECTORS = [
   'Basic Materials',
@@ -336,11 +358,21 @@ export const SUPPORTED_LANGUAGE_CODES = [
   'zh'
 ] as const;
 
+export const TAG_ID_DEMO = 'efa08cb3-9b9d-4974-ac68-db13a19c4874';
+export const TAG_ID_DRAFT = '0c077abd-eca2-4cbb-818c-6cefbf2d169a';
 export const TAG_ID_EMERGENCY_FUND = '4452656d-9fa4-4bd0-ba38-70492e31d180';
 export const TAG_ID_EXCLUDE_FROM_ANALYSIS =
   'f2e868af-8333-459f-b161-cbc6544c24bd';
-export const TAG_ID_DEMO = 'efa08cb3-9b9d-4974-ac68-db13a19c4874';
 
+export const TAG_IDS_SYSTEM = [
+  TAG_ID_DEMO,
+  TAG_ID_DRAFT,
+  TAG_ID_EMERGENCY_FUND,
+  TAG_ID_EXCLUDE_FROM_ANALYSIS
+];
+
+export const THROTTLE_DAILY_KEY = 'daily';
+export const THROTTLE_DAILY_TTL = ms('1 day');
 export const THROTTLE_DEFAULT_LIMIT = 10;
 export const THROTTLE_DEFAULT_TTL = ms('1 minute');
 export const THROTTLE_SIGNUP_LIMIT = 5;
