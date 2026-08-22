@@ -9,6 +9,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Upgraded the `Node.js` engine from version `>=22.18.0` to `>=22.22.3` (`package.json`)
+
+## 3.57.0 - 2026-08-21
+
+### Added
+
+- Added the permission to manage data to the grant access dialog and to the access table to share the portfolio (experimental)
+
+### Changed
+
+- Extended the account selector options to include the platform and currency
+- Improved the error handling of the `AuthGuard`
+- Improved the language localization for German (`de`)
+- Improved the language localization for Japanese (`ja`)
 - Upgraded `yahoo-finance2` from version `4.0.0` to `4.0.2`
 
 ## 3.56.0 - 2026-08-20
