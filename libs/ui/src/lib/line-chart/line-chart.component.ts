@@ -7,7 +7,7 @@ import {
 import { primaryColorRgb, secondaryColorRgb } from '@ghostfolio/common/config';
 import { getBackgroundColor, getLocale } from '@ghostfolio/common/helper';
 import { LineChartItem } from '@ghostfolio/common/interfaces';
-import { ColorScheme } from '@ghostfolio/common/types';
+import type { ColorScheme } from '@ghostfolio/common/types';
 
 import {
   AfterViewInit,

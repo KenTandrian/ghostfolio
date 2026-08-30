@@ -49,7 +49,7 @@ import {
   MatSort,
   MatSortModule,
   Sort,
-  SortDirection
+  type SortDirection
 } from '@angular/material/sort';
 import { MatTableDataSource, MatTableModule } from '@angular/material/table';
 import { MatTooltipModule } from '@angular/material/tooltip';

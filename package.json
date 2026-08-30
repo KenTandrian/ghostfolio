@@ -183,6 +183,7 @@
     "@storybook/addon-docs": "10.5.7",
     "@storybook/addon-themes": "10.5.7",
     "@storybook/angular": "10.5.7",
+    "@storybook/builder-vite": "10.5.7",
     "@trivago/prettier-plugin-sort-imports": "6.0.2",
     "@types/big.js": "7.0.0",
     "@types/cookie-parser": "1.4.10",
@@ -219,6 +220,7 @@
     "ts-node": "10.9.2",
     "tslib": "2.8.1",
     "typescript": "6.0.3",
+    "vite-tsconfig-paths": "6.1.1",
     "webpack-cli": "7.1.0"
   },
   "engines": {
