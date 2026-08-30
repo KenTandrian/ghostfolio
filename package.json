@@ -13,7 +13,7 @@
     "affected:lint": "nx affected:lint",
     "affected:test": "nx affected:test",
     "angular": "node --max_old_space_size=32768 ./node_modules/@angular/cli/bin/ng",
-    "build:production": "nx run api:copy-assets && nx run api:build:production && nx run client:copy-assets && nx run client:build:production && nx run ui:build-storybook && npm run replace-placeholders-in-build",
+    "build:production": "nx run-many --target=copy-assets --all && nx run-many --targets=build,build-storybook --configuration=production --parallel=3 && npm run replace-placeholders-in-build",
     "build:storybook": "nx run ui:build-storybook",
     "database:format-schema": "prisma format",
     "database:generate-typings": "prisma generate",
