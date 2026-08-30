@@ -193,7 +193,8 @@ export class ActivitiesService {
       userId: data.userId
     });
 
-    let account: Prisma.AccountCreateNestedOneWithoutActivitiesInput;
+    let account:
+      Prisma.AccountCreateNestedOneWithoutActivitiesInput | undefined;
 
     if (data.accountId) {
       account = {
@@ -1032,8 +1033,8 @@ export class ActivitiesService {
               },
               {
                 OR: [
-                  { assetProfileOverrides: { is: null } },
-                  { assetProfileOverrides: { assetClass: null } }
+                  { assetProfileOverrides: { assetClass: null } },
+                  { assetProfileOverrides: { is: null } }
                 ]
               }
             ]

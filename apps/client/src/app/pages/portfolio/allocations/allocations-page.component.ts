@@ -8,10 +8,10 @@ import { UserService } from '@ghostfolio/client/services/user/user.service';
 import { MAX_TOP_HOLDINGS, UNKNOWN_KEY } from '@ghostfolio/common/config';
 import {
   canOpenHoldingDetail,
+  getAssetProfileIdentifier,
   getCountryName
 } from '@ghostfolio/common/helper';
 import {
-  AssetProfileIdentifier,
   HoldingWithParents,
   PortfolioDetails,
   PortfolioPosition,
@@ -21,7 +21,10 @@ import { hasPermission, permissions } from '@ghostfolio/common/permissions';
 import { hasScope, scopes } from '@ghostfolio/common/scopes';
 import { MarketAdvanced } from '@ghostfolio/common/types';
 import { translate } from '@ghostfolio/ui/i18n';
-import { GfPortfolioProportionChartComponent } from '@ghostfolio/ui/portfolio-proportion-chart';
+import {
+  GfPortfolioProportionChartComponent,
+  PortfolioProportionChartClickEvent
+} from '@ghostfolio/ui/portfolio-proportion-chart';
 import { GfPremiumIndicatorComponent } from '@ghostfolio/ui/premium-indicator';
 import { DataService } from '@ghostfolio/ui/services';
 import { GfTopHoldingsComponent } from '@ghostfolio/ui/top-holdings';
@@ -87,7 +90,7 @@ export class GfAllocationsPageComponent implements OnInit {
     () => this.deviceDetectorService.deviceInfo().deviceType
   );
   protected holdings: {
-    [symbol: string]: Pick<
+    [assetProfileIdentifier: string]: Pick<
       PortfolioPosition['assetProfile'],
       | 'assetClass'
       | 'assetClassLabel'
@@ -118,7 +121,7 @@ export class GfAllocationsPageComponent implements OnInit {
     [name: string]: { name: string; value: number };
   };
   protected symbols: {
-    [name: string]: {
+    [symbol: string]: {
       dataSource?: DataSource;
       isClickable?: boolean;
       name: string;
@@ -205,7 +208,9 @@ export class GfAllocationsPageComponent implements OnInit {
     this.initialize();
   }
 
-  protected onAccountChartClicked({ accountId }: { accountId: string }) {
+  protected onAccountChartClicked(event: PortfolioProportionChartClickEvent) {
+    const accountId = 'accountId' in event ? event.accountId : undefined;
+
     if (accountId && accountId !== UNKNOWN_KEY) {
       void this.router.navigate([], {
         queryParams: { accountId, accountDetailDialog: true }
@@ -213,10 +218,9 @@ export class GfAllocationsPageComponent implements OnInit {
     }
   }
 
-  protected onSymbolChartClicked({
-    dataSource,
-    symbol
-  }: AssetProfileIdentifier) {
+  protected onSymbolChartClicked(event: PortfolioProportionChartClickEvent) {
+    const { dataSource, symbol } = 'symbol' in event ? event : {};
+
     if (dataSource && symbol) {
       void this.router.navigate([], {
         queryParams: { dataSource, symbol, holdingDetailDialog: true }
@@ -329,7 +333,7 @@ export class GfAllocationsPageComponent implements OnInit {
     this.portfolioDetails = {
       accounts: {},
       createdAt: new Date(),
-      holdings: {},
+      holdings: [],
       platforms: {},
       summary: undefined
     };
@@ -369,10 +373,12 @@ export class GfAllocationsPageComponent implements OnInit {
       };
     }
 
-    for (const [symbol, position] of Object.entries(
-      this.portfolioDetails.holdings
-    )) {
-      this.holdings[symbol] = {
+    for (const position of this.portfolioDetails.holdings) {
+      const assetProfileIdentifier = getAssetProfileIdentifier(
+        position.assetProfile
+      );
+
+      this.holdings[assetProfileIdentifier] = {
         assetClass:
           position.assetProfile.assetClass || (UNKNOWN_KEY as AssetClass),
         assetClassLabel: position.assetProfile.assetClassLabel ?? UNKNOWN_KEY,
@@ -498,20 +504,33 @@ export class GfAllocationsPageComponent implements OnInit {
         }
       }
 
-      if (this.holdings[symbol].assetSubClass === 'ETF') {
-        this.totalValueInEtf += this.holdings[symbol].value;
+      if (this.holdings[assetProfileIdentifier].assetSubClass === 'ETF') {
+        this.totalValueInEtf += this.holdings[assetProfileIdentifier].value;
       }
 
-      this.symbols[symbol] = {
-        symbol,
-        dataSource: position.assetProfile.dataSource,
-        isClickable: canOpenHoldingDetail(position),
-        name: position.assetProfile.name ?? '',
-        value:
-          (isNumber(position.valueInBaseCurrency)
-            ? position.valueInBaseCurrency
-            : position.valueInPercentage) ?? 0
-      };
+      const symbol = position.assetProfile.symbol;
+
+      const value =
+        (isNumber(position.valueInBaseCurrency)
+          ? position.valueInBaseCurrency
+          : position.valueInPercentage) ?? 0;
+
+      const symbolData = this.symbols[symbol];
+
+      if (symbolData) {
+        // Aggregate holdings with the same symbol from different data sources
+        symbolData.dataSource = undefined;
+        symbolData.isClickable = false;
+        symbolData.value += value;
+      } else {
+        this.symbols[symbol] = {
+          symbol,
+          value,
+          dataSource: position.assetProfile.dataSource,
+          isClickable: canOpenHoldingDetail(position),
+          name: position.assetProfile.name ?? ''
+        };
+      }
     }
 
     this.markets = this.portfolioDetails.markets;
@@ -558,8 +577,8 @@ export class GfAllocationsPageComponent implements OnInit {
           name,
           allocationInPercentage:
             this.totalValueInEtf > 0 ? value / this.totalValueInEtf : 0,
-          parents: Object.entries(this.portfolioDetails.holdings)
-            .map(([symbol, holding]) => {
+          parents: this.portfolioDetails.holdings
+            .map((holding) => {
               if (holding.assetProfile.holdings.length > 0) {
                 const currentParentHolding = holding.assetProfile.holdings.find(
                   (parentHolding) => {
@@ -573,11 +592,11 @@ export class GfAllocationsPageComponent implements OnInit {
                 return currentParentHolding &&
                   isNumber(currentParentHolding.valueInBaseCurrency)
                   ? {
-                      symbol,
                       allocationInPercentage:
                         currentParentHolding.valueInBaseCurrency / value,
                       name: holding.assetProfile.name ?? '',
                       position: holding,
+                      symbol: holding.assetProfile.symbol,
                       valueInBaseCurrency:
                         currentParentHolding.valueInBaseCurrency
                     }
@@ -625,6 +644,10 @@ export class GfAllocationsPageComponent implements OnInit {
         hasPermissionToCreateActivity:
           !this.impersonationId &&
           hasPermission(this.user?.permissions, permissions.createActivity) &&
+          !this.user?.settings?.isRestrictedView,
+        hasPermissionToUpdateActivity:
+          !this.impersonationId &&
+          hasPermission(this.user?.permissions, permissions.updateActivity) &&
           !this.user?.settings?.isRestrictedView,
         impersonationId: this.impersonationId
       },

@@ -1,4 +1,4 @@
-import type { AccessType } from './access-type.type';
+import type { AccessLevel } from './access-level.type';
 import type { AccessWithGranteeUser } from './access-with-grantee-user.type';
 import type { AccountWithBalance } from './account-with-balance.type';
 import type { AccountWithPlatform } from './account-with-platform.type';
@@ -29,7 +29,7 @@ import type { UserWithSettings } from './user-with-settings.type';
 import type { ViewMode } from './view-mode.type';
 
 export type {
-  AccessType,
+  AccessLevel,
   AccessWithGranteeUser,
   AccountWithBalance,
   AccountWithPlatform,

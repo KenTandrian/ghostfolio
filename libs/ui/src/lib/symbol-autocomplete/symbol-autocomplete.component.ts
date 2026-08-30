@@ -82,7 +82,7 @@ export class GfSymbolAutocompleteComponent
   @Input() public defaultLookupItems: LookupItem[] = [];
   @Input() public isLoading = false;
 
-  @Input() private includeIndices = false;
+  @Input() public includeIndices = false;
 
   public readonly control = new FormControl();
   public lookupItems: (LookupItem & { assetSubClassString: string })[] = [];
@@ -128,6 +128,7 @@ export class GfSymbolAutocompleteComponent
         map((query) => {
           return isString(query) ? query.trim() : query;
         }),
+        distinctUntilChanged(),
         filter((query) => {
           if (query?.length === 0) {
             this.showDefaultOptions();
@@ -137,13 +138,12 @@ export class GfSymbolAutocompleteComponent
 
           return isString(query);
         }),
-        debounceTime(400),
-        distinctUntilChanged(),
         tap(() => {
           this.isLoading = true;
 
           this.changeDetectorRef.markForCheck();
         }),
+        debounceTime(400),
         takeUntilDestroyed(this.destroyRef),
         switchMap((query: string) => {
           return this.dataService.fetchSymbols({

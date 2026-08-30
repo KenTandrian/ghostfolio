@@ -3,7 +3,9 @@ import { ActivitiesService } from '@ghostfolio/api/app/activities/activities.ser
 import { PlatformService } from '@ghostfolio/api/app/platform/platform.service';
 import { PortfolioService } from '@ghostfolio/api/app/portfolio/portfolio.service';
 import { getTagsWithDraftTag } from '@ghostfolio/api/helper/activity.helper';
+import { getMaskedGhostfolioDataSource } from '@ghostfolio/api/helper/data-source.helper';
 import { ApiService } from '@ghostfolio/api/services/api/api.service';
+import { ConfigurationService } from '@ghostfolio/api/services/configuration/configuration.service';
 import { DataProviderService } from '@ghostfolio/api/services/data-provider/data-provider.service';
 import { ExchangeRateDataService } from '@ghostfolio/api/services/exchange-rate-data/exchange-rate-data.service';
 import { MarketDataService } from '@ghostfolio/api/services/market-data/market-data.service';
@@ -48,6 +50,7 @@ import { omit, uniqBy } from 'lodash';
 import { randomUUID } from 'node:crypto';
 
 import { ImportDataDto } from './import-data.dto';
+import { AssetProfileToCreate } from './interfaces/asset-profile-to-create.interface';
 
 @Injectable()
 export class ImportService {
@@ -55,6 +58,7 @@ export class ImportService {
     private readonly accountService: AccountService,
     private readonly activitiesService: ActivitiesService,
     private readonly apiService: ApiService,
+    private readonly configurationService: ConfigurationService,
     private readonly dataGatheringService: DataGatheringService,
     private readonly dataProviderService: DataProviderService,
     private readonly exchangeRateDataService: ExchangeRateDataService,
@@ -203,6 +207,9 @@ export class ImportService {
   }): Promise<Activity[]> {
     const accountIdMapping: { [oldAccountId: string]: string } = {};
     const assetProfileSymbolMapping: { [oldSymbol: string]: string } = {};
+    const ghostfolioDataSources = this.configurationService.get(
+      'DATA_SOURCES_GHOSTFOLIO_DATA_PROVIDER'
+    );
     const platformIdMapping: { [oldPlatformId: string]: string } = {};
     const tagIdMapping: { [oldTagId: string]: string } = {};
     const userCurrency = user.settings.settings.baseCurrency;
@@ -211,33 +218,63 @@ export class ImportService {
     for (const [index, assetProfileWithMarketData] of (
       assetProfilesWithMarketDataDto ?? []
     ).entries()) {
+      const { dataSource, symbol } = assetProfileWithMarketData;
+
       if (
-        assetProfileWithMarketData.dataSource === DataSource.MANUAL &&
-        !isValidCustomAssetProfileSymbol(assetProfileWithMarketData.symbol)
+        dataSource === DataSource.MANUAL &&
+        !isValidCustomAssetProfileSymbol(symbol)
       ) {
         throw new Error(
-          `assetProfiles.${index}.symbol ("${assetProfileWithMarketData.symbol}") must be a UUID or start with the prefix "${ghostfolioPrefix}_" for the data source ("${DataSource.MANUAL}")`
+          `assetProfiles.${index}.symbol ("${symbol}") must be a UUID or start with the prefix "${ghostfolioPrefix}_" for the data source ("${DataSource.MANUAL}")`
+        );
+      } else if (
+        dataSource !== DataSource.MANUAL &&
+        isValidCustomAssetProfileSymbol(symbol)
+      ) {
+        const maskedDataSource = getMaskedGhostfolioDataSource({
+          dataSource,
+          ghostfolioDataSources
+        });
+
+        throw new Error(
+          `assetProfiles.${index}.symbol ("${symbol}") is not valid for the data source ("${maskedDataSource}")`
         );
       }
     }
 
-    // Validate the symbols before any data is persisted. Activities without a
-    // data source are excluded, since a symbol is generated in
-    // createActivity() if needed.
+    // Validate the symbols before any data is persisted. Activities without an
+    // explicit data source are excluded from the first check, since a symbol is
+    // generated in createActivity() if needed.
     for (const [index, activity] of activitiesDto.entries()) {
-      if (!activity.dataSource) {
-        if (NON_INVESTMENT_ACTIVITY_TYPES.includes(activity.type)) {
-          activity.dataSource = DataSource.MANUAL;
-        } else {
-          activity.dataSource =
-            this.dataProviderService.getDataSourceForImport();
-        }
-      } else if (
+      const hasDataSource = Boolean(activity.dataSource);
+
+      if (!hasDataSource) {
+        activity.dataSource = NON_INVESTMENT_ACTIVITY_TYPES.includes(
+          activity.type
+        )
+          ? DataSource.MANUAL
+          : this.dataProviderService.getDataSourceForImport();
+      }
+
+      if (
+        hasDataSource &&
         activity.dataSource === DataSource.MANUAL &&
         !isValidCustomAssetProfileSymbol(activity.symbol)
       ) {
         throw new Error(
           `activities.${index}.symbol ("${activity.symbol}") must be a UUID or start with the prefix "${ghostfolioPrefix}_" for the data source ("${DataSource.MANUAL}")`
+        );
+      } else if (
+        activity.dataSource !== DataSource.MANUAL &&
+        isValidCustomAssetProfileSymbol(activity.symbol)
+      ) {
+        const maskedDataSource = getMaskedGhostfolioDataSource({
+          ghostfolioDataSources,
+          dataSource: activity.dataSource
+        });
+
+        throw new Error(
+          `activities.${index}.symbol ("${activity.symbol}") is not valid for the data source ("${maskedDataSource}")`
         );
       }
     }
@@ -358,7 +395,7 @@ export class ImportService {
 
           if (!isDryRun) {
             const existingTag = await this.tagService.getTag({ id: tag.id });
-            let oldTagId: string;
+            let oldTagId: string | undefined;
 
             if (existingTag) {
               oldTagId = tag.id;
@@ -472,7 +509,7 @@ export class ImportService {
           'tags'
         ]);
 
-        let oldAccountId: string;
+        let oldAccountId: string | undefined;
         const platformId =
           platformIdMapping[account.platformId] ?? account.platformId;
 
@@ -534,6 +571,8 @@ export class ImportService {
       }
     }
 
+    const assetProfilesToCreate: AssetProfileToCreate[] = [];
+
     if (assetProfilesWithMarketDataDto?.length) {
       const customAssetProfileNames = assetProfilesWithMarketDataDto
         .filter(({ dataSource, name }) => {
@@ -557,6 +596,7 @@ export class ImportService {
         ]);
 
       for (const assetProfileWithMarketData of assetProfilesWithMarketDataDto) {
+        let assetProfileToCreate: Prisma.SymbolProfileCreateInput | undefined;
         let symbol = assetProfileWithMarketData.symbol;
 
         // Check if there is any existing asset profile
@@ -605,13 +645,10 @@ export class ImportService {
             assetProfile.symbol = symbol;
 
             if (!isDryRun) {
-              // Create a new asset profile
-              const assetProfileObject: Prisma.SymbolProfileCreateInput = {
+              assetProfileToCreate = {
                 ...assetProfile,
                 user: { connect: { id: user.id } }
               };
-
-              await this.symbolProfileService.add(assetProfileObject);
             }
           }
 
@@ -625,7 +662,6 @@ export class ImportService {
         }
 
         if (!isDryRun) {
-          // Insert or update market data
           const marketDataObjects = (
             assetProfileWithMarketData.marketData ?? []
           ).map((marketData) => {
@@ -636,7 +672,40 @@ export class ImportService {
             } as Prisma.MarketDataUpdateInput;
           });
 
-          await this.marketDataService.updateMany({ data: marketDataObjects });
+          if (assetProfileToCreate) {
+            const assetProfileToCreateIdentifier =
+              getAssetProfileIdentifier(assetProfileToCreate);
+
+            const duplicateAssetProfileToCreate = assetProfilesToCreate.find(
+              ({ assetProfile }) => {
+                return (
+                  getAssetProfileIdentifier(assetProfile) ===
+                  assetProfileToCreateIdentifier
+                );
+              }
+            );
+
+            if (duplicateAssetProfileToCreate) {
+              // The import contains the same asset profile more than once,
+              // which would fail with a unique constraint violation. Keep the
+              // first asset profile and merge the market data into it.
+              duplicateAssetProfileToCreate.marketDataObjects.push(
+                ...marketDataObjects
+              );
+            } else {
+              // Create the new asset profile and its market data later, once it
+              // is known which activities are imported
+              assetProfilesToCreate.push({
+                marketDataObjects,
+                assetProfile: assetProfileToCreate
+              });
+            }
+          } else {
+            // Insert or update market data
+            await this.marketDataService.updateMany({
+              data: marketDataObjects
+            });
+          }
         }
       }
     }
@@ -718,6 +787,25 @@ export class ImportService {
     const draftTag = tags.find(({ id }) => {
       return id === TAG_ID_DRAFT;
     }) ?? { id: TAG_ID_DRAFT, name: 'DRAFT' };
+
+    // Create the new asset profiles of the activities to import only, so that
+    // no unused asset profile remains, for example if no activity refers to
+    // the asset profile. An asset profile which is created before the
+    // validation of the activities would stay behind, because the import is
+    // not rolled back on an error.
+    if (!isDryRun) {
+      for (const {
+        assetProfile,
+        marketDataObjects
+      } of this.getAssetProfilesToCreate({
+        activities: activitiesExtendedWithErrors,
+        assetProfiles: assetProfilesToCreate
+      })) {
+        await this.symbolProfileService.add(assetProfile);
+
+        await this.marketDataService.updateMany({ data: marketDataObjects });
+      }
+    }
 
     const activities: Activity[] = [];
 
@@ -934,7 +1022,7 @@ export class ImportService {
     activitiesDto: Partial<CreateOrderDto>[];
     userCurrency: string;
     userId: string;
-  }): Promise<Partial<Activity>[]> {
+  }): Promise<(Partial<Activity> & Pick<Activity, 'assetProfile'>)[]> {
     const { activities: existingActivities } =
       await this.activitiesService.getActivities({
         userCurrency,
@@ -1053,6 +1141,30 @@ export class ImportService {
     }
 
     return matchingAccountsOfUser[0];
+  }
+
+  private getAssetProfilesToCreate({
+    activities,
+    assetProfiles
+  }: {
+    activities: Pick<Activity, 'assetProfile' | 'error'>[];
+    assetProfiles: AssetProfileToCreate[];
+  }) {
+    const assetProfileIdentifiersToImport = new Set(
+      activities
+        .filter(({ error }) => {
+          return !error;
+        })
+        .map(({ assetProfile }) => {
+          return getAssetProfileIdentifier(assetProfile);
+        })
+    );
+
+    return assetProfiles.filter(({ assetProfile }) => {
+      return assetProfileIdentifiersToImport.has(
+        getAssetProfileIdentifier(assetProfile)
+      );
+    });
   }
 
   private isUniqueAccount(accounts: AccountWithValue[]) {

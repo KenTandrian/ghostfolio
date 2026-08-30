@@ -23,6 +23,7 @@ import {
   getStartOfUtcDate,
   isCurrency,
   isDerivedCurrency,
+  isValidCustomAssetProfileSymbol,
   isValidSearchQuery
 } from '@ghostfolio/common/helper';
 import {
@@ -35,11 +36,12 @@ import {
 } from '@ghostfolio/common/interfaces';
 import type { Granularity, UserWithSettings } from '@ghostfolio/common/types';
 
+import { utc } from '@date-fns/utc';
 import { Inject, Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { DataSource, MarketData, Prisma, SymbolProfile } from '@prisma/client';
 import { Big } from 'big.js';
 import { eachDayOfInterval, format, isValid } from 'date-fns';
-import { groupBy, isEmpty, isNumber, uniqWith } from 'lodash';
+import { groupBy, isEmpty, isNumber, omit, uniqWith } from 'lodash';
 import ms from 'ms';
 
 import { AssetProfileInvalidError } from './errors/asset-profile-invalid.error';
@@ -254,6 +256,15 @@ export class DataProviderService implements OnModuleInit {
       }
 
       if (
+        dataSource !== DataSource.MANUAL &&
+        isValidCustomAssetProfileSymbol(symbol)
+      ) {
+        throw new Error(
+          `${activityPath}.symbol ("${symbol}") is not valid for the data source ("${maskedDataSource}")`
+        );
+      }
+
+      if (
         this.configurationService.get('ENABLE_FEATURE_SUBSCRIPTION') &&
         subscription?.type === SubscriptionType.Basic
       ) {
@@ -272,23 +283,31 @@ export class DataProviderService implements OnModuleInit {
       });
 
       if (!assetProfiles[assetProfileIdentifier]) {
+        const assetProfileInImport = assetProfilesWithMarketDataDto?.find(
+          (assetProfileWithMarketData) => {
+            return (
+              assetProfileWithMarketData.dataSource === dataSource &&
+              assetProfileWithMarketData.symbol === symbol
+            );
+          }
+        );
+
+        // A custom asset profile of the import is created after the
+        // validation, thus the data provider cannot resolve it yet
         if (
           (dataSource === DataSource.MANUAL && type === 'BUY') ||
+          assetProfileInImport?.dataSource === DataSource.MANUAL ||
           NON_INVESTMENT_ACTIVITY_TYPES.includes(type)
         ) {
-          const assetProfileInImport = assetProfilesWithMarketDataDto?.find(
-            (assetProfile) => {
-              return (
-                assetProfile.dataSource === dataSource &&
-                assetProfile.symbol === symbol
-              );
-            }
-          );
-
           assetProfiles[assetProfileIdentifier] = {
-            currency,
+            ...omit(assetProfileInImport ?? {}, [
+              'dataSource',
+              'marketData',
+              'symbol'
+            ]),
             dataSource,
             symbol,
+            currency: assetProfileInImport?.currency ?? currency,
             name: assetProfileInImport?.name ?? symbol
           };
 
@@ -309,22 +328,8 @@ export class DataProviderService implements OnModuleInit {
         } catch {}
 
         if (!assetProfile?.name) {
-          const assetProfileInImport = assetProfilesWithMarketDataDto?.find(
-            (profile) => {
-              return (
-                profile.dataSource === dataSource && profile.symbol === symbol
-              );
-            }
-          );
-
-          if (assetProfileInImport) {
-            Object.assign(assetProfile, assetProfileInImport);
-          }
-        }
-
-        if (!assetProfile?.name) {
           throw new Error(
-            `${activityPath}.symbol ("${symbol}") is not valid for the specified data source ("${maskedDataSource}")`
+            `${activityPath}.symbol ("${symbol}") cannot be resolved by the data source ("${maskedDataSource}")`
           );
         }
 
@@ -388,10 +393,11 @@ export class DataProviderService implements OnModuleInit {
 
     const rangeQuery =
       from && to
-        ? Prisma.sql`AND date >= ${format(from, DATE_FORMAT)}::timestamp AND date <= ${format(
-            to,
-            DATE_FORMAT
-          )}::timestamp`
+        ? Prisma.sql`AND date >= ${format(from, DATE_FORMAT, {
+            in: utc
+          })}::timestamp AND date <= ${format(to, DATE_FORMAT, {
+            in: utc
+          })}::timestamp`
         : Prisma.empty;
 
     const dataSources = aItems.map(({ dataSource }) => {
@@ -425,7 +431,9 @@ export class DataProviderService implements OnModuleInit {
           r[assetProfileIdentifier] = {};
         }
 
-        r[assetProfileIdentifier][format(new Date(date), DATE_FORMAT)] = {
+        r[assetProfileIdentifier][
+          format(new Date(date), DATE_FORMAT, { in: utc })
+        ] = {
           marketPrice
         };
 
@@ -500,8 +508,11 @@ export class DataProviderService implements OnModuleInit {
             [date: string]: DataProviderHistoricalResponse;
           } = {};
 
-          for (const date of eachDayOfInterval({ end: to, start: from })) {
-            data[format(date, DATE_FORMAT)] = { marketPrice: 100 };
+          for (const date of eachDayOfInterval(
+            { end: to, start: from },
+            { in: utc }
+          )) {
+            data[format(date, DATE_FORMAT, { in: utc })] = { marketPrice: 100 };
           }
 
           promises.push(

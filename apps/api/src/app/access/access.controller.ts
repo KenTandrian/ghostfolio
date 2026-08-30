@@ -4,6 +4,10 @@ import { HasPermissionGuard } from '@ghostfolio/api/guards/has-permission.guard'
 import { ConfigurationService } from '@ghostfolio/api/services/configuration/configuration.service';
 import { CreateAccessDto, UpdateAccessDto } from '@ghostfolio/common/dtos';
 import { SubscriptionType } from '@ghostfolio/common/enums';
+import {
+  canApplyFiltersToAccess,
+  isValidGranteeOfAccess
+} from '@ghostfolio/common/helper';
 import { Access, AccessSettings } from '@ghostfolio/common/interfaces';
 import { permissions } from '@ghostfolio/common/permissions';
 import { getScopesOfAccess } from '@ghostfolio/common/scopes';
@@ -49,27 +53,20 @@ export class AccessController {
     });
 
     return accessesWithGranteeUser.map((accessItem) => {
-      const { alias, granteeUser, id, settings } = accessItem;
-      const scopes = getScopesOfAccess(accessItem);
+      const { alias, expiresAt, granteeUser, id, lastUsedAt, settings, type } =
+        accessItem;
 
-      if (granteeUser) {
-        return {
-          alias,
-          id,
-          scopes,
-          grantee: granteeUser?.id,
-          settings: settings as AccessSettings,
-          type: 'PRIVATE'
-        };
-      }
+      const { filters } = (settings ?? {}) as AccessSettings;
 
       return {
         alias,
+        expiresAt,
         id,
-        scopes,
-        grantee: 'Public',
-        settings: settings as AccessSettings,
-        type: 'PUBLIC'
+        lastUsedAt,
+        type,
+        grantee: granteeUser?.id,
+        scopes: getScopesOfAccess(accessItem),
+        settings: canApplyFiltersToAccess({ type }) ? { filters } : {}
       };
     });
   }
@@ -90,14 +87,45 @@ export class AccessController {
       );
     }
 
+    const type = data.type ?? (data.granteeUserId ? 'PRIVATE' : 'PUBLIC');
+
+    if (
+      type === 'MCP' &&
+      !this.configurationService.get('ENABLE_FEATURE_MCP')
+    ) {
+      // The client hides the type while the feature is disabled, hence an
+      // access of this type must not become a credential which is dormant
+      // until the feature is enabled
+      throw new HttpException(
+        getReasonPhrase(StatusCodes.BAD_REQUEST),
+        StatusCodes.BAD_REQUEST
+      );
+    }
+
+    if (!isValidGranteeOfAccess({ granteeUserId: data.granteeUserId, type })) {
+      throw new HttpException(
+        getReasonPhrase(StatusCodes.BAD_REQUEST),
+        StatusCodes.BAD_REQUEST
+      );
+    }
+
+    if (data.filters?.length && !canApplyFiltersToAccess({ type })) {
+      throw new HttpException(
+        getReasonPhrase(StatusCodes.BAD_REQUEST),
+        StatusCodes.BAD_REQUEST
+      );
+    }
+
     try {
       return await this.accessService.createAccess({
+        type,
         alias: data.alias || undefined,
+        expiresAt: new Date(data.expiresAt),
         granteeUser: data.granteeUserId
           ? { connect: { id: data.granteeUserId } }
           : undefined,
         scopes: getScopesOfAccess({
-          granteeUserId: data.granteeUserId,
+          type,
           scopes: data.scopes
         }),
         settings: this.accessService.buildSettings(data.filters),
@@ -114,10 +142,13 @@ export class AccessController {
   @Delete(':id')
   @HasPermission(permissions.deleteAccess)
   @UseGuards(AuthGuard('jwt'), HasPermissionGuard)
-  public async deleteAccess(@Param('id') id: string): Promise<AccessModel> {
+  public async deleteAccess(@Param('id') id: string): Promise<void> {
     const originalAccess = await this.accessService.access({
       id,
-      userId: this.request.user.id
+      OR: [
+        { granteeUserId: this.request.user.id },
+        { userId: this.request.user.id }
+      ]
     });
 
     if (!originalAccess) {
@@ -127,7 +158,7 @@ export class AccessController {
       );
     }
 
-    return this.accessService.deleteAccess({
+    await this.accessService.deleteAccess({
       id
     });
   }
@@ -161,16 +192,39 @@ export class AccessController {
       );
     }
 
+    if (
+      !isValidGranteeOfAccess({
+        granteeUserId: data.granteeUserId,
+        type: originalAccess.type
+      })
+    ) {
+      throw new HttpException(
+        getReasonPhrase(StatusCodes.BAD_REQUEST),
+        StatusCodes.BAD_REQUEST
+      );
+    }
+
+    if (
+      data.filters?.length &&
+      !canApplyFiltersToAccess({ type: originalAccess.type })
+    ) {
+      throw new HttpException(
+        getReasonPhrase(StatusCodes.BAD_REQUEST),
+        StatusCodes.BAD_REQUEST
+      );
+    }
+
     try {
       return await this.accessService.updateAccess({
         data: {
           alias: data.alias,
+          expiresAt: new Date(data.expiresAt),
           granteeUser: data.granteeUserId
             ? { connect: { id: data.granteeUserId } }
             : { disconnect: true },
           scopes: getScopesOfAccess({
-            granteeUserId: data.granteeUserId,
-            scopes: data.scopes ?? originalAccess.scopes
+            scopes: data.scopes ?? originalAccess.scopes,
+            type: originalAccess.type
           }),
           settings: this.accessService.buildSettings(data.filters)
         },
