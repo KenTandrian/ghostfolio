@@ -4,7 +4,7 @@
     "outDir": "../../dist/out-tsc",
     "module": "preserve",
     "isolatedModules": true,
-    "types": ["jest", "node"]
+    "types": ["node"]
   },
   "include": [
     "**/*.spec.ts",
@@ -16,6 +16,6 @@
     "**/*.spec.jsx",
     "**/*.test.jsx",
     "**/*.d.ts",
-    "jest.config.ts"
+    "vitest.config.ts"
   ]
 }

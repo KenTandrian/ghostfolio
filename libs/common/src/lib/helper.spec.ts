@@ -17,7 +17,9 @@ import {
   isValidGranteeOfAccess,
   resolveUserSettings
 } from '@ghostfolio/common/helper';
-import { UserSettings } from '@ghostfolio/common/interfaces';
+import type { UserSettings } from '@ghostfolio/common/interfaces';
+
+import { vi, type MockInstance } from 'vitest';
 
 describe('Helper', () => {
   describe('Can apply filters to access', () => {
@@ -121,10 +123,10 @@ describe('Helper', () => {
   });
 
   describe('Get number format group', () => {
-    let languageGetter: jest.SpyInstance<string, [], any>;
+    let languageGetter: MockInstance<() => string>;
 
     beforeEach(() => {
-      languageGetter = jest.spyOn(window.navigator, 'language', 'get');
+      languageGetter = vi.spyOn(window.navigator, 'language', 'get');
     });
 
     it('Get de-CH number format group', () => {

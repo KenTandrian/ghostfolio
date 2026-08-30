@@ -37,6 +37,7 @@ npm-debug.log
 .nx/polygraph
 .nx/self-healing
 .nx/workspace-data
+.vite
 /.sass-cache
 /connect.lock
 /coverage
