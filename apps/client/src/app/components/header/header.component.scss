@@ -12,6 +12,16 @@
           transparent,
           rgba(var(--palette-foreground-base), 0.02)
         );
+
+        @media (min-width: 576px) {
+          justify-content: center;
+          width: 5rem;
+
+          a {
+            justify-content: center !important;
+            padding: 0 !important;
+          }
+        }
       }
 
       @media (min-width: 576px) {
