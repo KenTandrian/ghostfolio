@@ -1,4 +1,5 @@
 import { UserService } from '@ghostfolio/client/services/user/user.service';
+import { DEFAULT_LOCALE } from '@ghostfolio/common/config';
 import {
   AssetProfileIdentifier,
   PortfolioPosition,
@@ -49,6 +50,8 @@ import { DeviceDetectorService } from 'ngx-device-detector';
 })
 export class GfHomeHoldingsComponent implements OnInit {
   public static DEFAULT_HOLDINGS_VIEW_MODE: HoldingsViewMode = 'TABLE';
+
+  protected readonly DEFAULT_LOCALE = DEFAULT_LOCALE;
 
   protected deviceType: string;
   protected hasPermissionToAccessHoldingsChart: boolean;
@@ -150,9 +153,7 @@ export class GfHomeHoldingsComponent implements OnInit {
   private fetchHoldings() {
     const filters = this.userService.getFilters();
 
-    if (this.holdingType === 'CLOSED') {
-      filters.push({ id: 'CLOSED', type: 'HOLDING_TYPE' });
-    }
+    filters.push({ id: this.holdingType, type: 'HOLDING_TYPE' });
 
     return this.dataService.fetchPortfolioHoldings({
       filters,

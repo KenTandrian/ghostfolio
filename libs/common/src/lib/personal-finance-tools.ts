@@ -1591,6 +1591,26 @@ export const personalFinanceTools: Product[] = [
     url: 'https://www.navexa.com'
   },
   {
+    categories: [
+      'BUDGETING',
+      'CRYPTOCURRENCY',
+      'ETF_TRACKING',
+      'FINANCIAL_PLANNING',
+      'NET_WORTH_TRACKING',
+      'STOCK_TRACKING'
+    ],
+    hasFreePlan: true,
+    hasSelfHostingAbility: false,
+    key: 'neontra',
+    languages: ['English'],
+    name: 'Neontra',
+    origin: 'CA',
+    platforms: ['ANDROID', 'IOS', 'WEB'],
+    pricingPerYear: '$75',
+    slogan: 'Everything you own. Everything you owe. Everything in one place.',
+    url: 'https://neontra.com'
+  },
+  {
     categories: ['INVESTMENT_RESEARCH', 'STOCK_TRACKING'],
     hasFreePlan: true,
     hasSelfHostingAbility: false,
@@ -2440,14 +2460,14 @@ export const personalFinanceTools: Product[] = [
   {
     categories: ['NET_WORTH_TRACKING', 'STOCK_TRACKING'],
     founded: 2025,
-    hasFreePlan: false,
+    hasFreePlan: true,
     hasSelfHostingAbility: false,
     key: 'turbobulls',
     name: 'Turbobulls',
     origin: 'RO',
     platforms: ['WEB'],
-    pricingPerYear: '€39.99',
-    slogan: 'Your complete financial dashboard. Actually private.',
+    pricingPerYear: '€35.90',
+    slogan: 'Your complete portfolio and expense tracker. Actually private.',
     url: 'https://www.turbobulls.com'
   },
   {

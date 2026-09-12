@@ -1,3 +1,4 @@
+import { ImportValidationError } from '@ghostfolio/api/app/import/errors/import-validation.error';
 import { ImportDataDto } from '@ghostfolio/api/app/import/import-data.dto';
 import { RedisCacheService } from '@ghostfolio/api/app/redis-cache/redis-cache.service';
 import { getMaskedGhostfolioDataSource } from '@ghostfolio/api/helper/data-source.helper';
@@ -226,7 +227,9 @@ export class DataProviderService implements OnModuleInit {
     subscription: UserWithSettings['subscription'];
   }) {
     if (activitiesDto?.length > maxActivitiesToImport) {
-      throw new Error(`Too many activities (${maxActivitiesToImport} at most)`);
+      throw new ImportValidationError(
+        `Too many activities (${maxActivitiesToImport} at most)`
+      );
     }
 
     const assetProfiles: {
@@ -250,7 +253,7 @@ export class DataProviderService implements OnModuleInit {
       });
 
       if (!dataSources.includes(dataSource)) {
-        throw new Error(
+        throw new ImportValidationError(
           `${activityPath}.dataSource ("${dataSource}") is not valid`
         );
       }
@@ -259,7 +262,7 @@ export class DataProviderService implements OnModuleInit {
         dataSource !== DataSource.MANUAL &&
         isValidCustomAssetProfileSymbol(symbol)
       ) {
-        throw new Error(
+        throw new ImportValidationError(
           `${activityPath}.symbol ("${symbol}") is not valid for the data source ("${maskedDataSource}")`
         );
       }
@@ -271,7 +274,7 @@ export class DataProviderService implements OnModuleInit {
         const dataProvider = this.getDataProvider(DataSource[dataSource]);
 
         if (dataProvider.getDataProviderInfo().isPremium) {
-          throw new Error(
+          throw new ImportValidationError(
             `${activityPath}.dataSource ("${maskedDataSource}") requires Ghostfolio Premium`
           );
         }
@@ -328,7 +331,7 @@ export class DataProviderService implements OnModuleInit {
         } catch {}
 
         if (!assetProfile?.name) {
-          throw new Error(
+          throw new ImportValidationError(
             `${activityPath}.symbol ("${symbol}") cannot be resolved by the data source ("${maskedDataSource}")`
           );
         }
@@ -722,6 +725,10 @@ export class DataProviderService implements OnModuleInit {
 
         promises.push(
           promise.then(async (result) => {
+            const fetchedQuotes: (DataProviderResponse & {
+              symbol: string;
+            })[] = [];
+
             for (const [symbol, dataProviderResponse] of Object.entries(
               result
             )) {
@@ -736,12 +743,16 @@ export class DataProviderService implements OnModuleInit {
                 continue;
               }
 
+              const quote = { ...dataProviderResponse, symbol };
+
+              fetchedQuotes.push(quote);
+
               response[
                 getAssetProfileIdentifier({
                   symbol,
                   dataSource: DataSource[dataSource]
                 })
-              ] = { ...dataProviderResponse, symbol };
+              ] = quote;
 
               this.redisCacheService.set(
                 this.redisCacheService.getQuoteKey({
@@ -769,15 +780,19 @@ export class DataProviderService implements OnModuleInit {
                     marketState: 'open'
                   };
 
+                  const derivedQuote = {
+                    ...derivedDataProviderResponse,
+                    symbol: `${DEFAULT_CURRENCY}${currency}`
+                  };
+
+                  fetchedQuotes.push(derivedQuote);
+
                   response[
                     getAssetProfileIdentifier({
                       dataSource: DataSource[dataSource],
                       symbol: `${DEFAULT_CURRENCY}${currency}`
                     })
-                  ] = {
-                    ...derivedDataProviderResponse,
-                    symbol: `${DEFAULT_CURRENCY}${currency}`
-                  };
+                  ] = derivedQuote;
 
                   this.redisCacheService.set(
                     this.redisCacheService.getQuoteKey({
@@ -802,7 +817,7 @@ export class DataProviderService implements OnModuleInit {
 
             try {
               await this.marketDataService.updateMany({
-                data: Object.values(response)
+                data: fetchedQuotes
                   .filter(({ marketPrice, marketState }) => {
                     return (
                       isNumber(marketPrice) &&
