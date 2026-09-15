@@ -76,6 +76,7 @@ import {
 } from '@ghostfolio/common/types';
 import { PerformanceCalculationType } from '@ghostfolio/common/types/performance-calculation-type.type';
 
+import { utc } from '@date-fns/utc';
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { REQUEST } from '@nestjs/core';
 import {
@@ -476,12 +477,12 @@ export class PortfolioService {
     filters?: Filter[];
     userId: string;
   }) {
-    const { SEARCH_QUERY: [filterBySearchQuery] = [] } = groupBy(
-      filters,
-      ({ type }) => {
-        return type;
-      }
-    );
+    const {
+      HOLDING_TYPE: [filterByHoldingType] = [],
+      SEARCH_QUERY: [filterBySearchQuery] = []
+    } = groupBy(filters, ({ type }) => {
+      return type;
+    });
 
     const filtersWithoutSearchQueryFilter = filters?.filter(({ type }) => {
       return type !== 'SEARCH_QUERY';
@@ -490,7 +491,8 @@ export class PortfolioService {
     let { holdings } = await this.getDetails({
       dateRange,
       userId,
-      filters: filtersWithoutSearchQueryFilter
+      filters: filtersWithoutSearchQueryFilter,
+      includeAllHoldings: !filterByHoldingType
     });
 
     if (filterBySearchQuery) {
@@ -544,7 +546,8 @@ export class PortfolioService {
       filters,
       userId,
       calculationType: this.getUserPerformanceCalculationType(user),
-      currency: userCurrency
+      currency: userCurrency,
+      subscriptionType: user.subscription?.type
     });
 
     const { historicalData } = await portfolioCalculator.getSnapshot();
@@ -591,6 +594,7 @@ export class PortfolioService {
   public async getDetails({
     dateRange = DEFAULT_DATE_RANGE,
     filters,
+    includeAllHoldings = false,
     user: userFromCaller,
     userId,
     withExcludedAccounts = false,
@@ -599,6 +603,7 @@ export class PortfolioService {
   }: {
     dateRange?: DateRange;
     filters?: Filter[];
+    includeAllHoldings?: boolean;
     user?: UserWithSettings;
     userId: string;
     withExcludedAccounts?: boolean;
@@ -613,19 +618,24 @@ export class PortfolioService {
       (user.settings?.settings as UserSettings)?.emergencyFund ?? 0
     );
 
+    const portfolioSnapshotFilters = filters?.filter(({ type }) => {
+      return type !== 'HOLDING_TYPE';
+    });
+
     const { activities } =
       await this.activitiesService.getActivitiesForPortfolioCalculator({
-        filters,
         userCurrency,
-        userId
+        userId,
+        filters: portfolioSnapshotFilters
       });
 
     const portfolioCalculator = this.calculatorFactory.createCalculator({
       activities,
-      filters,
       userId,
       calculationType: this.getUserPerformanceCalculationType(user),
-      currency: userCurrency
+      currency: userCurrency,
+      filters: portfolioSnapshotFilters,
+      subscriptionType: user.subscription?.type
     });
 
     const { createdAt, currentValueInBaseCurrency, hasErrors, positions } =
@@ -705,13 +715,13 @@ export class PortfolioService {
       tags,
       valueInBaseCurrency
     } of positions) {
-      if (isFilteredByClosedHoldings === true) {
-        if (!quantity.eq(0)) {
+      if (!includeAllHoldings) {
+        if (isFilteredByClosedHoldings && !quantity.eq(0)) {
           // Ignore positions with a quantity
           continue;
         }
-      } else {
-        if (quantity.eq(0)) {
+
+        if (!isFilteredByClosedHoldings && quantity.eq(0)) {
           // Ignore positions without any quantity
           continue;
         }
@@ -887,20 +897,47 @@ export class PortfolioService {
   public async getHolding({
     dataSource,
     symbol,
-    userId
+    userId,
+    withExcludedActivities = false
   }: {
     userId: string;
+    withExcludedActivities?: boolean;
   } & AssetProfileIdentifier): Promise<PortfolioHoldingResponse> {
     const user = await this.userService.user({ id: userId });
     const userCurrency = this.getUserCurrency(user);
 
-    const { activities } =
+    const holdingFilters: Filter[] = [
+      { id: dataSource, type: 'DATA_SOURCE' },
+      { id: symbol, type: 'SYMBOL' }
+    ];
+
+    let { activities } =
       await this.activitiesService.getActivitiesForPortfolioCalculator({
         userCurrency,
         userId
       });
 
-    if (activities.length === 0) {
+    let hasActivitiesOfHolding = activities.some(({ assetProfile }) => {
+      return (
+        assetProfile.dataSource === dataSource && assetProfile.symbol === symbol
+      );
+    });
+
+    const isExcludedHolding = withExcludedActivities && !hasActivitiesOfHolding;
+
+    if (isExcludedHolding) {
+      ({ activities } =
+        await this.activitiesService.getActivitiesForPortfolioCalculator({
+          userCurrency,
+          userId,
+          filters: holdingFilters,
+          withExcludedAccountsAndActivities: true
+        }));
+
+      hasActivitiesOfHolding = activities.length > 0;
+    }
+
+    if (!hasActivitiesOfHolding) {
       return undefined;
     }
 
@@ -926,7 +963,10 @@ export class PortfolioService {
       activities,
       userId,
       calculationType: this.getUserPerformanceCalculationType(user),
-      currency: userCurrency
+      currency: userCurrency,
+      filters: isExcludedHolding ? holdingFilters : undefined,
+      usePortfolioSnapshotCache: !isExcludedHolding,
+      subscriptionType: user.subscription?.type
     });
 
     const transactionPoints = portfolioCalculator.getTransactionPoints();
@@ -995,7 +1035,7 @@ export class PortfolioService {
     const historicalData = await this.dataProviderService.getHistorical(
       [{ dataSource, symbol }],
       'day',
-      parseISO(dateOfFirstActivity),
+      parseISO(dateOfFirstActivity, { in: utc }),
       new Date()
     );
 
@@ -1093,7 +1133,9 @@ export class PortfolioService {
         userId: assetProfile.userId
       },
       averagePrice: averagePrice.toNumber(),
-      dataProviderInfo: portfolioCalculator.getDataProviderInfos()?.[0],
+      dataProviderInfo: this.dataProviderService
+        .getDataProvider(dataSource)
+        .getDataProviderInfo(),
       dividendInBaseCurrency: dividendInBaseCurrency.toNumber(),
       dividendYieldPercent: dividendYieldPercent.toNumber(),
       dividendYieldPercentWithCurrencyEffect:
@@ -1179,7 +1221,8 @@ export class PortfolioService {
       filters,
       userId,
       calculationType: this.getUserPerformanceCalculationType(user),
-      currency: userCurrency
+      currency: userCurrency,
+      subscriptionType: user.subscription?.type
     });
 
     const { errors, hasErrors, historicalData } =
@@ -2030,12 +2073,7 @@ export class PortfolioService {
     const nonExcludedActivities: Activity[] = [];
 
     for (const activity of activities) {
-      if (
-        (activity.account && isAccountExcluded(activity.account)) ||
-        activity.tags?.some(({ id }) => {
-          return id === TAG_ID_EXCLUDE_FROM_ANALYSIS;
-        })
-      ) {
+      if (this.isExcludedFromAnalysis(activity)) {
         excludedActivities.push(activity);
       } else {
         nonExcludedActivities.push(activity);
@@ -2414,5 +2452,14 @@ export class PortfolioService {
     }
 
     return { accounts, platforms };
+  }
+
+  private isExcludedFromAnalysis(activity: Activity) {
+    return (
+      isAccountExcluded(activity.account) ||
+      activity.tags?.some(({ id }) => {
+        return id === TAG_ID_EXCLUDE_FROM_ANALYSIS;
+      }) === true
+    );
   }
 }

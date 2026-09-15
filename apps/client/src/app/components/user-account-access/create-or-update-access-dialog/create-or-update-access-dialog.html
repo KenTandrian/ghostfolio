@@ -82,20 +82,17 @@
           <mat-option value="READ_RESTRICTED">
             <gf-access-level-icon accessLevel="READ_RESTRICTED" />
           </mat-option>
+          @if (canGrantRestrictedWriteAccess) {
+            <mat-option
+              value="CREATE_READ_RESTRICTED_UPDATE_DELETE"
+              [disabled]="!canGrantWriteAccess"
+            >
+              <gf-access-level-icon
+                accessLevel="CREATE_READ_RESTRICTED_UPDATE_DELETE"
+              />
+            </mat-option>
+          }
           @if (accessForm.get('type')?.value === 'PRIVATE') {
-            <!--
-              The permission to change the data without the monetary values is
-              not available yet, because it is intended for the model context
-              protocol, which exposes read tools only
-              <mat-option
-                value="CREATE_READ_RESTRICTED_UPDATE_DELETE"
-                [disabled]="!canGrantWriteAccess"
-              >
-                <gf-access-level-icon
-                  accessLevel="CREATE_READ_RESTRICTED_UPDATE_DELETE"
-                />
-              </mat-option>
-            -->
             <mat-option value="READ">
               <gf-access-level-icon accessLevel="READ" />
             </mat-option>
@@ -135,6 +132,18 @@
         [holdings]="holdings"
         [tags]="tags"
       />
+    }
+    @if (showMcpDetails || showPublicDetails) {
+      <h2 class="h6" i18n>Details</h2>
+      @if (showMcpDetails) {
+        <pre class="m-0"><code>{{ mcpConfiguration | json }}</code></pre>
+      } @else if (showPublicDetails) {
+        <div>
+          <code class="text-break"
+            >GET {{ baseUrl }}/api/v1/public/{{ accessId }}/portfolio</code
+          >
+        </div>
+      }
     }
   </div>
   <div class="justify-content-end" mat-dialog-actions>
