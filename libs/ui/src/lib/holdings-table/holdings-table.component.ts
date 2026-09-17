@@ -22,7 +22,7 @@ import {
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialogModule } from '@angular/material/dialog';
 import { MatPaginator, MatPaginatorModule } from '@angular/material/paginator';
-import { MatSort, MatSortModule } from '@angular/material/sort';
+import { MatSort, MatSortModule, SortDirection } from '@angular/material/sort';
 import { MatTableDataSource, MatTableModule } from '@angular/material/table';
 import { NgxSkeletonLoaderModule } from 'ngx-skeleton-loader';
 
@@ -50,8 +50,9 @@ export class GfHoldingsTableComponent {
   public readonly hasPermissionToOpenDetails = input(true);
   public readonly hasPermissionToShowQuantities = input(true);
   public readonly hasPermissionToShowValues = input(true);
-  public readonly holdings = input.required<PortfolioPosition[]>();
+  public readonly holdings = input.required<PortfolioPosition[] | undefined>();
   public readonly locale = input(getLocale());
+  public readonly mode = input<'default' | 'simple'>('default');
   public readonly pageSize = model(Number.MAX_SAFE_INTEGER);
 
   public readonly holdingClicked = output<AssetProfileIdentifier>();
@@ -62,6 +63,10 @@ export class GfHoldingsTableComponent {
   protected readonly dataSource = new MatTableDataSource<PortfolioPosition>([]);
 
   protected readonly displayedColumns = computed(() => {
+    if (this.mode() === 'simple') {
+      return ['icon', 'nameWithSymbol', 'performanceInPercentage'];
+    }
+
     const columns = ['icon', 'nameWithSymbol', 'dateOfFirstActivity'];
 
     if (this.hasPermissionToShowQuantities()) {
@@ -82,14 +87,26 @@ export class GfHoldingsTableComponent {
     return columns;
   });
 
-  protected readonly isLoading = computed(() => !this.holdings());
+  protected readonly isLoading = computed(() => {
+    return !this.holdings();
+  });
+
+  protected readonly sortActive = computed(() => {
+    return this.mode() === 'default'
+      ? 'allocationInPercentage'
+      : 'assetProfile.name';
+  });
+
+  protected readonly sortDirection = computed<SortDirection>(() => {
+    return this.mode() === 'default' ? 'desc' : 'asc';
+  });
 
   public constructor() {
     this.dataSource.sortingDataAccessor = getLowercase;
 
     // Reactive data update
     effect(() => {
-      this.dataSource.data = this.holdings();
+      this.dataSource.data = this.holdings() ?? [];
     });
 
     // Reactive view connection
