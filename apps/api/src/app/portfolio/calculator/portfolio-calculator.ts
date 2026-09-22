@@ -938,6 +938,8 @@ export abstract class PortfolioCalculator {
     let grossPerformanceWithCurrencyEffect = new Big(0);
     let grossPerformanceAtStartDate = new Big(0);
     let grossPerformanceAtStartDateWithCurrencyEffect = new Big(0);
+    let grossPerformanceFromDividends = new Big(0);
+    let grossPerformanceFromDividendsWithCurrencyEffect = new Big(0);
     let grossPerformanceFromSells = new Big(0);
     let grossPerformanceFromSellsWithCurrencyEffect = new Big(0);
     let initialValue: Big;
@@ -1140,6 +1142,19 @@ export abstract class PortfolioCalculator {
           grossPerformanceFromSellWithCurrencyEffect
         );
 
+      if (['DIVIDEND', 'INTEREST'].includes(activity.type)) {
+        const dividendAmount = activity.quantity.mul(activity.unitPrice);
+
+        grossPerformanceFromDividends = grossPerformanceFromDividends.plus(
+          dividendAmount.mul(currentExchangeRate ?? 1)
+        );
+
+        grossPerformanceFromDividendsWithCurrencyEffect =
+          grossPerformanceFromDividendsWithCurrencyEffect.plus(
+            dividendAmount.mul(exchangeRateAtActivityDate ?? 1)
+          );
+      }
+
       lastAveragePrice = totalQuantityFromBuyTransactions.eq(0)
         ? new Big(0)
         : totalInvestmentFromBuyTransactions.div(
@@ -1174,12 +1189,14 @@ export abstract class PortfolioCalculator {
 
       const newGrossPerformance = valueOfInvestment
         .minus(totalInvestment)
-        .plus(grossPerformanceFromSells);
+        .plus(grossPerformanceFromSells)
+        .plus(grossPerformanceFromDividends);
 
       const newGrossPerformanceWithCurrencyEffect =
         valueOfInvestmentWithCurrencyEffect
           .minus(totalInvestmentWithCurrencyEffect)
-          .plus(grossPerformanceFromSellsWithCurrencyEffect);
+          .plus(grossPerformanceFromSellsWithCurrencyEffect)
+          .plus(grossPerformanceFromDividendsWithCurrencyEffect);
 
       grossPerformance = newGrossPerformance;
 
