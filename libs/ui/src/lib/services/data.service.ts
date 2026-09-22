@@ -4,6 +4,7 @@ import {
   CreateAccountDto,
   CreateOrderDto,
   CreateTagDto,
+  CreateUserDto,
   CreateWatchlistItemDto,
   DeleteOwnUserDto,
   TransferBalanceDto,
@@ -788,12 +789,6 @@ export class DataService {
               holding.assetProfile.assetSubClassLabel = translate(
                 holding.assetProfile.assetSubClass
               );
-
-              holding.valueInBaseCurrency = isNumber(
-                holding.valueInBaseCurrency
-              )
-                ? holding.valueInBaseCurrency
-                : holding.valueInPercentage;
             }
           }
 
@@ -902,8 +897,8 @@ export class DataService {
     return this.http.post<Tag>(`/api/v1/tags`, aTag);
   }
 
-  public postUser() {
-    return this.http.post<UserItem>('/api/v1/user', {});
+  public postUser(aData: CreateUserDto) {
+    return this.http.post<UserItem>('/api/v1/user', aData);
   }
 
   public postWatchlistItem(watchlistItem: CreateWatchlistItemDto) {

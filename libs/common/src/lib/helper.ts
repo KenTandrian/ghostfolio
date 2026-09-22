@@ -11,11 +11,15 @@ import {
 } from '@prisma/client';
 import { Big } from 'big.js';
 import { isISO4217CurrencyCode, isUUID } from 'class-validator';
+import { countries } from 'countries-list';
 import {
+  addDays,
   getDate,
   getMonth,
   getYear,
+  isAfter,
   isMatch,
+  isValid,
   parse,
   parseISO,
   subDays
@@ -84,6 +88,8 @@ const USER_SETTINGS_KEYS_OF_AUTHENTICATED_USER: (keyof UserSettings)[] = [
   'locale',
   'viewMode'
 ];
+
+const VALID_COUNTRY_CODES = new Set([...Object.keys(countries), 'EU']);
 
 export function applyAssetProfileOverrides<T extends Partial<SymbolProfile>>(
   assetProfile: T,
@@ -230,6 +236,22 @@ export function canOpenHoldingDetail({
 
 export function capitalize(aString: string) {
   return aString.charAt(0).toUpperCase() + aString.slice(1).toLowerCase();
+}
+
+export function convertValuesToPercentagesOfTotal({
+  total,
+  values
+}: {
+  total: number;
+  values: { [key: string]: { value: number } };
+}) {
+  if (!total) {
+    return;
+  }
+
+  for (const item of Object.values(values)) {
+    item.value = item.value / total;
+  }
 }
 
 export function downloadAsFile({
@@ -420,15 +442,15 @@ export function getDateWithTimeFormatString(aLocale?: string) {
 }
 
 export function getEmojiFlag(aCountryCode: string) {
-  if (!aCountryCode) {
-    return aCountryCode;
+  const countryCode = aCountryCode?.toUpperCase();
+
+  if (!countryCode || !VALID_COUNTRY_CODES.has(countryCode)) {
+    return undefined;
   }
 
-  return aCountryCode
-    .toUpperCase()
-    .replace(/./g, (character) =>
-      String.fromCodePoint(127397 + character.charCodeAt(0))
-    );
+  return countryCode.replace(/./g, (character) => {
+    return String.fromCodePoint(127397 + character.charCodeAt(0));
+  });
 }
 
 export function getLocale() {
@@ -468,6 +490,10 @@ export function getStartOfUtcDate(aDate: Date) {
   date.setUTCHours(0, 0, 0, 0);
 
   return date;
+}
+
+export function getStartOfUtcDateOfTomorrow() {
+  return addDays(getStartOfUtcDate(new Date()), 1, { in: utc });
 }
 
 export function getStartOfUtcDateOfYesterday() {
@@ -551,6 +577,14 @@ export function isAccountExcluded(account?: { tags?: { id: string }[] }) {
       return id === TAG_ID_EXCLUDE_FROM_ANALYSIS;
     }) === true
   );
+}
+
+export function isCashPosition({
+  assetSubClass
+}: {
+  assetSubClass?: AssetSubClass;
+} = {}) {
+  return assetSubClass === AssetSubClass.CASH;
 }
 
 export function isCurrency(aCurrency: string) {
@@ -644,8 +678,25 @@ export function isUserSettingOfAuthenticatedUser(aKey: string) {
   );
 }
 
+export function isValidCurrencyCode(aCurrency: string) {
+  if (!aCurrency) {
+    return false;
+  }
+
+  return (
+    isDerivedCurrency(aCurrency) ||
+    (aCurrency === aCurrency.toUpperCase() && isISO4217CurrencyCode(aCurrency))
+  );
+}
+
 export function isValidCustomAssetProfileSymbol(aSymbol: string) {
   return hasGhostfolioPrefix(aSymbol) || isUUID(aSymbol);
+}
+
+export function isValidDateAfter1970(aDate: Date | string) {
+  const date = isString(aDate) ? parseISO(aDate, { in: utc }) : aDate;
+
+  return isValid(date) && isAfter(date, new Date(0));
 }
 
 /**

@@ -35,6 +35,7 @@ import {
 import {
   canDeleteAssetProfile,
   getAssetProfileIdentifier,
+  getStartOfUtcDateOfTomorrow,
   isDraftActivity,
   isValidCustomAssetProfileSymbol
 } from '@ghostfolio/common/helper';
@@ -59,7 +60,6 @@ import {
   Type as ActivityType
 } from '@prisma/client';
 import { Big } from 'big.js';
-import { endOfToday } from 'date-fns';
 import { groupBy, uniqBy } from 'lodash';
 import { randomUUID } from 'node:crypto';
 
@@ -486,7 +486,7 @@ export class ActivitiesService {
     }
 
     const activities: Activity[] = [];
-    const endOfTodayDate = endOfToday();
+    const startOfUtcDateOfTomorrow = getStartOfUtcDateOfTomorrow();
 
     for (const account of cashDetails.accounts) {
       const { balances } = await this.accountBalanceService.getAccountBalances({
@@ -501,7 +501,7 @@ export class ActivitiesService {
       for (const balanceItem of balances) {
         if (
           isAccountBalanceInFuture({
-            endOfTodayDate,
+            startOfUtcDateOfTomorrow,
             date: balanceItem.date
           })
         ) {
@@ -760,7 +760,8 @@ export class ActivitiesService {
     filters,
     userCurrency,
     userId,
-    withCash = false
+    withCash = false,
+    withExcludedAccountsAndActivities = false
   }: {
     /** Optional filters to apply to the activities. */
     filters?: Filter[];
@@ -770,13 +771,15 @@ export class ActivitiesService {
     userId: string;
     /** Whether to include cash activities in the result. */
     withCash?: boolean;
+    /** Whether to include activities that are excluded from analysis. */
+    withExcludedAccountsAndActivities?: boolean;
   }) {
     const [activities, splits] = await Promise.all([
       this.getActivities({
         filters,
         userCurrency,
         userId,
-        withExcludedAccountsAndActivities: false // TODO
+        withExcludedAccountsAndActivities
       }),
       this.assetProfileSplitService.getSplitsByUserId({ userId })
     ]);
