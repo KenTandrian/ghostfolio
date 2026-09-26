@@ -1,5 +1,5 @@
 import { getTooltipOptions } from '@ghostfolio/common/chart-helper';
-import { UNKNOWN_KEY } from '@ghostfolio/common/config';
+import { DEFAULT_COLOR_SCHEME, UNKNOWN_KEY } from '@ghostfolio/common/config';
 import { getLocale, getSum, getTextColor } from '@ghostfolio/common/helper';
 import { PortfolioPosition } from '@ghostfolio/common/interfaces';
 import { ColorScheme } from '@ghostfolio/common/types';
@@ -60,8 +60,8 @@ const {
 export class GfPortfolioProportionChartComponent
   implements AfterViewInit, OnChanges, OnDestroy
 {
-  @Input() baseCurrency: string;
-  @Input() colorScheme: ColorScheme;
+  @Input() baseCurrency?: string = '';
+  @Input() colorScheme?: ColorScheme = DEFAULT_COLOR_SCHEME;
   @Input() cursor: string;
   @Input() data: {
     [symbol: string]: Pick<PortfolioPosition, 'type'> & {
@@ -71,9 +71,9 @@ export class GfPortfolioProportionChartComponent
       value: number;
     };
   } = {};
-  @Input() isInPercentage = false;
+  @Input() isInPercentage?: boolean = false;
   @Input() keys: string[] = [];
-  @Input() locale = getLocale();
+  @Input() locale?: string = getLocale();
   @Input() maxItems?: number;
   @Input() showLabels = false;
 
@@ -123,8 +123,8 @@ export class GfPortfolioProportionChartComponent
       };
     } = {};
     this.colorMap = {
-      [this.OTHER_KEY]: `rgba(${getTextColor(this.colorScheme)}, 0.24)`,
-      [UNKNOWN_KEY]: `rgba(${getTextColor(this.colorScheme)}, 0.12)`
+      [this.OTHER_KEY]: `rgba(${getTextColor(this.colorScheme ?? DEFAULT_COLOR_SCHEME)}, 0.24)`,
+      [UNKNOWN_KEY]: `rgba(${getTextColor(this.colorScheme ?? DEFAULT_COLOR_SCHEME)}, 0.12)`
     };
 
     if (this.keys.length > 0) {
@@ -444,7 +444,7 @@ export class GfPortfolioProportionChartComponent
   ): Partial<TooltipOptions<'doughnut'>> {
     return {
       ...getTooltipOptions({
-        colorScheme: this.colorScheme,
+        colorScheme: this.colorScheme ?? DEFAULT_COLOR_SCHEME,
         currency: this.baseCurrency,
         locale: this.locale
       }),
