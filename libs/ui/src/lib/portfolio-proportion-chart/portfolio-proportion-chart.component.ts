@@ -123,7 +123,8 @@ export class GfPortfolioProportionChartComponent
       };
     } = {};
     this.colorMap = {
-      [this.OTHER_KEY]: `rgba(${getTextColor(this.colorScheme ?? DEFAULT_COLOR_SCHEME)}, 0.24)`,
+      [this.OTHER_KEY]:
+        `rgba(${getTextColor(this.colorScheme ?? DEFAULT_COLOR_SCHEME)}, 0.24)`,
       [UNKNOWN_KEY]: `rgba(${getTextColor(this.colorScheme ?? DEFAULT_COLOR_SCHEME)}, 0.12)`
     };
 
