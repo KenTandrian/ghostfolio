@@ -1,7 +1,6 @@
 import {
-  activityDummyData,
-  assetProfileDummyData,
   getPerformanceByDateRange,
+  loadActivitiesFromExportFile,
   userDummyData
 } from '@ghostfolio/api/app/portfolio/calculator/portfolio-calculator-test-utils';
 import { PortfolioCalculatorFactory } from '@ghostfolio/api/app/portfolio/calculator/portfolio-calculator.factory';
@@ -14,7 +13,6 @@ import { ExchangeRateDataService } from '@ghostfolio/api/services/exchange-rate-
 import { PortfolioSnapshotService } from '@ghostfolio/api/services/queues/portfolio-snapshot/portfolio-snapshot.service';
 import { PortfolioSnapshotServiceMock } from '@ghostfolio/api/services/queues/portfolio-snapshot/portfolio-snapshot.service.mock';
 import { parseDate } from '@ghostfolio/common/helper';
-import { Activity } from '@ghostfolio/common/interfaces';
 import { PerformanceCalculationType } from '@ghostfolio/common/types/performance-calculation-type.type';
 
 import { Big } from 'big.js';
@@ -86,45 +84,14 @@ describe('PortfolioCalculator', () => {
     it.only('with MSFT buy', async () => {
       jest.useFakeTimers().setSystemTime(parseDate('2023-07-10').getTime());
 
-      const activities: Activity[] = [
-        {
-          ...activityDummyData,
-          assetProfile: {
-            ...assetProfileDummyData,
-            currency: 'USD',
-            dataSource: 'YAHOO',
-            name: 'Microsoft Inc.',
-            symbol: 'MSFT'
-          },
-          date: new Date('2021-09-16'),
-          feeInAssetProfileCurrency: 19,
-          feeInBaseCurrency: 19,
-          quantity: 1,
-          type: 'BUY',
-          unitPriceInAssetProfileCurrency: 298.58
-        },
-        {
-          ...activityDummyData,
-          assetProfile: {
-            ...assetProfileDummyData,
-            currency: 'USD',
-            dataSource: 'YAHOO',
-            name: 'Microsoft Inc.',
-            symbol: 'MSFT'
-          },
-          date: new Date('2021-11-16'),
-          feeInAssetProfileCurrency: 0,
-          feeInBaseCurrency: 0,
-          quantity: 1,
-          type: 'DIVIDEND',
-          unitPriceInAssetProfileCurrency: 0.62
-        }
-      ];
+      const { activities, userCurrency } = loadActivitiesFromExportFile(
+        'msft-buy-with-dividend.json'
+      );
 
       const portfolioCalculator = portfolioCalculatorFactory.createCalculator({
         activities,
         calculationType: PerformanceCalculationType.ROAI,
-        currency: 'USD',
+        currency: userCurrency,
         usePortfolioSnapshotCache: false,
         userId: userDummyData.id
       });
@@ -198,6 +165,8 @@ describe('PortfolioCalculator', () => {
       expect(performanceByDateRange).toMatchObject({
         '1d': {
           date: '2023-07-10',
+          dividendInBaseCurrency: 0,
+          dividendInPercentageWithCurrencyEffect: 0,
           netPerformance: -5.390000000000002,
           netPerformanceInPercentage: -0.015983630864124316,
           netPerformanceInPercentageWithCurrencyEffect: -0.015983630864124316,
@@ -207,6 +176,8 @@ describe('PortfolioCalculator', () => {
         },
         max: {
           date: '2023-07-10',
+          dividendInBaseCurrency: 0.62,
+          dividendInPercentageWithCurrencyEffect: 0.002076495411614967,
           netPerformance: 14.87,
           netPerformanceInPercentage: 0.049802398017281556,
           netPerformanceInPercentageWithCurrencyEffect: 0.049802398017281556,
@@ -216,6 +187,8 @@ describe('PortfolioCalculator', () => {
         },
         ytd: {
           date: '2023-07-10',
+          dividendInBaseCurrency: 0,
+          dividendInPercentageWithCurrencyEffect: 0,
           netPerformance: -7.6800000000000015,
           netPerformanceInPercentage: -0.022620835910577015,
           netPerformanceInPercentageWithCurrencyEffect: -0.022620835910577015,

@@ -14,7 +14,7 @@ import {
 
 import { Injectable } from '@nestjs/common';
 import { isBefore, isToday } from 'date-fns';
-import { isEmpty, uniqBy } from 'lodash';
+import { isEmpty, uniqBy } from 'lodash-es';
 
 import { GetValueObject } from './interfaces/get-value-object.interface';
 import { GetValuesObject } from './interfaces/get-values-object.interface';
@@ -132,18 +132,29 @@ export class CurrentRateService {
           });
 
           if (!value) {
-            // Fallback to unit price of latest activity
-            const latestActivity =
-              await this.activitiesService.getLatestActivity({
-                dataSource,
-                symbol
-              });
+            const latestMarketData = await this.marketDataService.getLatest({
+              dataSource,
+              symbol
+            });
+
+            let marketPrice = latestMarketData?.marketPrice;
+
+            if (!marketPrice) {
+              // Fallback to unit price of latest activity
+              const latestActivity =
+                await this.activitiesService.getLatestActivity({
+                  dataSource,
+                  symbol
+                });
+
+              marketPrice = latestActivity?.unitPrice ?? 0;
+            }
 
             value = {
               dataSource,
+              marketPrice,
               symbol,
-              date: today,
-              marketPrice: latestActivity?.unitPrice ?? 0
+              date: today
             };
 
             response.values.push(value);
