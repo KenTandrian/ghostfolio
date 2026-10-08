@@ -31,8 +31,6 @@ import {
 @Injectable()
 export class PluangService implements DataProviderInterface {
   private readonly apiUrl = 'https://api-pluang.pluang.com/api';
-  private readonly userAgent =
-    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.2 Safari/605.1.15';
   private readonly assetClassMap: {
     [key: string]: AssetClass;
   } = {
@@ -48,6 +46,8 @@ export class PluangService implements DataProviderInterface {
     gold: AssetSubClass.PRECIOUS_METAL,
     STOCK: AssetSubClass.STOCK
   };
+  private readonly userAgent =
+    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.2 Safari/605.1.15';
 
   public constructor(
     private readonly configurationService: ConfigurationService
@@ -74,15 +74,9 @@ export class PluangService implements DataProviderInterface {
         response.assetSubClass = AssetSubClass.PRECIOUS_METAL;
         response.name = 'Emas';
       } else {
-        const { data } = await fetch(
-          `${this.apiUrl}/v4/asset/cryptocurrency/description?cryptocurrency=${symbol}`,
-          {
-            headers: { 'User-Agent': this.userAgent },
-            signal: AbortSignal.timeout(
-              this.configurationService.get('REQUEST_TIMEOUT')
-            )
-          }
-        ).then((res) => res.json() as Promise<IPluangDescriptionResponse>);
+        const { data } = await this.fetchJson<IPluangDescriptionResponse>(
+          `${this.apiUrl}/v4/asset/cryptocurrency/description?cryptocurrency=${symbol}`
+        );
 
         response.assetClass = AssetClass.LIQUIDITY;
         response.assetSubClass = AssetSubClass.CRYPTOCURRENCY;
@@ -118,13 +112,10 @@ export class PluangService implements DataProviderInterface {
   }> {
     try {
       if (symbol === 'GOLD') {
-        const { data } = await fetch(
+        const { data } = await this.fetchJson<IPluangGoldPricingResponse>(
           `${this.apiUrl}/v3/asset/gold/pricing?daysLimit=90`,
-          {
-            headers: { 'User-Agent': this.userAgent },
-            signal: AbortSignal.timeout(requestTimeout)
-          }
-        ).then((res) => res.json() as Promise<IPluangGoldPricingResponse>);
+          requestTimeout
+        );
 
         return data.history.reduce((acc, item) => {
           acc[item.updated_at.split('T')[0]] = {
@@ -133,13 +124,10 @@ export class PluangService implements DataProviderInterface {
           return acc;
         }, {});
       } else {
-        const { data } = await fetch(
+        const { data } = await this.fetchJson<IPluangHistoricalResponse>(
           `${this.apiUrl}/v4/asset/cryptocurrency/price/price-stats-history?cryptocurrency=${symbol}&timeframe=3M`,
-          {
-            headers: { 'User-Agent': this.userAgent },
-            signal: AbortSignal.timeout(requestTimeout)
-          }
-        ).then((res) => res.json() as Promise<IPluangHistoricalResponse>);
+          requestTimeout
+        );
 
         return data.priceHistory.reduce((acc, item) => {
           acc[item.priceStatDate.split('T')[0]] = {
@@ -171,13 +159,10 @@ export class PluangService implements DataProviderInterface {
     try {
       const promises = symbols.map(async (symbol) => {
         if (symbol === 'GOLD') {
-          const { data } = await fetch(
-            'https://api-pluang.pluang.com/api/v3/asset/gold/pricing?daysLimit=1',
-            {
-              headers: { 'User-Agent': this.userAgent },
-              signal: AbortSignal.timeout(requestTimeout)
-            }
-          ).then((res) => res.json() as Promise<IPluangGoldPricingResponse>);
+          const { data } = await this.fetchJson<IPluangGoldPricingResponse>(
+            `${this.apiUrl}/v3/asset/gold/pricing?daysLimit=1`,
+            requestTimeout
+          );
 
           response[symbol] = {
             currency: data.currency,
@@ -187,13 +172,10 @@ export class PluangService implements DataProviderInterface {
             marketState: 'open'
           };
         } else {
-          const { data } = await fetch(
+          const { data } = await this.fetchJson<IPluangHistoricalResponse>(
             `${this.apiUrl}/v4/asset/cryptocurrency/price/price-stats-history?cryptocurrency=${symbol}&timeframe=3M`,
-            {
-              headers: { 'User-Agent': this.userAgent },
-              signal: AbortSignal.timeout(requestTimeout)
-            }
-          ).then((res) => res.json() as Promise<IPluangHistoricalResponse>);
+            requestTimeout
+          );
 
           response[symbol] = {
             currency: 'IDR',
@@ -222,14 +204,9 @@ export class PluangService implements DataProviderInterface {
         throw new Error('PLUANG_DASH_ID is not defined');
       }
 
-      const { pageProps } = await fetch(
-        `https://pluang.com/_next/data/${dashId}/id/explore/search.json?query=${query}`,
-        {
-          signal: AbortSignal.timeout(
-            this.configurationService.get('REQUEST_TIMEOUT')
-          )
-        }
-      ).then((res) => res.json() as Promise<IPluangSearchResponse>);
+      const { pageProps } = await this.fetchJson<IPluangSearchResponse>(
+        `https://pluang.com/_next/data/${dashId}/id/explore/search.json?query=${query}`
+      );
 
       return {
         items: pageProps.pageData?.assets.map(({ tileInfo: item }) => ({
@@ -254,5 +231,21 @@ export class PluangService implements DataProviderInterface {
       );
       return { items: [] };
     }
+  }
+
+  private async fetchJson<T>(
+    url: string,
+    requestTimeout: number = this.configurationService.get('REQUEST_TIMEOUT')
+  ): Promise<T> {
+    const response = await fetch(url, {
+      headers: { 'User-Agent': this.userAgent },
+      signal: AbortSignal.timeout(requestTimeout)
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    return (await response.json()) as T;
   }
 }

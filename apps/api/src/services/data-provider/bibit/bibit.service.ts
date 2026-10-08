@@ -48,6 +48,8 @@ export class BibitService implements DataProviderInterface {
     1: AssetSubClass.BOND,
     2: AssetSubClass.STOCK
   };
+  private readonly userAgent =
+    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
 
   public constructor(
     private readonly configurationService: ConfigurationService
@@ -75,23 +77,16 @@ export class BibitService implements DataProviderInterface {
 
     try {
       if (this.isFRBond(symbol)) {
-        const { data } = await fetch(
-          `${this.apiUrl}/bonds/fixed-rate/products/${symbol}`,
-          {
-            signal: AbortSignal.timeout(
-              this.configurationService.get('REQUEST_TIMEOUT')
-            )
-          }
-        ).then((res) => res.json() as Promise<IBibitFRProductResponse>);
+        const { data } = await this.fetchJson<IBibitFRProductResponse>(
+          `${this.apiUrl}/bonds/fixed-rate/products/${symbol}`
+        );
 
         response.name = data.name;
         response.url = 'https://www.kemenkeu.go.id';
       } else {
-        const { data } = await fetch(`${this.apiUrl}/products/${symbol}`, {
-          signal: AbortSignal.timeout(
-            this.configurationService.get('REQUEST_TIMEOUT')
-          )
-        }).then((res) => res.json() as Promise<IBibitGenericResponse>);
+        const { data } = await this.fetchJson<IBibitGenericResponse>(
+          `${this.apiUrl}/products/${symbol}`
+        );
         const decryptedData = this.decrypt<IBibitRDProduct>(data);
 
         response.name = decryptedData.name;
@@ -131,12 +126,10 @@ export class BibitService implements DataProviderInterface {
     try {
       const period = this.getPeriod(from);
       if (this.isFRBond(symbol)) {
-        const { data } = await fetch(
+        const { data } = await this.fetchJson<IBibitFRChartResponse>(
           `${this.apiUrl}/bonds/fixed-rate/products/${symbol}/charts?period=${period}`,
-          {
-            signal: AbortSignal.timeout(requestTimeout)
-          }
-        ).then((res) => res.json() as Promise<IBibitFRChartResponse>);
+          requestTimeout
+        );
         const result = data.prices.reduce((acc, item) => {
           acc[item.formated_date] = {
             marketPrice: item.sell_price.price_rate * 10000
@@ -145,12 +138,10 @@ export class BibitService implements DataProviderInterface {
         }, {});
         return result;
       } else {
-        const { data } = await fetch(
+        const { data } = await this.fetchJson<IBibitGenericResponse>(
           `${this.apiUrl}/products/${symbol}/chart?period=${period}`,
-          {
-            signal: AbortSignal.timeout(requestTimeout)
-          }
-        ).then((res) => res.json() as Promise<IBibitGenericResponse>);
+          requestTimeout
+        );
         const decryptedData = this.decrypt<IBibitRDChart>(data);
         return decryptedData.chart.reduce((acc, item) => {
           acc[item.formated_date] = {
@@ -183,12 +174,10 @@ export class BibitService implements DataProviderInterface {
     try {
       const promises = symbols.map(async (symbol) => {
         if (this.isFRBond(symbol)) {
-          const { data } = await fetch(
+          const { data } = await this.fetchJson<IBibitFRProductResponse>(
             `${this.apiUrl}/bonds/fixed-rate/products/${symbol}`,
-            {
-              signal: AbortSignal.timeout(requestTimeout)
-            }
-          ).then((res) => res.json() as Promise<IBibitFRProductResponse>);
+            requestTimeout
+          );
 
           response[symbol] = {
             currency: 'IDR',
@@ -198,9 +187,10 @@ export class BibitService implements DataProviderInterface {
             marketState: 'open'
           };
         } else {
-          const { data } = await fetch(`${this.apiUrl}/products/${symbol}`, {
-            signal: AbortSignal.timeout(requestTimeout)
-          }).then((res) => res.json() as Promise<IBibitGenericResponse>);
+          const { data } = await this.fetchJson<IBibitGenericResponse>(
+            `${this.apiUrl}/products/${symbol}`,
+            requestTimeout
+          );
           const decryptedData = this.decrypt<{ nav: { value: number } }>(data);
           response[symbol] = {
             currency: 'IDR',
@@ -224,14 +214,9 @@ export class BibitService implements DataProviderInterface {
 
   public async search({ query }: GetSearchParams): Promise<LookupResponse> {
     try {
-      const { data } = await fetch(
-        `${this.apiUrl}/search?keyword=${query}&limit=10&page=1&v=3`,
-        {
-          signal: AbortSignal.timeout(
-            this.configurationService.get('REQUEST_TIMEOUT')
-          )
-        }
-      ).then((res) => res.json() as Promise<IBibitSearchResponse>);
+      const { data } = await this.fetchJson<IBibitSearchResponse>(
+        `${this.apiUrl}/search?keyword=${query}&limit=10&page=1&v=3`
+      );
 
       return {
         items: data.map((item) => ({
@@ -269,8 +254,20 @@ export class BibitService implements DataProviderInterface {
     return JSON.parse(decrypted.toString('utf-8')) as T;
   }
 
-  private isFRBond(symbol: string) {
-    return symbol.startsWith('FR') || symbol.startsWith('PBS');
+  private async fetchJson<T>(
+    url: string,
+    requestTimeout: number = this.configurationService.get('REQUEST_TIMEOUT')
+  ): Promise<T> {
+    const response = await fetch(url, {
+      headers: { 'User-Agent': this.userAgent },
+      signal: AbortSignal.timeout(requestTimeout)
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    return (await response.json()) as T;
   }
 
   private getPeriod(from: Date) {
@@ -286,5 +283,9 @@ export class BibitService implements DataProviderInterface {
     else if (diffDays > 30) period = '3m';
 
     return period;
+  }
+
+  private isFRBond(symbol: string) {
+    return symbol.startsWith('FR') || symbol.startsWith('PBS');
   }
 }
