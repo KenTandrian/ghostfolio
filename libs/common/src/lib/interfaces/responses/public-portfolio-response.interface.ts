@@ -4,8 +4,7 @@ import {
   PortfolioPosition
 } from '@ghostfolio/common/interfaces';
 import { Market } from '@ghostfolio/common/types';
-
-import { Order } from '@prisma/client';
+import type { Order } from '@ghostfolio/prisma/browser';
 
 export interface PublicPortfolioResponse extends PublicPortfolioResponseV1 {
   alias?: string;
@@ -17,7 +16,6 @@ export interface PublicPortfolioResponse extends PublicPortfolioResponseV1 {
     | 'dateOfFirstActivity'
     | 'markets'
     | 'netPerformancePercentWithCurrencyEffect'
-    | 'valueInBaseCurrency'
     | 'valueInPercentage'
   >[];
   latestActivities: (Pick<

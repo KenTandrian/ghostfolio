@@ -1,6 +1,5 @@
 import { AccessLevel } from '@ghostfolio/common/types';
-
-import { AccessType } from '@prisma/client';
+import { AccessType } from '@ghostfolio/prisma/enums';
 
 /**
  * Scopes describe what a grantee may do on behalf of the granting user. They
@@ -64,18 +63,23 @@ export const SCOPES_OF_READ_RESTRICTED_ACCESS: readonly Scope[] =
 /**
  * Maximum scopes per access type. The scopes stored on an access are
  * intersected with it, hence a scope which the type does not permit stays
- * ineffective even if it is stored.
+ * ineffective even if it is stored. A type which cannot grant the restricted
+ * write access drops the write scopes in addition, unless the access reads the
+ * monetary values.
  */
 const SCOPES_OF_TYPE: Record<AccessType, readonly Scope[]> = {
-  MCP: [
-    ...SCOPES_OF_READ_RESTRICTED_ACCESS
-    // Write scope is not permitted yet, because the controller exposes read
-    // tools only
-    // ...SCOPES_OF_WRITE_ACCESS
-  ],
+  MCP: [...SCOPES_OF_READ_RESTRICTED_ACCESS, scopes.activityCreate],
   PRIVATE: Object.values(scopes),
   PUBLIC: SCOPES_OF_PUBLIC_ACCESS
 };
+
+/**
+ * Access types which combine a write scope with the restricted read access,
+ * because their tools change data without exposing the monetary values
+ */
+export function canGrantRestrictedWriteAccess({ type }: { type: AccessType }) {
+  return type === 'MCP';
+}
 
 /**
  * Access level which the scopes of an access grant
@@ -101,9 +105,16 @@ export function getScopesOfAccess({
 }): string[] {
   const scopesToEvaluate = scopesOfAccess ?? [];
 
+  const permitsWriteAccess =
+    canGrantRestrictedWriteAccess({ type }) ||
+    hasScope(scopesToEvaluate, scopes.portfolioReadValues);
+
   // An unknown scope is dropped
   return SCOPES_OF_TYPE[type].filter((scope) => {
-    return scopesToEvaluate.includes(scope);
+    return (
+      scopesToEvaluate.includes(scope) &&
+      (permitsWriteAccess || !SCOPES_OF_WRITE_ACCESS.includes(scope))
+    );
   });
 }
 

@@ -47,19 +47,24 @@ import {
   isSameDay,
   parseISO
 } from 'date-fns';
-import { isArray, uniqBy } from 'lodash';
+import { isArray, uniqBy } from 'lodash-es';
 
 @Injectable()
 export class FinancialModelingPrepService
   implements DataProviderInterface, OnModuleInit
 {
   private static countriesMapping = {
+    'Aland Islands': 'AX',
+    'Congo (Dem. Rep. of the)': 'CD',
+    'Congo (Rep. of)': 'CG',
     'Czech Republic': 'CZ',
+    Korea: 'KR',
     'Korea (the Republic of)': 'KR',
     Macau: 'MO',
     'Russian Federation': 'RU',
     'Taiwan (Province of China)': 'TW',
-    Turkey: 'TR'
+    Turkey: 'TR',
+    'Virgin Islands (British)': 'VG'
   };
 
   private readonly logger = new Logger(FinancialModelingPrepService.name);

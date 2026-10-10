@@ -1,8 +1,14 @@
-import { AssetClass, AssetSubClass, DataSource, Type } from '@prisma/client';
+import {
+  AssetClass,
+  AssetSubClass,
+  DataSource,
+  Type
+} from '@ghostfolio/prisma/enums';
+
 import { JobOptions, JobStatus } from 'bull';
 import ms from 'ms';
 
-import { ColorScheme, DateRange } from './types';
+import { DateRange } from './types';
 
 export const ghostfolioPrefix = 'GF';
 
@@ -60,6 +66,8 @@ export const BULL_BOARD_ROUTE = '/admin/queues';
 export const CACHE_TTL_NO_CACHE = 1;
 export const CACHE_TTL_INFINITE = 0;
 
+export const COMMENT_MAXIMUM_LENGTH = 2000;
+
 export const DATA_GATHERING_QUEUE = 'DATA_GATHERING_QUEUE';
 export const DATA_GATHERING_QUEUE_PRIORITY_HIGH = 1;
 export const DATA_GATHERING_QUEUE_PRIORITY_LOW = Number.MAX_SAFE_INTEGER;
@@ -92,7 +100,6 @@ export const PORTFOLIO_SNAPSHOT_COMPUTATION_QUEUE_PRIORITY_LOW =
 
 export const STATISTICS_GATHERING_QUEUE = 'STATISTICS_GATHERING_QUEUE';
 
-export const DEFAULT_COLOR_SCHEME: ColorScheme = 'LIGHT';
 export const DEFAULT_CURRENCY = 'USD';
 export const DEFAULT_DATE_FORMAT_MONTH_YEAR = 'MMM yyyy';
 export const DEFAULT_DATE_RANGE: DateRange = 'max';
@@ -150,10 +157,10 @@ export const DEFAULT_REDACTED_PATHS = [
   'grossPerformance',
   'grossPerformanceWithCurrencyEffect',
   'historicalData[*].quantity',
+  'holdings[*].assetProfile.holdings[*].valueInBaseCurrency',
   'holdings[*].dividend',
   'holdings[*].grossPerformance',
   'holdings[*].grossPerformanceWithCurrencyEffect',
-  'holdings[*].holdings[*].valueInBaseCurrency',
   'holdings[*].investment',
   'holdings[*].netPerformance',
   'holdings[*].netPerformanceWithCurrencyEffect',
@@ -173,6 +180,16 @@ export const DEFAULT_REDACTED_PATHS = [
   'settings.emergencyFund',
   'settings.projectedTotalAmount',
   'settings.savingsRate',
+
+  /* @deprecated */
+  'SymbolProfile.comment',
+
+  /* @deprecated */
+  'SymbolProfile.scraperConfiguration',
+
+  /* @deprecated */
+  'SymbolProfile.symbolMapping',
+
   'totalBalanceInBaseCurrency',
   'totalDividendInBaseCurrency',
   'totalInterestInBaseCurrency',
@@ -180,6 +197,8 @@ export const DEFAULT_REDACTED_PATHS = [
   'value',
   'valueInBaseCurrency'
 ];
+
+export const DELETE_OWN_USER_PERIOD = ms('2 weeks');
 
 // USX is handled separately
 export const DERIVED_CURRENCIES = [
@@ -278,6 +297,7 @@ export const HTTP_RESPONSE_MESSAGE_IMPERSONATION_UNRESOLVED =
 export const MAX_TOP_HOLDINGS = 50;
 
 export const MCP_ENDPOINT = '/mcp';
+export const MCP_MAX_ACCOUNTS = 50;
 export const MCP_MAX_ACTIVITIES = 100;
 export const MCP_REALM = 'Ghostfolio';
 
@@ -342,6 +362,7 @@ export const REPLACE_NAME_PARTS = [
   'Xtrackers (IE) Plc -'
 ];
 
+export const SEARCH_QUERY_MAXIMUM_LENGTH = 255;
 export const SEARCH_QUERY_MINIMUM_LENGTH = 2;
 
 export const SECTORS = [
@@ -377,6 +398,8 @@ export const SUPPORTED_LANGUAGE_CODES = [
   'uk',
   'zh'
 ] as const;
+
+export const SYMBOL_MAXIMUM_LENGTH = 255;
 
 export const TAG_ID_DEMO = 'efa08cb3-9b9d-4974-ac68-db13a19c4874';
 export const TAG_ID_DRAFT = '0c077abd-eca2-4cbb-818c-6cefbf2d169a';

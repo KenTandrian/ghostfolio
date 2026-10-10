@@ -34,9 +34,11 @@ import {
 } from '@ghostfolio/common/config';
 import {
   canDeleteAssetProfile,
+  canUseCustomAssetProfileSymbol,
   getAssetProfileIdentifier,
-  isDraftActivity,
-  isValidCustomAssetProfileSymbol
+  getStartOfUtcDateOfTomorrow,
+  hasGhostfolioPrefix,
+  isDraftActivity
 } from '@ghostfolio/common/helper';
 import {
   ActivitiesResponse,
@@ -59,8 +61,7 @@ import {
   Type as ActivityType
 } from '@prisma/client';
 import { Big } from 'big.js';
-import { endOfToday } from 'date-fns';
-import { groupBy, uniqBy } from 'lodash';
+import { groupBy, omit, uniqBy } from 'lodash-es';
 import { randomUUID } from 'node:crypto';
 
 @Injectable()
@@ -183,7 +184,7 @@ export class ActivitiesService {
       updateAccountBalance?: boolean;
       userId: string;
     }
-  ): Promise<Order> {
+  ): Promise<Prisma.OrderGetPayload<{ include: { SymbolProfile: true } }>> {
     const tags = data.tags ?? [];
 
     await this.tagService.validateTagIds({
@@ -221,19 +222,31 @@ export class ActivitiesService {
       const assetSubClass = data.assetSubClass;
       const dataSource: DataSource = 'MANUAL';
 
+      const requestedSymbol = data.SymbolProfile.connectOrCreate.create.symbol;
+
       let name = data.SymbolProfile.connectOrCreate.create.name;
       let symbol: string;
 
+      const existingAssetProfile = hasGhostfolioPrefix(requestedSymbol)
+        ? await this.prismaService.symbolProfile.findUnique({
+            select: { id: true },
+            where: {
+              dataSource_symbol: { dataSource, symbol: requestedSymbol }
+            }
+          })
+        : null;
+
       if (
-        isValidCustomAssetProfileSymbol(
-          data.SymbolProfile.connectOrCreate.create.symbol
-        )
+        canUseCustomAssetProfileSymbol({
+          assetProfile: existingAssetProfile,
+          symbol: requestedSymbol
+        })
       ) {
         // Connect custom asset profile (clone)
-        symbol = data.SymbolProfile.connectOrCreate.create.symbol;
+        symbol = requestedSymbol;
       } else {
         // Create custom asset profile
-        name = name ?? data.SymbolProfile.connectOrCreate.create.symbol;
+        name = name ?? requestedSymbol;
         symbol = randomUUID();
       }
 
@@ -486,7 +499,7 @@ export class ActivitiesService {
     }
 
     const activities: Activity[] = [];
-    const endOfTodayDate = endOfToday();
+    const startOfUtcDateOfTomorrow = getStartOfUtcDateOfTomorrow();
 
     for (const account of cashDetails.accounts) {
       const { balances } = await this.accountBalanceService.getAccountBalances({
@@ -501,7 +514,7 @@ export class ActivitiesService {
       for (const balanceItem of balances) {
         if (
           isAccountBalanceInFuture({
-            endOfTodayDate,
+            startOfUtcDateOfTomorrow,
             date: balanceItem.date
           })
         ) {
@@ -582,14 +595,16 @@ export class ActivitiesService {
 
   public async getLatestActivity({
     dataSource,
-    symbol
-  }: AssetProfileIdentifier) {
+    symbol,
+    types
+  }: AssetProfileIdentifier & { types: ActivityType[] }) {
     return this.prismaService.order.findFirst({
-      orderBy: {
-        date: 'desc'
-      },
+      orderBy: [{ date: 'desc' }, { createdAt: 'desc' }],
       where: {
-        SymbolProfile: { dataSource, symbol }
+        ...WHERE_ACTIVITY_NOT_DRAFT,
+        SymbolProfile: { dataSource, symbol },
+        type: { in: types },
+        unitPrice: { gt: 0 }
       }
     });
   }
@@ -656,7 +671,13 @@ export class ActivitiesService {
             }
           },
           // eslint-disable-next-line @typescript-eslint/naming-convention
-          SymbolProfile: true,
+          SymbolProfile: {
+            select: {
+              currency: true,
+              dataSource: true,
+              symbol: true
+            }
+          },
           tags: true
         },
         orderBy: [...orderBy, { id: sortDirection }]
@@ -737,7 +758,7 @@ export class ActivitiesService {
         ]);
 
         return {
-          ...order,
+          ...omit(order, ['SymbolProfile']),
           assetProfile,
           feeInAssetProfileCurrency,
           feeInBaseCurrency,
@@ -760,7 +781,8 @@ export class ActivitiesService {
     filters,
     userCurrency,
     userId,
-    withCash = false
+    withCash = false,
+    withExcludedAccountsAndActivities = false
   }: {
     /** Optional filters to apply to the activities. */
     filters?: Filter[];
@@ -770,13 +792,15 @@ export class ActivitiesService {
     userId: string;
     /** Whether to include cash activities in the result. */
     withCash?: boolean;
+    /** Whether to include activities that are excluded from analysis. */
+    withExcludedAccountsAndActivities?: boolean;
   }) {
     const [activities, splits] = await Promise.all([
       this.getActivities({
         filters,
         userCurrency,
         userId,
-        withExcludedAccountsAndActivities: false // TODO
+        withExcludedAccountsAndActivities
       }),
       this.assetProfileSplitService.getSplitsByUserId({ userId })
     ]);

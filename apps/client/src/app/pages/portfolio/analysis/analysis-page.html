@@ -254,6 +254,17 @@
           <div class="d-flex ml-3 py-1">
             <div class="flex-grow-1 mr-2 text-truncate">
               <ng-container i18n>Net Performance</ng-container>
+              @if (
+                user?.settings?.performanceCalculationType ===
+                PerformanceCalculationType.ROAI
+              ) {
+                <abbr
+                  class="d-none d-sm-inline-block initialism ml-2 text-muted"
+                  i18n-title
+                  title="Return on Average Investment (total return with dividends)"
+                  >(ROAI)</abbr
+                >
+              }
             </div>
             <div class="d-flex justify-content-end">
               <gf-value
@@ -266,6 +277,42 @@
                 [value]="
                   performance?.netPerformancePercentageWithCurrencyEffect
                 "
+              />
+            </div>
+          </div>
+          <div class="d-flex ml-3 py-1 text-muted">
+            <div
+              class="align-items-center d-flex flex-grow-1 mr-2 text-truncate"
+            >
+              <span i18n>thereof Dividend</span>
+              @if (user?.subscription?.type === 'Basic') {
+                <gf-premium-indicator class="ml-1" />
+              }
+            </div>
+            <div class="d-flex justify-content-end">
+              <gf-value
+                class="justify-content-end"
+                position="end"
+                [isCurrency]="true"
+                [isLoading]="isLoadingInvestmentChart"
+                [locale]="user?.settings?.locale"
+                [unit]="user?.settings?.baseCurrency"
+                [value]="performance?.dividendInBaseCurrency"
+              />
+            </div>
+          </div>
+          <div class="d-flex ml-3 py-1 text-muted">
+            <div class="flex-grow-1 mr-2 text-truncate">
+              <ng-container i18n>thereof Dividend Performance</ng-container>
+            </div>
+            <div class="d-flex justify-content-end">
+              <gf-value
+                class="justify-content-end"
+                position="end"
+                [isLoading]="isLoadingInvestmentChart"
+                [isPercent]="true"
+                [locale]="user?.settings?.locale"
+                [value]="performance?.dividendPercentageWithCurrencyEffect"
               />
             </div>
           </div>
@@ -283,7 +330,7 @@
           >
         </mat-card-header>
         <mat-card-content>
-          <ol class="mb-0 ml-1 pl-3">
+          <ol class="holdings mb-0 ml-1 pl-3">
             @for (holding of top3; track holding) {
               <li class="py-1">
                 <a
@@ -295,8 +342,10 @@
                   }"
                   [routerLink]="[]"
                 >
-                  <div class="flex-grow-1 mr-2">
-                    {{ holding.assetProfile.name }}
+                  <div class="flex-grow-1 mr-2 name">
+                    <span class="align-top d-inline-block mw-100 text-truncate">
+                      {{ holding.assetProfile.name }}
+                    </span>
                   </div>
                   <div class="d-flex justify-content-end">
                     <gf-value
@@ -334,7 +383,7 @@
           >
         </mat-card-header>
         <mat-card-content>
-          <ol class="mb-0 ml-1 pl-3">
+          <ol class="holdings mb-0 ml-1 pl-3">
             @for (holding of bottom3; track holding) {
               <li class="py-1">
                 <a
@@ -346,8 +395,10 @@
                   }"
                   [routerLink]="[]"
                 >
-                  <div class="flex-grow-1 mr-2">
-                    {{ holding.assetProfile.name }}
+                  <div class="flex-grow-1 mr-2 name">
+                    <span class="align-top d-inline-block mw-100 text-truncate">
+                      {{ holding.assetProfile.name }}
+                    </span>
                   </div>
                   <div class="d-flex justify-content-end">
                     <gf-value
@@ -379,6 +430,35 @@
     </div>
   </div>
 
+  @if (user?.settings?.isExperimentalFeatures) {
+    <div class="mb-5 row">
+      <div class="col-lg">
+        <div class="align-items-center d-flex mb-4">
+          <div
+            class="align-items-center d-flex flex-grow-1 h5 mb-0 text-truncate"
+          >
+            <span i18n>Performance Timeline</span>
+            @if (user?.subscription?.type === 'Basic') {
+              <gf-premium-indicator class="ml-1" />
+            }
+          </div>
+        </div>
+        <div class="chart-container">
+          <gf-investment-chart
+            class="h-100"
+            groupBy="year"
+            [benchmarkDataItems]="performancePercentagesByYear"
+            [benchmarkDataLabel]="performanceTimelineDataLabel"
+            [colorScheme]="user?.settings?.colorScheme"
+            [isInPercentage]="true"
+            [isLoading]="isLoadingPerformanceTimelineChart"
+            [locale]="user?.settings?.locale"
+          />
+        </div>
+      </div>
+    </div>
+  }
+
   <div class="mb-5 row">
     <div class="col-lg">
       <div class="align-items-center d-flex mb-4">
@@ -396,6 +476,7 @@
           class="h-100"
           [benchmarkDataItems]="investments"
           [benchmarkDataLabel]="portfolioEvolutionDataLabel"
+          [colorScheme]="user?.settings?.colorScheme"
           [currency]="user?.settings?.baseCurrency"
           [historicalDataItems]="performanceDataItems"
           [isInPercentage]="showValuesInPercentage()"
@@ -452,6 +533,7 @@
           class="h-100"
           [benchmarkDataItems]="investmentsByGroup"
           [benchmarkDataLabel]="investmentTimelineDataLabel"
+          [colorScheme]="user?.settings?.colorScheme"
           [currency]="user?.settings?.baseCurrency"
           [groupBy]="mode()"
           [isInPercentage]="showValuesInPercentage()"
@@ -487,6 +569,7 @@
           class="h-100"
           [benchmarkDataItems]="dividendsByGroup"
           [benchmarkDataLabel]="dividendTimelineDataLabel"
+          [colorScheme]="user?.settings?.colorScheme"
           [currency]="user?.settings?.baseCurrency"
           [groupBy]="mode()"
           [isInPercentage]="showValuesInPercentage()"

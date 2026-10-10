@@ -2,24 +2,9 @@ import { ActivitiesService } from '@ghostfolio/api/app/activities/activities.ser
 import { SubscriptionService } from '@ghostfolio/api/app/subscription/subscription.service';
 import { environment } from '@ghostfolio/api/environments/environment';
 import { PortfolioChangedEvent } from '@ghostfolio/api/events/portfolio-changed.event';
+import { getSupportedLanguageCode } from '@ghostfolio/api/helper/language.helper';
 import { getRandomString } from '@ghostfolio/api/helper/string.helper';
-import { AccountClusterRiskCurrentInvestment } from '@ghostfolio/api/models/rules/account-cluster-risk/current-investment';
-import { AccountClusterRiskSingleAccount } from '@ghostfolio/api/models/rules/account-cluster-risk/single-account';
-import { AssetClassClusterRiskEquity } from '@ghostfolio/api/models/rules/asset-class-cluster-risk/equity';
-import { AssetClassClusterRiskFixedIncome } from '@ghostfolio/api/models/rules/asset-class-cluster-risk/fixed-income';
-import { CurrencyClusterRiskBaseCurrencyCurrentInvestment } from '@ghostfolio/api/models/rules/currency-cluster-risk/base-currency-current-investment';
-import { CurrencyClusterRiskCurrentInvestment } from '@ghostfolio/api/models/rules/currency-cluster-risk/current-investment';
-import { EconomicMarketClusterRiskDevelopedMarkets } from '@ghostfolio/api/models/rules/economic-market-cluster-risk/developed-markets';
-import { EconomicMarketClusterRiskEmergingMarkets } from '@ghostfolio/api/models/rules/economic-market-cluster-risk/emerging-markets';
-import { EmergencyFundCoverage } from '@ghostfolio/api/models/rules/emergency-fund/emergency-fund-coverage';
-import { EmergencyFundSetup } from '@ghostfolio/api/models/rules/emergency-fund/emergency-fund-setup';
-import { FeeRatioTotalInvestmentVolume } from '@ghostfolio/api/models/rules/fees/fee-ratio-total-investment-volume';
-import { BuyingPower } from '@ghostfolio/api/models/rules/liquidity/buying-power';
-import { RegionalMarketClusterRiskAsiaPacific } from '@ghostfolio/api/models/rules/regional-market-cluster-risk/asia-pacific';
-import { RegionalMarketClusterRiskEmergingMarkets } from '@ghostfolio/api/models/rules/regional-market-cluster-risk/emerging-markets';
-import { RegionalMarketClusterRiskEurope } from '@ghostfolio/api/models/rules/regional-market-cluster-risk/europe';
-import { RegionalMarketClusterRiskJapan } from '@ghostfolio/api/models/rules/regional-market-cluster-risk/japan';
-import { RegionalMarketClusterRiskNorthAmerica } from '@ghostfolio/api/models/rules/regional-market-cluster-risk/north-america';
+import { getXRayRulesSettings } from '@ghostfolio/api/models/rules/rule-settings';
 import { ConfigurationService } from '@ghostfolio/api/services/configuration/configuration.service';
 import { I18nService } from '@ghostfolio/api/services/i18n/i18n.service';
 import { PrismaService } from '@ghostfolio/api/services/prisma/prisma.service';
@@ -28,8 +13,8 @@ import { TagService } from '@ghostfolio/api/services/tag/tag.service';
 import {
   DEFAULT_CURRENCY,
   DEFAULT_DATE_RANGE,
-  DEFAULT_LANGUAGE_CODE,
   DEFAULT_LOCALE,
+  DELETE_OWN_USER_PERIOD,
   PROPERTY_API_KEY_GHOSTFOLIO,
   PROPERTY_IS_READ_ONLY_MODE,
   PROPERTY_MAX_DAILY_REQUESTS,
@@ -61,8 +46,8 @@ import { Injectable, Logger } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { InjectThrottlerStorage, ThrottlerStorage } from '@nestjs/throttler';
 import { Prisma, Role, User } from '@prisma/client';
-import { differenceInDays, subDays } from 'date-fns';
-import { isNil, without } from 'lodash';
+import { addMilliseconds, differenceInDays, isBefore, subDays } from 'date-fns';
+import { isNil, without } from 'lodash-es';
 import { createHmac } from 'node:crypto';
 
 @Injectable()
@@ -275,7 +260,7 @@ export class UserService {
     }
 
     try {
-      const { isBlocked } = await this.throttlerStorage.increment(
+      const { totalHits } = await this.throttlerStorage.increment(
         `${THROTTLE_DAILY_KEY}-${user.id}`,
         THROTTLE_DAILY_TTL,
         maxDailyRequests,
@@ -283,7 +268,7 @@ export class UserService {
         THROTTLE_DAILY_KEY
       );
 
-      return isBlocked;
+      return totalHits > maxDailyRequests;
     } catch (error) {
       this.logger.error(error);
 
@@ -405,128 +390,9 @@ export class UserService {
       (user.settings.settings as UserSettings).viewMode = 'DEFAULT';
     }
 
-    (user.settings.settings as UserSettings).xRayRules = {
-      AccountClusterRiskCurrentInvestment:
-        new AccountClusterRiskCurrentInvestment(
-          undefined,
-          undefined,
-          undefined,
-          {}
-        ).getSettings(user.settings.settings),
-      AccountClusterRiskSingleAccount: new AccountClusterRiskSingleAccount(
-        undefined,
-        undefined,
-        undefined,
-        {}
-      ).getSettings(user.settings.settings),
-      AssetClassClusterRiskEquity: new AssetClassClusterRiskEquity(
-        undefined,
-        undefined,
-        undefined,
-        undefined
-      ).getSettings(user.settings.settings),
-      AssetClassClusterRiskFixedIncome: new AssetClassClusterRiskFixedIncome(
-        undefined,
-        undefined,
-        undefined,
-        undefined
-      ).getSettings(user.settings.settings),
-      BuyingPower: new BuyingPower(
-        undefined,
-        undefined,
-        undefined,
-        undefined
-      ).getSettings(user.settings.settings),
-      CurrencyClusterRiskBaseCurrencyCurrentInvestment:
-        new CurrencyClusterRiskBaseCurrencyCurrentInvestment(
-          undefined,
-          undefined,
-          undefined,
-          undefined
-        ).getSettings(user.settings.settings),
-      CurrencyClusterRiskCurrentInvestment:
-        new CurrencyClusterRiskCurrentInvestment(
-          undefined,
-          undefined,
-          undefined,
-          undefined
-        ).getSettings(user.settings.settings),
-      EconomicMarketClusterRiskDevelopedMarkets:
-        new EconomicMarketClusterRiskDevelopedMarkets(
-          undefined,
-          undefined,
-          undefined,
-          undefined,
-          undefined
-        ).getSettings(user.settings.settings),
-      EconomicMarketClusterRiskEmergingMarkets:
-        new EconomicMarketClusterRiskEmergingMarkets(
-          undefined,
-          undefined,
-          undefined,
-          undefined,
-          undefined
-        ).getSettings(user.settings.settings),
-      EmergencyFundCoverage: new EmergencyFundCoverage(
-        undefined,
-        undefined,
-        undefined,
-        undefined,
-        undefined,
-        undefined
-      ).getSettings(user.settings.settings),
-      EmergencyFundSetup: new EmergencyFundSetup(
-        undefined,
-        undefined,
-        undefined,
-        undefined
-      ).getSettings(user.settings.settings),
-      FeeRatioTotalInvestmentVolume: new FeeRatioTotalInvestmentVolume(
-        undefined,
-        undefined,
-        undefined,
-        undefined,
-        undefined
-      ).getSettings(user.settings.settings),
-      RegionalMarketClusterRiskAsiaPacific:
-        new RegionalMarketClusterRiskAsiaPacific(
-          undefined,
-          undefined,
-          undefined,
-          undefined,
-          undefined
-        ).getSettings(user.settings.settings),
-      RegionalMarketClusterRiskEmergingMarkets:
-        new RegionalMarketClusterRiskEmergingMarkets(
-          undefined,
-          undefined,
-          undefined,
-          undefined,
-          undefined
-        ).getSettings(user.settings.settings),
-      RegionalMarketClusterRiskEurope: new RegionalMarketClusterRiskEurope(
-        undefined,
-        undefined,
-        undefined,
-        undefined,
-        undefined
-      ).getSettings(user.settings.settings),
-      RegionalMarketClusterRiskJapan: new RegionalMarketClusterRiskJapan(
-        undefined,
-        undefined,
-        undefined,
-        undefined,
-        undefined
-      ).getSettings(user.settings.settings),
-      RegionalMarketClusterRiskNorthAmerica:
-        new RegionalMarketClusterRiskNorthAmerica(
-          undefined,
-          undefined,
-          undefined,
-          undefined,
-          undefined
-        ).getSettings(user.settings.settings)
-    };
+    (user.settings.settings as UserSettings).xRayRules = getXRayRulesSettings(
+      user.settings.settings
+    );
 
     let currentPermissions = getPermissions(user.role);
 
@@ -571,6 +437,17 @@ export class UserService {
 
         if (analytics?.activityCount % frequency === 1) {
           currentPermissions.push(permissions.enableSubscriptionInterstitial);
+        }
+
+        if (
+          !hasRole(user, Role.DEMO) &&
+          user.provider !== 'ANONYMOUS' &&
+          isBefore(
+            new Date(),
+            addMilliseconds(user.createdAt, DELETE_OWN_USER_PERIOD)
+          )
+        ) {
+          currentPermissions.push(permissions.deleteOwnUser);
         }
 
         currentPermissions = without(
@@ -692,9 +569,11 @@ export class UserService {
 
   public async createUser(
     {
-      data
+      data,
+      languageCode
     }: {
       data: Prisma.UserCreateInput;
+      languageCode?: string;
     } = { data: {} }
   ): Promise<User> {
     if (!data.provider) {
@@ -715,7 +594,7 @@ export class UserService {
             currency: DEFAULT_CURRENCY,
             name: this.i18nService.getTranslation({
               id: 'myAccount',
-              languageCode: DEFAULT_LANGUAGE_CODE // TODO
+              languageCode: getSupportedLanguageCode(languageCode)
             })
           }
         },

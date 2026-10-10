@@ -4,16 +4,22 @@ import {
 } from '@ghostfolio/common/config';
 import {
   canApplyFiltersToAccess,
+  canUseCustomAssetProfileSymbol,
   extractNumberFromString,
   getCountryCodeFromCurrency,
+  getEmojiFlag,
+  getHoldingName,
   getNumberFormatGroup,
   getStringOrNull,
   getStringOrUndefined,
   isAccountExcluded,
   isCurrency,
   isCurrencySymbol,
+  isDarkColorScheme,
   isSplitRatio,
+  isValidCurrencyCode,
   isValidCustomAssetProfileSymbol,
+  isValidDateAfter1970,
   isValidGranteeOfAccess,
   resolveUserSettings
 } from '@ghostfolio/common/helper';
@@ -33,6 +39,50 @@ describe('Helper', () => {
 
     it('A public access', () => {
       expect(canApplyFiltersToAccess({ type: 'PUBLIC' })).toEqual(true);
+    });
+  });
+
+  describe('Can use custom asset profile symbol', () => {
+    const assetProfile = { id: 'asset-profile-id' };
+    const symbol = '7e91b7d4-1430-4212-8380-289a06c9bbc1';
+
+    it('Free-text symbol', () => {
+      expect(
+        canUseCustomAssetProfileSymbol({
+          assetProfile: null,
+          symbol: 'Penthouse Apartment'
+        })
+      ).toEqual(false);
+    });
+
+    it('New asset profile with UUID', () => {
+      expect(
+        canUseCustomAssetProfileSymbol({ symbol, assetProfile: null })
+      ).toEqual(true);
+    });
+
+    it('New asset profile with Ghostfolio prefix', () => {
+      expect(
+        canUseCustomAssetProfileSymbol({
+          assetProfile: null,
+          symbol: 'GF_PENTHOUSE_APARTMENT'
+        })
+      ).toEqual(false);
+    });
+
+    it('Existing asset profile with UUID', () => {
+      expect(canUseCustomAssetProfileSymbol({ assetProfile, symbol })).toEqual(
+        true
+      );
+    });
+
+    it('Existing asset profile with Ghostfolio prefix', () => {
+      expect(
+        canUseCustomAssetProfileSymbol({
+          assetProfile,
+          symbol: 'GF_PENTHOUSE_APARTMENT'
+        })
+      ).toEqual(true);
     });
   });
 
@@ -119,6 +169,71 @@ describe('Helper', () => {
 
     it('Empty currency', () => {
       expect(getCountryCodeFromCurrency('')).toEqual('');
+    });
+  });
+
+  describe('Get emoji flag', () => {
+    it('Country code', () => {
+      expect(getEmojiFlag('US')).toEqual('🇺🇸');
+      expect(getEmojiFlag('us')).toEqual('🇺🇸');
+    });
+
+    it('European Union code', () => {
+      expect(getEmojiFlag('EU')).toEqual('🇪🇺');
+    });
+
+    it('Invalid country code', () => {
+      expect(getEmojiFlag('XX')).toEqual(undefined);
+    });
+
+    it('Empty country code', () => {
+      expect(getEmojiFlag('')).toEqual(undefined);
+    });
+  });
+
+  describe('Get holding name', () => {
+    it('Cash position', () => {
+      expect(
+        getHoldingName({
+          assetSubClass: 'CASH',
+          assetSubClassLabel: 'Cash',
+          name: 'CHF',
+          symbol: 'CHF'
+        })
+      ).toEqual('Cash (CHF)');
+    });
+
+    it('Cash position without asset sub class label', () => {
+      expect(
+        getHoldingName({
+          assetSubClass: 'CASH',
+          assetSubClassLabel: undefined,
+          name: 'CHF',
+          symbol: 'CHF'
+        })
+      ).toEqual('CHF');
+    });
+
+    it('Holding with name', () => {
+      expect(
+        getHoldingName({
+          assetSubClass: 'STOCK',
+          assetSubClassLabel: 'Stock',
+          name: 'Apple Inc.',
+          symbol: 'AAPL'
+        })
+      ).toEqual('Apple Inc.');
+    });
+
+    it('Holding without name', () => {
+      expect(
+        getHoldingName({
+          assetSubClass: 'STOCK',
+          assetSubClassLabel: 'Stock',
+          name: undefined,
+          symbol: 'AAPL'
+        })
+      ).toEqual('AAPL');
     });
   });
 
@@ -328,6 +443,40 @@ describe('Helper', () => {
     });
   });
 
+  describe('Is dark color scheme', () => {
+    const mockPrefersColorSchemeDark = (matches: boolean) => {
+      window.matchMedia = jest.fn(() => {
+        return { matches } as MediaQueryList;
+      });
+    };
+
+    afterEach(() => {
+      Reflect.deleteProperty(window, 'matchMedia');
+    });
+
+    it('Dark color scheme with operating system in light mode', () => {
+      mockPrefersColorSchemeDark(false);
+      expect(isDarkColorScheme('DARK')).toEqual(true);
+    });
+
+    it('Light color scheme with operating system in dark mode', () => {
+      mockPrefersColorSchemeDark(true);
+      expect(isDarkColorScheme('LIGHT')).toEqual(false);
+    });
+
+    it('Auto color scheme with operating system in dark mode', () => {
+      mockPrefersColorSchemeDark(true);
+      expect(isDarkColorScheme()).toEqual(true);
+      expect(isDarkColorScheme(null)).toEqual(true);
+    });
+
+    it('Auto color scheme with operating system in light mode', () => {
+      mockPrefersColorSchemeDark(false);
+      expect(isDarkColorScheme()).toEqual(false);
+      expect(isDarkColorScheme(null)).toEqual(false);
+    });
+  });
+
   describe('Is split ratio', () => {
     it('Forward split', () => {
       expect(isSplitRatio({ denominator: 1, numerator: 2 })).toEqual(true);
@@ -373,6 +522,28 @@ describe('Helper', () => {
     });
   });
 
+  describe('Is valid currency code', () => {
+    it('Currency code in lower case', () => {
+      expect(isValidCurrencyCode('usd')).toEqual(false);
+    });
+
+    it('Currency code in upper case', () => {
+      expect(isValidCurrencyCode('USD')).toEqual(true);
+    });
+
+    it('Derived currency', () => {
+      expect(isValidCurrencyCode('GBp')).toEqual(true);
+    });
+
+    it('Empty currency code', () => {
+      expect(isValidCurrencyCode('')).toEqual(false);
+    });
+
+    it('Unknown currency code', () => {
+      expect(isValidCurrencyCode('XYZ')).toEqual(false);
+    });
+  });
+
   describe('Is valid custom asset profile symbol', () => {
     it('Empty symbol', () => {
       expect(isValidCustomAssetProfileSymbol('')).toEqual(false);
@@ -398,6 +569,56 @@ describe('Helper', () => {
       expect(
         isValidCustomAssetProfileSymbol('7e91b7d4-1430-4212-8380-289a06c9bbc1')
       ).toEqual(true);
+    });
+  });
+
+  describe('Is valid date after 1970', () => {
+    it('Date', () => {
+      expect(isValidDateAfter1970('2024-01-01')).toEqual(true);
+    });
+
+    it('Date and time', () => {
+      expect(isValidDateAfter1970('2024-01-01T12:00:00.000Z')).toEqual(true);
+    });
+
+    it('Date before 1970', () => {
+      expect(isValidDateAfter1970('0000-01-01')).toEqual(false);
+    });
+
+    it('Date object', () => {
+      expect(
+        isValidDateAfter1970(new Date('2024-01-01T12:00:00.000Z'))
+      ).toEqual(true);
+    });
+
+    it('Date object of 1970', () => {
+      expect(isValidDateAfter1970(new Date(0))).toEqual(false);
+    });
+
+    it('Date of 1970', () => {
+      expect(isValidDateAfter1970('1970-01-01T00:00:00.000Z')).toEqual(false);
+    });
+
+    // A date without a time is read in UTC, hence the result is the same in
+    // every time zone of the server
+    it('Date of 1970 without a time', () => {
+      expect(isValidDateAfter1970('1970-01-01')).toEqual(false);
+    });
+
+    it('Date after 1970 without a time', () => {
+      expect(isValidDateAfter1970('1970-01-02')).toEqual(true);
+    });
+
+    it('Date with an expanded year', () => {
+      expect(isValidDateAfter1970('+010000-01-01')).toEqual(true);
+    });
+
+    it('Empty date', () => {
+      expect(isValidDateAfter1970('')).toEqual(false);
+    });
+
+    it('Free-text date', () => {
+      expect(isValidDateAfter1970('yesterday')).toEqual(false);
     });
   });
 

@@ -24,8 +24,10 @@ import {
   CreateAssetProfileDto,
   CreateOrderDto
 } from '@ghostfolio/common/dtos';
+import { SubscriptionType } from '@ghostfolio/common/enums';
 import {
   getAssetProfileIdentifier,
+  hasGhostfolioPrefix,
   isValidCustomAssetProfileSymbol,
   parseDate
 } from '@ghostfolio/common/helper';
@@ -46,9 +48,10 @@ import { Account, DataSource, Prisma } from '@prisma/client';
 import { Big } from 'big.js';
 import { isISIN } from 'class-validator';
 import { isSameSecond, parseISO } from 'date-fns';
-import { omit, uniqBy } from 'lodash';
+import { omit, uniqBy } from 'lodash-es';
 import { randomUUID } from 'node:crypto';
 
+import { ImportValidationError } from './errors/import-validation.error';
 import { ImportDataDto } from './import-data.dto';
 import { AssetProfileToCreate } from './interfaces/asset-profile-to-create.interface';
 
@@ -186,12 +189,22 @@ export class ImportService {
     }
   }
 
+  public getMaxActivitiesToImport({ user }: { user: UserWithSettings }) {
+    if (
+      this.configurationService.get('ENABLE_FEATURE_SUBSCRIPTION') &&
+      user.subscription?.type === SubscriptionType.Premium
+    ) {
+      return Number.MAX_SAFE_INTEGER;
+    }
+
+    return this.configurationService.get('MAX_ACTIVITIES_TO_IMPORT');
+  }
+
   public async import({
     accountsWithBalancesDto,
     activitiesDto,
     assetProfilesWithMarketDataDto,
     isDryRun = false,
-    maxActivitiesToImport,
     platformsDto,
     tagsDto,
     user
@@ -200,7 +213,6 @@ export class ImportService {
     activitiesDto: ImportDataDto['activities'];
     assetProfilesWithMarketDataDto: ImportDataDto['assetProfiles'];
     isDryRun?: boolean;
-    maxActivitiesToImport: number;
     platformsDto: ImportDataDto['platforms'];
     tagsDto: ImportDataDto['tags'];
     user: UserWithSettings;
@@ -210,6 +222,7 @@ export class ImportService {
     const ghostfolioDataSources = this.configurationService.get(
       'DATA_SOURCES_GHOSTFOLIO_DATA_PROVIDER'
     );
+    const maxActivitiesToImport = this.getMaxActivitiesToImport({ user });
     const platformIdMapping: { [oldPlatformId: string]: string } = {};
     const tagIdMapping: { [oldTagId: string]: string } = {};
     const userCurrency = user.settings.settings.baseCurrency;
@@ -224,7 +237,7 @@ export class ImportService {
         dataSource === DataSource.MANUAL &&
         !isValidCustomAssetProfileSymbol(symbol)
       ) {
-        throw new Error(
+        throw new ImportValidationError(
           `assetProfiles.${index}.symbol ("${symbol}") must be a UUID or start with the prefix "${ghostfolioPrefix}_" for the data source ("${DataSource.MANUAL}")`
         );
       } else if (
@@ -236,7 +249,7 @@ export class ImportService {
           ghostfolioDataSources
         });
 
-        throw new Error(
+        throw new ImportValidationError(
           `assetProfiles.${index}.symbol ("${symbol}") is not valid for the data source ("${maskedDataSource}")`
         );
       }
@@ -261,7 +274,7 @@ export class ImportService {
         activity.dataSource === DataSource.MANUAL &&
         !isValidCustomAssetProfileSymbol(activity.symbol)
       ) {
-        throw new Error(
+        throw new ImportValidationError(
           `activities.${index}.symbol ("${activity.symbol}") must be a UUID or start with the prefix "${ghostfolioPrefix}_" for the data source ("${DataSource.MANUAL}")`
         );
       } else if (
@@ -273,7 +286,7 @@ export class ImportService {
           dataSource: activity.dataSource
         });
 
-        throw new Error(
+        throw new ImportValidationError(
           `activities.${index}.symbol ("${activity.symbol}") is not valid for the data source ("${maskedDataSource}")`
         );
       }
@@ -358,7 +371,7 @@ export class ImportService {
           }
         } else {
           if (!canCreatePlatform) {
-            throw new Error(
+            throw new ImportValidationError(
               `Insufficient permissions to create platform ("${platform.name}")`
             );
           }
@@ -388,7 +401,7 @@ export class ImportService {
 
         if (!existingTagOfUser) {
           if (!canCreateOwnTag) {
-            throw new Error(
+            throw new ImportValidationError(
               `Insufficient permissions to create custom tag ("${tag.name}")`
             );
           }
@@ -637,9 +650,23 @@ export class ImportService {
               'marketData'
             );
 
-            // Asset profile belongs to a different user, generate a new symbol
-            if (existingAssetProfile && !isDryRun) {
-              symbol = randomUUID();
+            if (
+              (existingAssetProfile || hasGhostfolioPrefix(symbol)) &&
+              !isDryRun
+            ) {
+              const isSymbolOfAssetProfileToCreate = assetProfilesToCreate.some(
+                ({ assetProfile: { symbol: symbolToCreate } }) => {
+                  return symbolToCreate === assetProfileSymbolMapping[symbol];
+                }
+              );
+
+              if (hasGhostfolioPrefix(symbol)) {
+                assetProfile.name ??= symbol;
+              }
+
+              symbol = isSymbolOfAssetProfileToCreate
+                ? assetProfileSymbolMapping[symbol]
+                : randomUUID();
             }
 
             assetProfile.symbol = symbol;
@@ -765,6 +792,21 @@ export class ImportService {
         });
     }
 
+    // Validate the accounts before any activity is created, since an account
+    // which does not belong to the user is dropped without a notice otherwise
+    for (const [index, { accountId }] of activitiesDto.entries()) {
+      if (
+        accountId &&
+        !accounts.some(({ id }) => {
+          return id === accountId;
+        })
+      ) {
+        throw new ImportValidationError(
+          `activities.${index}.accountId ("${accountId}") is not valid`
+        );
+      }
+    }
+
     const tags = (await this.tagService.getTagsForUser(user.id)).map(
       ({ id, name }) => {
         return { id, name };
@@ -809,6 +851,10 @@ export class ImportService {
 
     const activities: Activity[] = [];
 
+    const customAssetProfileSymbols: {
+      [assetProfileIdentifier: string]: string;
+    } = {};
+
     for (const activity of activitiesExtendedWithErrors) {
       const accountId = activity.accountId;
       const comment = activity.comment;
@@ -821,37 +867,15 @@ export class ImportService {
       const type = activity.type;
       const unitPrice = activity.unitPrice;
 
-      const assetProfile = assetProfiles[
-        getAssetProfileIdentifier({
-          dataSource: activity.assetProfile.dataSource,
-          symbol: activity.assetProfile.symbol
-        })
-      ] ?? {
+      const assetProfileIdentifier = getAssetProfileIdentifier({
+        dataSource: activity.assetProfile.dataSource,
+        symbol: activity.assetProfile.symbol
+      });
+
+      let assetProfile = assetProfiles[assetProfileIdentifier] ?? {
         dataSource: activity.assetProfile.dataSource,
         symbol: activity.assetProfile.symbol
       };
-      const {
-        assetClass,
-        assetSubClass,
-        countries,
-        createdAt,
-        cusip,
-        dataSource,
-        figi,
-        figiComposite,
-        figiShareClass,
-        holdings,
-        id,
-        isActive,
-        isin,
-        name,
-        scraperConfiguration,
-        sectors,
-        symbol,
-        symbolMapping,
-        url,
-        updatedAt
-      } = assetProfile;
       const validatedAccount = accounts.find(({ id }) => {
         return id === accountId;
       });
@@ -863,7 +887,7 @@ export class ImportService {
 
       let order:
         | OrderWithAccount
-        | (Omit<OrderWithAccount, 'account' | 'tags'> & {
+        | (Omit<OrderWithAccount, 'account' | 'SymbolProfile' | 'tags'> & {
             account?: { id: string; name: string };
             tags?: { id: string; name: string }[];
           });
@@ -889,33 +913,6 @@ export class ImportService {
           accountUserId: undefined,
           createdAt: new Date(),
           id: randomUUID(),
-          SymbolProfile: {
-            assetClass,
-            assetSubClass,
-            countries,
-            createdAt,
-            cusip,
-            dataSource,
-            figi,
-            figiComposite,
-            figiShareClass,
-            holdings,
-            id,
-            isActive,
-            isin,
-            name,
-            scraperConfiguration,
-            sectors,
-            symbol,
-            symbolMapping,
-            updatedAt,
-            url,
-            comment: assetProfile.comment,
-            currency: assetProfile.currency,
-            dataGatheringFrequency:
-              assetProfile.dataGatheringFrequency ?? 'DAILY',
-            userId: dataSource === 'MANUAL' ? user.id : undefined
-          },
           symbolProfileId: undefined,
           tags: previewTags,
           updatedAt: new Date(),
@@ -926,7 +923,16 @@ export class ImportService {
           continue;
         }
 
-        order = await this.activitiesService.createActivity({
+        const customAssetProfileSymbol =
+          NON_INVESTMENT_ACTIVITY_TYPES.includes(type) ||
+          assetProfile.dataSource === DataSource.MANUAL
+            ? customAssetProfileSymbols[assetProfileIdentifier]
+            : undefined;
+
+        const { dataSource, name } = assetProfile;
+        const symbol = customAssetProfileSymbol ?? assetProfile.symbol;
+
+        const createdActivity = await this.activitiesService.createActivity({
           comment,
           currency,
           date,
@@ -960,10 +966,18 @@ export class ImportService {
           userId: user.id
         });
 
-        if (order.SymbolProfile?.symbol) {
-          // Update symbol that may have been assigned in createOrder()
-          assetProfile.symbol = order.SymbolProfile.symbol;
+        if (createdActivity.SymbolProfile.dataSource === DataSource.MANUAL) {
+          customAssetProfileSymbols[assetProfileIdentifier] =
+            createdActivity.SymbolProfile.symbol;
+
+          assetProfile = {
+            ...assetProfile,
+            dataSource: DataSource.MANUAL,
+            symbol: createdActivity.SymbolProfile.symbol
+          };
         }
+
+        order = createdActivity;
       }
 
       const value = new Big(quantity).mul(unitPrice).toNumber();
@@ -977,7 +991,7 @@ export class ImportService {
         )) ?? 0;
 
       activities.push({
-        ...order,
+        ...omit(order, ['SymbolProfile']),
         // @ts-ignore
         assetProfile,
         error,

@@ -21,11 +21,11 @@
     "strictDomEventTypes": true,
     "strictDomLocalRefTypes": true,
     "strictInputAccessModifiers": true,
-    "strictInputTypes": false,
+    "strictInputTypes": true,
     "strictLiteralTypes": true,
     "strictNullInputTypes": true,
     "strictOutputEventTypes": true,
-    "strictSafeNavigationTypes": false,
+    "strictSafeNavigationTypes": true,
     // TODO: Enable stricter rules for this project
     "strictTemplates": false
   },

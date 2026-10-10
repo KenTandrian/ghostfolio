@@ -13,8 +13,8 @@ import {
 import { DateRange } from '@ghostfolio/common/types';
 
 import { Injectable, Logger } from '@nestjs/common';
-import { format, isSameDay } from 'date-fns';
-import { isNumber } from 'lodash';
+import { format, isSameDay, min } from 'date-fns';
+import { isNumber } from 'lodash-es';
 
 @Injectable()
 export class BenchmarksService {
@@ -94,25 +94,15 @@ export class BenchmarksService {
 
     const baselineDate = resetHours(parseDate(chart[0].date));
 
-    const exchangeRates =
-      await this.exchangeRateDataService.getExchangeRatesByCurrency({
-        startDate,
-        currencies: [currentSymbolItem.currency],
-        targetCurrency: userCurrency
-      });
-
-    const exchangeRateAtStartDate =
-      exchangeRates[`${currentSymbolItem.currency}${userCurrency}`]?.[
-        format(baselineDate, DATE_FORMAT)
-      ];
-
-    const marketPriceAtStartDate = marketDataItems?.find(({ date }) => {
-      return isSameDay(date, baselineDate);
-    })?.marketPrice;
+    // The market data of the benchmark can start after the baseline date.
+    // In this case, the first market data item is the start and there is no
+    // value before it.
+    const [firstMarketDataItem] = marketDataItems;
+    const marketPriceAtStartDate = firstMarketDataItem?.marketPrice;
 
     if (!marketPriceAtStartDate) {
       this.logger.error(
-        `No historical market data has been found for ${symbol} (${dataSource}) at ${format(
+        `No historical market data has been found for ${symbol} (${dataSource}) since ${format(
           baselineDate,
           DATE_FORMAT
         )}`
@@ -120,6 +110,47 @@ export class BenchmarksService {
 
       return { marketData };
     }
+
+    if (!isSameDay(firstMarketDataItem.date, baselineDate)) {
+      // If market data exists before the baseline date, the market data at
+      // the baseline date is missing and the benchmark does not start later
+      const [marketDataItemBeforeBaselineDate] =
+        await this.marketDataService.getRange({
+          assetProfileIdentifiers: [{ dataSource, symbol }],
+          dateQuery: { lt: baselineDate },
+          take: 1
+        });
+
+      if (marketDataItemBeforeBaselineDate) {
+        this.logger.error(
+          `No historical market data has been found for ${symbol} (${dataSource}) at ${format(
+            baselineDate,
+            DATE_FORMAT
+          )}`
+        );
+
+        return { marketData };
+      }
+
+      this.logger.warn(
+        `The market data of ${symbol} (${dataSource}) starts at ${format(
+          firstMarketDataItem.date,
+          DATE_FORMAT
+        )}, after the baseline date ${format(baselineDate, DATE_FORMAT)}`
+      );
+    }
+
+    const exchangeRates =
+      await this.exchangeRateDataService.getExchangeRatesByCurrency({
+        currencies: [currentSymbolItem.currency],
+        startDate: min([baselineDate, startDate]),
+        targetCurrency: userCurrency
+      });
+
+    const exchangeRateAtStartDate =
+      exchangeRates[`${currentSymbolItem.currency}${userCurrency}`]?.[
+        format(firstMarketDataItem.date, DATE_FORMAT)
+      ];
 
     for (const marketDataItem of marketDataItems) {
       const exchangeRate =
