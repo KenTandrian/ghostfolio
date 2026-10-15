@@ -1,3 +1,4 @@
+import { GfPredefinedFeeComponent } from '@ghostfolio/client/components/predefined-fee/predefined-fee.component';
 import { ImpersonationStorageService } from '@ghostfolio/client/services/impersonation-storage.service';
 import { UserService } from '@ghostfolio/client/services/user/user.service';
 import {
@@ -66,6 +67,7 @@ import { ActivityType } from './types/activity-type.type';
   host: { class: 'h-100' },
   imports: [
     GfAccountSelectorComponent,
+    GfPredefinedFeeComponent,
     GfSymbolAutocompleteComponent,
     GfTagsSelectorComponent,
     GfValueComponent,
@@ -514,6 +516,10 @@ export class GfCreateOrUpdateActivityDialogComponent {
       symbol:
         (['FEE', 'INTEREST', 'LIABILITY', 'VALUABLE'].includes(
           this.activityForm.get('type')?.value
+        ) &&
+        !(
+          this.activityForm.get('type')?.value === 'FEE' &&
+          this.data.activity?.symbolProfileId
         )
           ? undefined
           : this.activityForm.get('searchSymbol')?.value?.symbol) ??

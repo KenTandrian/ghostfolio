@@ -1,0 +1,57 @@
+<nav
+  mat-align-tabs="center"
+  mat-tab-nav-bar
+  [disablePagination]="true"
+  [tabPanel]="tabPanel"
+>
+  @for (item of items(); track item) {
+    @if (item.showCondition !== false) {
+      @if (item.onClick) {
+        <button
+          class="no-min-width overflow-hidden px-1"
+          mat-tab-link
+          type="button"
+          (click)="item.onClick()"
+        >
+          <ng-container
+            *ngTemplateOutlet="itemContent; context: { $implicit: item }"
+          />
+        </button>
+      } @else {
+        <a
+          #rla="routerLinkActive"
+          class="no-min-width overflow-hidden px-1"
+          mat-tab-link
+          routerLinkActive
+          [active]="rla.isActive"
+          [routerLink]="item.routerLink"
+          [routerLinkActiveOptions]="{ exact: true }"
+        >
+          <ng-container
+            *ngTemplateOutlet="itemContent; context: { $implicit: item }"
+          />
+        </a>
+      }
+    }
+  }
+</nav>
+
+<mat-tab-nav-panel #tabPanel />
+
+<ng-template #itemContent let-item>
+  <span
+    class="align-items-center d-flex flex-column justify-content-center text-center w-100"
+  >
+    <div
+      class="icon-wrapper align-items-center d-flex justify-content-center flex-shrink-0"
+      matRipple
+      [matRippleCentered]="true"
+    >
+      <ion-icon class="flex-shrink-0" [name]="item.iconName" />
+    </div>
+    <span
+      class="tab-label line-height-normal overflow-hidden p-0 text-truncate"
+      [innerHTML]="item.label"
+    ></span>
+  </span>
+</ng-template>
