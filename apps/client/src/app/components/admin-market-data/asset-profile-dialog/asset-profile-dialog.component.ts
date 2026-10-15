@@ -279,7 +279,7 @@ export class GfAssetProfileDialogComponent implements OnInit {
     },
     {
       label: $localize`Max`,
-      value: 'max'
+      value: ''
     }
   ];
   protected defaultDateFormat: string;
