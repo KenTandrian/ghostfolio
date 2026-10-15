@@ -10,7 +10,7 @@ import {
   LineChartItem,
   NullableLineChartItem
 } from '@ghostfolio/common/interfaces';
-import { ColorScheme } from '@ghostfolio/common/types';
+import type { ColorScheme } from '@ghostfolio/common/types';
 
 import {
   AfterViewInit,
