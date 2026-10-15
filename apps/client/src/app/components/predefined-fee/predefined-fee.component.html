@@ -1,0 +1,12 @@
+<div class="mt-n3 mb-3">
+  <mat-chip-set aria-label="Tax percentages">
+    <mat-chip [disabled]="isDisabled()" (click)="predefinedFee(0.0015)">
+      <ion-icon matChipAvatar name="arrow-up-circle-outline" />
+      0.15%
+    </mat-chip>
+    <mat-chip [disabled]="isDisabled()" (click)="predefinedFee(0.0025)">
+      <ion-icon matChipAvatar name="arrow-down-circle-outline" />
+      0.25%
+    </mat-chip>
+  </mat-chip-set>
+</div>
