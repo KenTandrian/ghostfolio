@@ -208,7 +208,8 @@ export class ActivitiesService {
     const userId = data.userId;
 
     if (
-      NON_INVESTMENT_ACTIVITY_TYPES.includes(data.type) ||
+      (NON_INVESTMENT_ACTIVITY_TYPES.includes(data.type) &&
+        !data.SymbolProfile.connectOrCreate.create.symbol.startsWith('FEE.')) ||
       (data.SymbolProfile.connectOrCreate.create.dataSource === 'MANUAL' &&
         data.type === 'BUY')
     ) {
