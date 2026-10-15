@@ -1,0 +1,150 @@
+@use '@angular/material' as mat;
+
+:host {
+  display: block;
+
+  .external-link-icon {
+    font-size: 0.75rem;
+  }
+
+  @include mat.tabs-overrides(
+    (
+      active-focus-label-text-color: rgba(var(--palette-primary-900), 1),
+      active-hover-label-text-color: rgba(var(--palette-primary-900), 1),
+      active-indicator-height: 0,
+      active-label-text-color: rgba(var(--palette-primary-900), 1),
+      divider-height: 0,
+      label-text-tracking: normal
+    )
+  );
+
+  ::ng-deep {
+    .mat-mdc-tab-ripple {
+      display: none;
+    }
+
+    .mat-mdc-tab-link {
+      padding: 6px 0;
+
+      .mdc-tab__content {
+        height: 100%;
+        width: 100%;
+      }
+
+      .icon-wrapper {
+        border-radius: 16px;
+        height: 32px;
+        overflow: hidden;
+        position: relative;
+        transition: background-color 0.2s ease-in-out;
+        width: 48px;
+
+        ion-icon {
+          font-size: 22px;
+        }
+      }
+
+      .tab-label {
+        font-size: 0.75rem;
+        font-weight: 500;
+        margin-top: 4px;
+      }
+
+      &.mdc-tab--active {
+        .icon-wrapper {
+          background-color: rgba(var(--palette-primary-900), 0.12);
+        }
+      }
+    }
+  }
+
+  @media (max-width: 575.98px) {
+    width: 100%;
+
+    @include mat.tabs-overrides(
+      (
+        container-height: 4.25rem
+      )
+    );
+
+    ::ng-deep {
+      .mat-mdc-tab-links {
+        justify-content: space-around;
+
+        .mat-mdc-tab-link.mdc-tab--active .mdc-tab__ripple::before {
+          background-color: transparent;
+        }
+      }
+    }
+  }
+
+  @media (min-width: 576px) {
+    height: 100%;
+    width: 5rem;
+
+    @include mat.tabs-overrides(
+      (
+        container-height: 4.5rem
+      )
+    );
+
+    ::ng-deep {
+      nav {
+        height: 100%;
+      }
+
+      .mat-mdc-tab-header {
+        background-color: rgba(var(--palette-foreground-base), 0.02);
+        height: 100%;
+        padding: 1.5rem 0;
+        width: 5rem;
+
+        .mat-mdc-tab-list,
+        .mat-mdc-tab-links {
+          width: 100%;
+        }
+
+        .mat-mdc-tab-links {
+          flex-direction: column;
+          gap: 0.75rem;
+          justify-content: flex-start;
+
+          .mat-mdc-tab-link {
+            border-radius: 0;
+            justify-content: center;
+            margin: 0;
+            width: 100%;
+          }
+        }
+      }
+    }
+  }
+}
+
+:host-context(.theme-dark) {
+  @include mat.tabs-overrides(
+    (
+      active-focus-label-text-color: rgba(var(--palette-primary-500), 1),
+      active-hover-label-text-color: rgba(var(--palette-primary-500), 1),
+      active-label-text-color: rgba(var(--palette-primary-500), 1)
+    )
+  );
+
+  ::ng-deep {
+    .mat-mdc-tab-link {
+      &.mdc-tab--active {
+        .icon-wrapper {
+          background-color: rgba(var(--palette-primary-500), 0.12);
+        }
+      }
+    }
+  }
+
+  @media (min-width: 576px) {
+    ::ng-deep {
+      .mat-mdc-tab-header {
+        background-color: rgba(var(--palette-foreground-base-dark), 0.02);
+      }
+    }
+  }
+}
