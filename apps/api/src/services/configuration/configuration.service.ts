@@ -61,7 +61,12 @@ export class ConfigurationService {
       }),
       DATA_SOURCE_IMPORT: str({ default: DataSource.YAHOO }),
       DATA_SOURCES: json({
-        default: [DataSource.COINGECKO, DataSource.MANUAL, DataSource.YAHOO]
+        default: [
+          DataSource.BIBIT,
+          DataSource.MANUAL,
+          DataSource.PLUANG,
+          DataSource.YAHOO
+        ]
       }),
       DATA_SOURCES_GHOSTFOLIO_DATA_PROVIDER: json({
         default: []
@@ -138,7 +143,11 @@ export class ConfigurationService {
       REDIS_HOST: str({ default: 'localhost' }),
       REDIS_PASSWORD: str({ default: '' }),
       REDIS_PORT: port({ default: 6379 }),
+      REDIS_HOST: str({ default: 'localhost' }),
+      REDIS_PASSWORD: *** default: '' }),
+      REDIS_PORT: port({ default: 6379 }),
       REDIS_TLS: bool({ default: false }),
+      REQUEST_TIMEOUT: num({ default: ms('3 seconds') }),
       REQUEST_TIMEOUT: num({ default: ms('3 seconds') }),
       ROOT_URL: url({
         default: environment.rootUrl

@@ -32,6 +32,12 @@ import { DataGatheringProcessor } from './data-gathering.processor';
         groupKey: 'dataSource',
         max: 1
       },
+      redis: {
+        host: process.env.REDIS_HOST,
+        port: parseInt(process.env.REDIS_PORT, 10),
+        password: process.env.REDIS_PASSWORD,
+        ...(process.env.REDIS_SSL !== 'false' ? { tls: {} } : {})
+      },
       name: DATA_GATHERING_QUEUE
     }),
     ConfigurationModule,

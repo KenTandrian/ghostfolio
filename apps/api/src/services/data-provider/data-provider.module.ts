@@ -2,12 +2,14 @@ import { RedisCacheModule } from '@ghostfolio/api/app/redis-cache/redis-cache.mo
 import { ConfigurationModule } from '@ghostfolio/api/services/configuration/configuration.module';
 import { CryptocurrencyModule } from '@ghostfolio/api/services/cryptocurrency/cryptocurrency.module';
 import { AlphaVantageService } from '@ghostfolio/api/services/data-provider/alpha-vantage/alpha-vantage.service';
+import { BibitService } from '@ghostfolio/api/services/data-provider/bibit/bibit.service';
 import { CoinGeckoService } from '@ghostfolio/api/services/data-provider/coingecko/coingecko.service';
 import { EodHistoricalDataService } from '@ghostfolio/api/services/data-provider/eod-historical-data/eod-historical-data.service';
 import { FinancialModelingPrepService } from '@ghostfolio/api/services/data-provider/financial-modeling-prep/financial-modeling-prep.service';
 import { GhostfolioService } from '@ghostfolio/api/services/data-provider/ghostfolio/ghostfolio.service';
 import { GoogleSheetsService } from '@ghostfolio/api/services/data-provider/google-sheets/google-sheets.service';
 import { ManualService } from '@ghostfolio/api/services/data-provider/manual/manual.service';
+import { PluangService } from '@ghostfolio/api/services/data-provider/pluang/pluang.service';
 import { RapidApiService } from '@ghostfolio/api/services/data-provider/rapid-api/rapid-api.service';
 import { YahooFinanceService } from '@ghostfolio/api/services/data-provider/yahoo-finance/yahoo-finance.service';
 import { FetchModule } from '@ghostfolio/api/services/fetch/fetch.module';
@@ -36,6 +38,7 @@ import { DataProviderService } from './data-provider.service';
   ],
   providers: [
     AlphaVantageService,
+    BibitService,
     CoinGeckoService,
     DataProviderService,
     EodHistoricalDataService,
@@ -43,39 +46,46 @@ import { DataProviderService } from './data-provider.service';
     GhostfolioService,
     GoogleSheetsService,
     ManualService,
+    PluangService,
     RapidApiService,
     YahooFinanceService,
     {
       inject: [
         AlphaVantageService,
+        BibitService,
         CoinGeckoService,
         EodHistoricalDataService,
         FinancialModelingPrepService,
         GhostfolioService,
         GoogleSheetsService,
         ManualService,
+        PluangService,
         RapidApiService,
         YahooFinanceService
       ],
       provide: 'DataProviderInterfaces',
       useFactory: (
         alphaVantageService,
+        bibitService,
         coinGeckoService,
         eodHistoricalDataService,
         financialModelingPrepService,
         ghostfolioService,
         googleSheetsService,
         manualService,
+        pluangService,
         rapidApiService,
         yahooFinanceService
       ) => [
         alphaVantageService,
+        bibitService,
         coinGeckoService,
         eodHistoricalDataService,
         financialModelingPrepService,
         ghostfolioService,
         googleSheetsService,
         manualService,
+        pluangService,
         rapidApiService,
         yahooFinanceService
       ]
