@@ -218,7 +218,8 @@ export class ActivitiesService {
       orderInput.SymbolProfile.connectOrCreate;
 
     if (
-      NON_INVESTMENT_ACTIVITY_TYPES.includes(orderInput.type) ||
+      (NON_INVESTMENT_ACTIVITY_TYPES.includes(orderInput.type) &&
+        !connectOrCreateSymbolProfile.create.symbol.startsWith('FEE.')) ||
       (connectOrCreateSymbolProfile.create.dataSource === 'MANUAL' &&
         orderInput.type === 'BUY')
     ) {
