@@ -2421,7 +2421,15 @@ export abstract class PortfolioCalculator {
       const job = await this.portfolioSnapshotService.getJob(jobId);
 
       if (job) {
-        await job.finished();
+        if (job.failedReason) {
+          Logger.error(
+            `Removing job ${job.id}: ${job.failedReason}`,
+            'PortfolioCalculator'
+          );
+          await job.remove();
+        } else {
+          await job.finished();
+        }
       }
 
       await this.initialize(attempt + 1);
