@@ -11,7 +11,7 @@ import { primaryColorRgb, secondaryColorRgb } from '@ghostfolio/common/config';
 import { getLocale, parseDate } from '@ghostfolio/common/helper';
 import { LineChartItem } from '@ghostfolio/common/interfaces';
 import { InvestmentItem } from '@ghostfolio/common/interfaces/investment-item.interface';
-import { ColorScheme, GroupBy } from '@ghostfolio/common/types';
+import type { ColorScheme, GroupBy } from '@ghostfolio/common/types';
 
 import {
   ChangeDetectionStrategy,
