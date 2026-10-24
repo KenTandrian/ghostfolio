@@ -10,6 +10,7 @@ const config = {
     getAbsolutePath('@storybook/addon-themes')
   ],
   core: {
+    builder: '@storybook/builder-vite',
     disableTelemetry: true
   },
   framework: {
@@ -22,14 +23,26 @@ const config = {
       to: '/assets'
     }
   ],
-  stories: ['../**/*.stories.@(js|jsx|ts|tsx|mdx)']
+  stories: ['../**/*.stories.@(js|jsx|ts|tsx|mdx)'],
+  viteFinal: async (config) => {
+    const { mergeConfig } = await import('vite');
+
+    return mergeConfig(config, {
+      esbuild: {
+        tsconfigRaw: {
+          compilerOptions: {
+            verbatimModuleSyntax: false
+          }
+        }
+      },
+      resolve: {
+        tsconfigPaths: true
+      }
+    });
+  }
 };
 
 export default config;
-
-// To customize your webpack configuration you can use the webpackFinal field.
-// Check https://storybook.js.org/docs/react/builders/webpack#extending-storybooks-webpack-config
-// and https://nx.dev/packages/storybook/documents/custom-builder-configs
 
 function getAbsolutePath(value) {
   return dirname(require.resolve(join(value, 'package.json')));
