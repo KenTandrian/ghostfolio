@@ -280,6 +280,7 @@ export const NON_INVESTMENT_ACTIVITY_TYPES = Object.values(Type).filter(
 
 export const PORTFOLIO_SNAPSHOT_PROCESS_JOB_NAME = 'PORTFOLIO';
 export const PORTFOLIO_SNAPSHOT_PROCESS_JOB_OPTIONS: JobOptions = {
+  attempts: 3,
   removeOnComplete: true
 };
 
